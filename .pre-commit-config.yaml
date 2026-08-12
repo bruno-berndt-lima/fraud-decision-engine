@@ -1,0 +1,35 @@
+repos:
+  # Ruff runs from uv.lock rather than a pre-commit-managed copy, so the hook
+  # and `make lint` can never disagree about which version is authoritative.
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      # data/ is gitignored but reports/ is tracked on purpose — this is the
+      # guard against a stray parquet or full-resolution figure entering history.
+      - id: check-added-large-files
+        args: [--maxkb=5000]
+
+  # Strips notebook outputs before they reach git. Phase 01 commits an EDA
+  # notebook; without this, base64 images and dataframe dumps go with it.
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.9.1
+    hooks:
+      - id: nbstripout

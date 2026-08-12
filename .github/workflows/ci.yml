@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+
+      # --locked fails if uv.lock is stale relative to pyproject.toml, so CI
+      # cannot silently run against different dependencies than the ones declared.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      # Same target you run locally — one definition of "passing".
+      - name: Lint and test
+        run: make check
