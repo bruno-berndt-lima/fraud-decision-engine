@@ -1,0 +1,161 @@
+# ==============================================================================
+# Cost matrix — economic assumptions
+# ==============================================================================
+# These are ASSUMPTIONS, not facts. Two of the four numbers below were invented
+# with reasoning rather than measured, and the decision policy in Phase 06 is
+# only as trustworthy as they are. That is why every value carries its basis and
+# a confidence level, and why `sensitivity` at the bottom defines the sweep that
+# tests how much the conclusion actually depends on them.
+#
+# Full reasoning: docs/problem-statement.md §4.
+# This file is versioned deliberately — changing a number here changes every
+# downstream result, so bump `version` and say why in the commit message.
+# ==============================================================================
+
+version: 1
+last_updated: 2026-08-12
+
+# Asserted at load. TransactionAmt is USD; nothing in this project converts
+# currency. The threshold is a ratio of a fixed cost to a variable amount, so
+# mixed units silently rescale it and block the wrong transactions.
+currency: USD
+
+# ------------------------------------------------------------------------------
+# Costs, per decision outcome
+# ------------------------------------------------------------------------------
+costs:
+
+  chargeback_fee:
+    value: 25.00
+    basis: >
+      Flat per-dispute administration fee the acquirer charges the merchant when
+      a cardholder files a chargeback. Independent of transaction size, and
+      charged whether or not the merchant wins the representment.
+    source: >
+      Industry-typical range is roughly $15-$100 depending on acquirer, merchant
+      category and risk profile. $25 sits low-middle, appropriate for a merchant
+      not in a network monitoring programme. Not measured for this portfolio.
+    confidence: medium
+
+  false_negative:
+    # Computed, not constant: fraud allowed costs the full transaction value
+    # plus the dispute fee. This term is what SCALES WITH AMOUNT, and the
+    # asymmetry against false_positive below is what makes the optimal
+    # threshold per-transaction rather than global.
+    formula: amount + chargeback_fee
+    basis: >
+      Goods shipped and funds clawed back, plus the chargeback administration
+      fee. Recovery via representment is not modelled — for card-not-present
+      fraud without 3DS the merchant usually loses.
+    confidence: high
+
+  false_positive:
+    value: 15.00
+    basis: >
+      A legitimate customer declined at authorisation. Two components: lost
+      contribution margin on the transaction, plus an allowance for churn risk
+      when a good customer is wrongly refused. Treated as APPROXIMATELY FIXED,
+      which is the simplification that makes the threshold derivation clean.
+    source: >
+      No public source exists. Margin is single-digit dollars on a low-hundreds
+      ticket; the churn component draws on widely cited industry surveys putting
+      the share of falsely-declined customers who reduce or abandon a merchant
+      at roughly a third - self-reported survey data, not observed behaviour,
+      and not measured here. $15 is a defensible round number, NOT a measurement.
+    confidence: low
+    note: >
+      The weakest number in this project, deliberately flagged. Phase 06 sweeps
+      it (see `sensitivity`) and reports how the policy and savings respond. The
+      goal is not to be right about it - it is to characterise how much the
+      conclusion depends on being right about it.
+
+  review:
+    value: 1.50
+    basis: >
+      Marginal cost of one analyst decision. Derived rather than assumed: at
+      20-30 manual reviews per analyst-hour and a fully-loaded analyst cost of
+      $30-$45/hour, one review lands at roughly $1.00-$2.25. $1.50 is the midpoint.
+    confidence: medium
+
+  review_friction:
+    value: 3.00
+    basis: >
+      A legitimate customer whose order is HELD pending review is delayed but not
+      declined, so the penalty is real but well below a block. Set at 20% of
+      false_positive. Applies only because review holds the transaction rather
+      than letting it through - see problem-statement.md §2.
+    confidence: low
+
+  true_positive:
+    value: 0.00
+    basis: >
+      Fraud blocked, or caught in review before capture. The loss is prevented.
+      Stated explicitly rather than left implied. Retry by the same fraudster on
+      another instrument is not modelled.
+    confidence: high
+
+  true_negative:
+    value: 0.00
+    basis: Good transaction allowed. The intended outcome, no cost incurred.
+    confidence: high
+
+# ------------------------------------------------------------------------------
+# Operational constraints the policy must respect
+# ------------------------------------------------------------------------------
+constraints:
+
+  review_capacity:
+    value: 0.01
+    unit: fraction_of_daily_transaction_volume
+    basis: >
+      1.0% of DAILY VOLUME - not 1% of the evaluation set; the denominator
+      matters. At ~3,245 transactions/day that is ~32 reviews/day, which at
+      20-30 reviews per analyst-hour is one analyst for 1-2 hours. Consistent
+      with a small merchant operation, not a large fraud floor.
+    confidence: medium
+    note: >
+      A hard constraint in Phase 06, not a preference: held orders age, so
+      unreviewed queue depth is a real operational failure.
+
+# ------------------------------------------------------------------------------
+# Sensitivity analysis (Phase 06)
+# ------------------------------------------------------------------------------
+# The sweep is config-driven so the analysis can be rerun without touching code.
+# If the model's advantage over the rules baseline disappears anywhere inside
+# these ranges, the headline result is an artefact of an assumption and must be
+# reported as such.
+sensitivity:
+
+  false_positive:
+    min: 5.00
+    max: 100.00
+    steps: 20
+
+  chargeback_fee:
+    min: 15.00
+    max: 100.00
+    steps: 10
+
+  review_capacity:
+    values: [0.005, 0.01, 0.02]
+
+# ------------------------------------------------------------------------------
+# Threshold derivation — reference only; implemented in evaluation/cost.py
+# ------------------------------------------------------------------------------
+#   Block when the expected cost of allowing exceeds the expected cost of
+#   blocking. You only pay the false-positive cost when you are WRONG:
+#
+#       p x (amount + chargeback_fee)  >  (1 - p) x false_positive
+#
+#   which solves to the exact per-transaction threshold:
+#
+#       p* = false_positive / (amount + chargeback_fee + false_positive)
+#
+#   Note the trailing `+ false_positive` in the denominator. Dropping it - as
+#   the common form of this formula does - is an approximation that is harmless
+#   at large amounts but sets the bar too high on small ones:
+#
+#       $20 transaction:  exact 25.0%  vs  approximate 33.3%
+#       $8,000:           exact 0.187% vs  approximate 0.187%
+#
+#   Use the exact form.
