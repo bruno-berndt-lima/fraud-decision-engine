@@ -1,0 +1,73 @@
+[project]
+name = "fraud-engine"
+version = "0.1.0"
+description = "Cost-weighted fraud decisioning on the IEEE-CIS dataset"
+readme = "README.md"
+authors = [
+    { name = "Bruno", email = "brunolima674@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "nbstripout>=0.9.1",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "ruff>=0.16.2",
+]
+
+[tool.ruff]
+line-length = 100
+# Tells isort which imports are yours vs third-party, so `fraud_engine`
+# sorts into its own block instead of being mistaken for a PyPI package.
+src = ["src", "tests"]
+# No target-version needed: ruff reads requires-python (>=3.12) above and
+# infers which modernisations are safe.
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle — whitespace and formatting basics
+    "F",       # pyflakes — unused imports, undefined names. Pure bug-catching.
+    "I",       # isort — deterministic import order, so diffs stay small
+    "B",       # bugbear — mutable default args, loop-variable closures.
+               #   Real bugs, not style. The single highest-value family here.
+    "UP",      # pyupgrade — rewrites to modern idioms as 3.12 allows
+    "C4",      # comprehensions — flags list(...)/dict(...) that should be literals
+    "SIM",     # simplify — collapses redundant branches and context managers
+    "PTH",     # use pathlib instead of os.path. A pipeline is mostly path
+               #   plumbing; one Path API beats string concatenation everywhere.
+    "PD",      # pandas-vet — inplace=True, chained assignment, .values vs
+               #   .to_numpy(). Directly relevant to every file you're about to write.
+    "NPY",     # numpy-specific legacy API usage
+    "ARG",     # unused function arguments — usually a sign of a stale signature
+    "RUF",     # ruff's own rules (mutable class defaults, unused noqa, etc.)
+]
+ignore = [
+    "E501",    # line length. The formatter already enforces it; leaving the lint
+               #   rule on means fighting it over long strings and comments.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately take fixtures they never reference by name.
+"tests/**" = ["ARG"]
+# EDA notebooks: imports mid-file and stray prints are the point of a notebook.
+# These stay linted rather than excluded, so genuine errors still surface.
+"notebooks/**" = ["E402", "F401", "T201"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "-ra",              # summarise every non-passing result, not just failures
+    "--strict-markers", # a typo'd @pytest.mark.slwo becomes an error, not a silent no-op
+    "--strict-config",  # same for typos in this config block
+]
+# Deliberately no `pythonpath` setting. That is the src-layout payoff: tests
+# import the installed package, not a directory that happens to be adjacent.
