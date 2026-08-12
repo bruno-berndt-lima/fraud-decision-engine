@@ -1,0 +1,44 @@
+# ==============================================================================
+# Pipeline configuration
+# ==============================================================================
+# Paths and stage parameters. Economic assumptions live in cost_matrix.yaml,
+# versioned separately — see docs/problem-statement.md §4.
+#
+# NOTE: the paths below are also declared in the Makefile, which needs literal
+# values to do mtime-based dependency resolution and cannot read this file.
+# tests/test_config_paths.py asserts the two stay in step.
+# ==============================================================================
+
+paths:
+  raw:
+    transactions: data/raw/train_transaction.csv
+    identity: data/raw/train_identity.csv
+  interim: data/interim/transactions.parquet
+  splits_dir: data/splits
+  features_dir: data/features
+
+# ------------------------------------------------------------------------------
+# Phase 01 — load
+# ------------------------------------------------------------------------------
+load:
+  # TransactionAmt is summed across hundreds of thousands of rows to produce the
+  # headline USD figure, and float32 carries only ~7 significant digits, so
+  # rounding error would accumulate in that sum. One column at double precision
+  # costs nothing; the other 393 are downcast.
+  amount_dtype: float64
+
+  # Everything else numeric. float32 rather than an integer type even for the
+  # count-like C* and day-delta D* families, because numpy integers cannot hold
+  # NaN and this data is missing-heavy from the first row.
+  default_float_dtype: float32
+
+  # An object column becomes `category` when its distinct values are few
+  # relative to row count. At 590,540 rows this ceiling is ~29,500 distinct
+  # values; every string column in this dataset sits far below it (DeviceInfo is
+  # widest at roughly two thousand). Pandas' own rule of thumb is 0.5 — this is
+  # deliberately tighter.
+  category_max_ratio: 0.05
+
+  # Rows sampled to measure cardinality before the full typed read, so the file
+  # is not parsed twice just to decide how to parse it.
+  cardinality_sample_rows: 100000
