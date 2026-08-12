@@ -10,7 +10,12 @@ MAKEFLAGS += --no-builtin-rules
 # ==============================================================================
 # Variables
 # ==============================================================================
-RUN := uv run
+RUN    := uv run
+# One-off fetch tool, deliberately NOT a project dependency: nothing in src/
+# imports it, and adding it pulls ~20 transitive packages into every CI install.
+# Data reproducibility comes from the recorded checksums, not from pinning the
+# client that downloaded the bytes.
+KAGGLE := uvx kaggle
 
 # ---- Directories -------------------------------------------------------------
 DATA_DIR     := data
@@ -81,7 +86,7 @@ $(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(MODEL_DIR) $(REPORTS_DIR):
 
 .PHONY: download
 download:  ## Fetch the IEEE-CIS CSVs from Kaggle into data/raw/
-	$(RUN) kaggle competitions download -c ieee-fraud-detection -p $(RAW_DIR)
+	$(KAGGLE) competitions download -c ieee-fraud-detection -p $(RAW_DIR)
 	cd $(RAW_DIR) && unzip -o ieee-fraud-detection.zip
 
 $(INTERIM): $(RAW_TXN) $(RAW_ID) src/fraud_engine/data/load.py | $(INTERIM_DIR)
