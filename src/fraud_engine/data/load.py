@@ -188,3 +188,44 @@ def read_typed(csv_path: Path, dtype_map: dict[str, str]) -> pd.DataFrame:
         )
 
     return pd.read_csv(csv_path, dtype=dtype_map)
+
+
+def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.DataFrame:
+    """LEFT join identity onto transactions, flagging which rows matched.
+
+    Only about 24% of transactions have an identity record, and *whether one
+    exists at all* is predictive. So ``has_identity`` comes from the join itself
+    rather than being inferred afterwards from a null check — those are
+    different things. A null in ``DeviceInfo`` can mean "no identity record" or
+    "a record whose DeviceInfo happened to be empty", and only the join knows
+    which.
+
+    Nothing is filled. Unmatched rows keep their nulls across every identity
+    column, because that missingness is signal the model will split on.
+
+    Args:
+        transactions: The full transaction table. Every row survives.
+        identity: Device and network attributes, covering a subset.
+
+    Returns:
+        ``transactions`` plus the identity columns and a boolean
+        ``has_identity``, with the row count unchanged.
+
+    Raises:
+        pandas.errors.MergeError: If either side has duplicate TransactionIDs.
+            A LEFT join whose right side has duplicate keys *multiplies* rows,
+            so without this check the function would fabricate transactions
+            rather than fail.
+    """
+    merged = transactions.merge(
+        identity,
+        on="TransactionID",
+        how="left",
+        validate="one_to_one",
+        indicator=True,
+    )
+
+    merged["has_identity"] = merged["_merge"] == "both"
+
+    # _merge was scaffolding for the flag above; it must not reach the parquet.
+    return merged.drop(columns="_merge")
