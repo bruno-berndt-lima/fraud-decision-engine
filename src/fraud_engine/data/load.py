@@ -143,3 +143,48 @@ def measure_cardinality(csv_path: Path, sample_rows: int) -> dict[str, int]:
     cardinality = df.select_dtypes(include="str").nunique().to_dict()
 
     return cardinality
+
+
+def read_typed(csv_path: Path, dtype_map: dict[str, str]) -> pd.DataFrame:
+    """Read the whole CSV under an explicit dtype policy.
+
+    The map is checked against the file's header before anything is read, which
+    is where ``build_dtype_map`` returning a *total* map finally pays off: a
+    column the map does not mention would fall back to pandas' inference, and
+    the entire dtype policy would be bypassed for it without any error.
+
+    Args:
+        csv_path: The CSV to read.
+        dtype_map: Column name to pandas dtype, from ``build_dtype_map``. Must
+            match the file's header exactly, in both directions.
+
+    Returns:
+        The full table, typed as the map dictates.
+
+    Raises:
+        ValueError: If the map and the header disagree either way.
+    """
+    # nrows=0 reads the header line only, not the file.
+    header = set(pd.read_csv(csv_path, nrows=0).columns)
+    mapped = set(dtype_map)
+
+    # The dangerous direction: these columns exist but have no declared dtype,
+    # so pandas would infer them. Nothing fails, the data just comes back
+    # float64/object and the memory work is silently undone.
+    untyped = header - mapped
+    if untyped:
+        raise ValueError(
+            f"{csv_path.name}: {len(untyped)} column(s) have no declared dtype "
+            f"and would fall back to inference: {sorted(untyped)}"
+        )
+
+    # The loud direction: read_csv would raise anyway, but a clear message here
+    # names the real cause — the map was built against a different header.
+    unknown = mapped - header
+    if unknown:
+        raise ValueError(
+            f"{csv_path.name}: dtype map names {len(unknown)} column(s) absent "
+            f"from the file: {sorted(unknown)}"
+        )
+
+    return pd.read_csv(csv_path, dtype=dtype_map)
