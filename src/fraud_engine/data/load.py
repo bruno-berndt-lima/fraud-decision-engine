@@ -10,6 +10,10 @@ so it belongs in ``features/``, not here.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pandas as pd
+
 # Columns whose dtype follows from their role rather than from the family rules.
 # Checked before the fallback so a role column can never be swept into the
 # default float type.
@@ -94,3 +98,48 @@ def build_dtype_map(
             dtypes[column] = default_float
 
     return dtypes
+
+
+def measure_cardinality(csv_path: Path, sample_rows: int) -> dict[str, int]:
+    """Count distinct values per text column, from the head of the file.
+
+    Feeds ``build_dtype_map``, which needs only a count to decide whether a
+    column is worth storing as ``category``. Sampling rather than reading the
+    whole file is the point: the dtype decision must be made *before* the full
+    typed read, or there is nothing to pass as ``dtype=``.
+
+    Nulls are excluded from the count, which is correct — pandas stores a
+    missing value as code ``-1`` rather than as an entry in the category lookup
+    table, so a column with four brands and some blanks has cardinality four.
+
+    Args:
+        csv_path: The CSV to sample.
+        sample_rows: Number of rows to read from the head of the file.
+
+    Returns:
+        ``{column: n_distinct}`` for the text columns only. Numeric columns are
+        absent, which is how ``build_dtype_map`` tells the two apart.
+
+    Raises:
+        ValueError: If ``sample_rows`` is not positive. Zero would produce an
+            empty frame, a cardinality of 0 for every column, and therefore a
+            ratio below any threshold — silently converting every text column
+            to ``category``, including one distinct per row.
+
+    Note:
+        The sample is the **head** of the file, which is the first ~31 days,
+        because the data is time-ordered. A column that happens to be empty
+        across that window infers as numeric and is missed here.
+
+        That is acceptable because the mistake cannot be silent: a string
+        landing in a ``float32`` column makes the full ``read_csv`` raise. The
+        failure mode is a loud crash, never a wrong answer — which is worth
+        more than a cleverer sampler.
+    """
+    if sample_rows <= 0:
+        raise ValueError(f"sample_rows must be positive, got {sample_rows}")
+
+    df = pd.read_csv(csv_path, nrows=sample_rows)
+    cardinality = df.select_dtypes(include="str").nunique().to_dict()
+
+    return cardinality
