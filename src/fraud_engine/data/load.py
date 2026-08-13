@@ -10,9 +10,20 @@ so it belongs in ``features/``, not here.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
+import yaml
+
+from fraud_engine.data.validate import validate_interim
+
+log = logging.getLogger(__name__)
+
+# Resolved relative to the working directory. The Makefile is the interface and
+# always runs from the repository root, so this holds for `make data`; the
+# override argument on main() exists for everything else.
+DEFAULT_CONFIG_PATH = Path("config/config.yaml")
 
 # Columns whose dtype follows from their role rather than from the family rules.
 # Checked before the fallback so a role column can never be swept into the
@@ -187,7 +198,13 @@ def read_typed(csv_path: Path, dtype_map: dict[str, str]) -> pd.DataFrame:
             f"from the file: {sorted(unknown)}"
         )
 
-    return pd.read_csv(csv_path, dtype=dtype_map)
+    # .copy() consolidates the block layout, and it is not optional here.
+    # Passing an explicit per-column dtype= map makes read_csv return a frame
+    # with ONE BLOCK PER COLUMN — 394 blocks for 394 columns. Every later
+    # operation then pays for that layout, and the merge in join_identity warns
+    # about it outright. Consolidating collapses the joined table from 435
+    # blocks to 37, which is cheaper for every column access downstream.
+    return pd.read_csv(csv_path, dtype=dtype_map).copy()
 
 
 def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.DataFrame:
@@ -225,10 +242,14 @@ def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.Data
         indicator=True,
     )
 
-    merged["has_identity"] = merged["_merge"] == "both"
+    # The comparison is already a per-row boolean Series — no conditional needed.
+    # Built standalone and concatenated rather than assigned in: inserting a
+    # column into a wide frame full of categorical blocks makes pandas rebuild
+    # its block layout and warn about fragmentation.
+    has_identity = (merged["_merge"] == "both").rename("has_identity")
 
     # _merge was scaffolding for the flag above; it must not reach the parquet.
-    return merged.drop(columns="_merge")
+    return pd.concat([merged.drop(columns="_merge"), has_identity], axis=1)
 
 
 def add_time_columns(transactions: pd.DataFrame) -> pd.DataFrame:
@@ -265,8 +286,126 @@ def add_time_columns(transactions: pd.DataFrame) -> pd.DataFrame:
         left unmodified, consistent with the rest of this module.
     """
     seconds = transactions["TransactionDT"]
-    return transactions.assign(
-        day=seconds // 86_400,
-        hour=seconds // 3_600 % 24,
-        weekday=seconds // 86_400 % 7,
+    # Assembled as one frame and concatenated in a single operation. `.assign()`
+    # inserts column by column, which on a wide frame with many categorical
+    # blocks forces a block-layout rebuild per column and warns about it.
+    derived = pd.DataFrame(
+        {
+            "day": seconds // 86_400,
+            "hour": seconds // 3_600 % 24,
+            "weekday": seconds // 86_400 % 7,
+        },
+        index=transactions.index,
     )
+    return pd.concat([transactions, derived], axis=1)
+
+
+def count_rows(csv_path: Path) -> int:
+    """Count data rows without parsing the file.
+
+    ``build_dtype_map`` needs the *full* row count to compute its category
+    ratio, and it needs it before the typed read exists — so the count cannot
+    come from a DataFrame. Counting newlines takes about a second on 683 MB.
+
+    The tempting shortcut is to pass the sample size instead. That would run,
+    but it silently redefines the ratio: a threshold tuned against 590,540 rows
+    would be measured against 100,000, and far fewer columns would qualify as
+    categorical. Wrong answers, no error.
+
+    Args:
+        csv_path: The CSV to count.
+
+    Returns:
+        Rows excluding the header.
+    """
+    with csv_path.open("rb") as handle:
+        return sum(1 for _ in handle) - 1
+
+
+def load_typed_csv(csv_path: Path, load_cfg: dict) -> pd.DataFrame:
+    """Run the sample → policy → typed-read cycle for one CSV.
+
+    Both raw files go through this independently: they have different columns
+    (only one carries ``isFraud``, only one the ``id_*`` block) and different
+    row counts, so each gets its own cardinality measurement and dtype map.
+
+    Args:
+        csv_path: The CSV to load.
+        load_cfg: The ``load:`` block of the config.
+
+    Returns:
+        The fully typed table.
+    """
+    n_rows = count_rows(csv_path)
+    cardinality = measure_cardinality(csv_path, load_cfg["cardinality_sample_rows"])
+    header = list(pd.read_csv(csv_path, nrows=0).columns)
+    dtype_map = build_dtype_map(header, cardinality, n_rows, load_cfg)
+
+    n_category = sum(1 for dtype in dtype_map.values() if dtype == "category")
+    log.info(
+        "%s: %d rows, %d columns, %d text column(s) encoded as category",
+        csv_path.name,
+        n_rows,
+        len(header),
+        n_category,
+    )
+    return read_typed(csv_path, dtype_map)
+
+
+def load_config(config_path: Path) -> dict:
+    """Read the pipeline config."""
+    return yaml.safe_load(config_path.read_text())
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Turn the two raw CSVs into one validated, typed parquet table.
+
+    Wiring only — every decision lives in the functions this calls. Invoked by
+    ``make data`` as ``python -m fraud_engine.data.load``.
+
+    Validation runs *before* the write, so a schema violation leaves no parquet
+    behind. Together with ``.DELETE_ON_ERROR:`` in the Makefile, that means no
+    downstream stage can ever read a table that failed its contract.
+
+    Args:
+        config_path: Path to ``config.yaml``. Defaults to a repo-root-relative
+            location, which is where the Makefile runs from.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, load_cfg = config["paths"], config["load"]
+
+    transactions = load_typed_csv(Path(paths["raw"]["transactions"]), load_cfg)
+    identity = load_typed_csv(Path(paths["raw"]["identity"]), load_cfg)
+
+    joined = join_identity(transactions, identity)
+    final = add_time_columns(joined)
+
+    # The only end-to-end check in the pipeline. join_identity guards against
+    # duplicate keys and the schema asserts TransactionID is unique, but this is
+    # the one place holding both the input and the output, so it is the only
+    # place that can compare them.
+    if len(final) != len(transactions):
+        raise ValueError(
+            f"row count changed during the join: {len(transactions)} in, {len(final)} out"
+        )
+
+    validate_interim(final)
+
+    interim_path = Path(paths["interim"])
+    interim_path.parent.mkdir(parents=True, exist_ok=True)
+    final.to_parquet(interim_path, index=False)
+
+    log.info(
+        "wrote %s — %d rows x %d columns, %.1f MB in memory (%.1f%% with identity)",
+        interim_path,
+        len(final),
+        final.shape[1],
+        final.memory_usage(deep=True).sum() / 1024**2,
+        100 * final["has_identity"].mean(),
+    )
+
+
+if __name__ == "__main__":
+    main()
