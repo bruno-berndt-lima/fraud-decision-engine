@@ -229,3 +229,44 @@ def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.Data
 
     # _merge was scaffolding for the flag above; it must not reach the parquet.
     return merged.drop(columns="_merge")
+
+
+def add_time_columns(transactions: pd.DataFrame) -> pd.DataFrame:
+    """Derive relative day, hour and weekday from ``TransactionDT``.
+
+    ``TransactionDT`` is **seconds elapsed from an unpublished reference point**,
+    not a Unix timestamp. Handing it to a date parser produces dates in 1970 that
+    look entirely plausible and mean nothing, so the arithmetic here is plain
+    integer division and nothing is converted to a datetime.
+
+    What the three columns actually mean:
+
+    ``day``
+        Days since the reference. Relative, but internally consistent — this is
+        what Phase 02 slices the temporal split on.
+    ``hour``
+        Hour relative to the reference. Equals wall-clock hour *only if* that
+        reference is midnight-aligned. ``min(TransactionDT)`` is exactly 86,400 —
+        one whole day — which suggests it is, but that is an inference, not a
+        documented fact. Confirm it in the EDA notebook: plot volume by hour and
+        look for a plausible overnight trough. A flat or oddly-phased curve means
+        the alignment assumption is wrong.
+    ``weekday``
+        A consistent 7-day cycle, but position 0 is **not** necessarily Monday.
+        Usable as a categorical feature; not usable as a claim. "Fraud peaks on
+        Tuesdays" would be unfounded — the grouping is real, the labels are not
+        knowable.
+
+    Args:
+        transactions: Table containing ``TransactionDT``.
+
+    Returns:
+        A new frame with ``day``, ``hour`` and ``weekday`` appended. The input is
+        left unmodified, consistent with the rest of this module.
+    """
+    seconds = transactions["TransactionDT"]
+    return transactions.assign(
+        day=seconds // 86_400,
+        hour=seconds // 3_600 % 24,
+        weekday=seconds // 86_400 % 7,
+    )
