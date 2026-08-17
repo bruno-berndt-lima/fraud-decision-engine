@@ -233,6 +233,9 @@ def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.Data
             A LEFT join whose right side has duplicate keys *multiplies* rows,
             so without this check the function would fabricate transactions
             rather than fail.
+        ValueError: If any identity row matched no transaction. Every identity
+            record in this dataset belongs to one — 144,233 of 144,233 match —
+            so a shortfall means the two files are not a pair.
     """
     merged = transactions.merge(
         identity,
@@ -243,10 +246,29 @@ def join_identity(transactions: pd.DataFrame, identity: pd.DataFrame) -> pd.Data
     )
 
     # The comparison is already a per-row boolean Series — no conditional needed.
+    matched = merged["_merge"] == "both"
+
+    # An identity row that matched nothing is invisible to every other check.
+    # A LEFT join preserves the row count by construction, so main's end-to-end
+    # comparison still passes; the schema asserts nothing about identity columns,
+    # so validation passes too. What lands on disk is a structurally valid table
+    # with has_identity False everywhere and the signal silently deleted. The
+    # validate= above catches the opposite failure — the join multiplying rows —
+    # and says nothing about this one.
+    n_matched = int(matched.sum())
+    if n_matched != len(identity):
+        raise ValueError(
+            f"{len(identity)} identity rows but {n_matched} matched a transaction. "
+            "Every identity record must belong to a transaction in this file. The "
+            "usual cause is a mismatched pair: paths.raw.identity pointing at "
+            "test_identity.csv, which has the same 41-column shape and sits in the "
+            "same directory as the file that belongs here."
+        )
+
     # Built standalone and concatenated rather than assigned in: inserting a
     # column into a wide frame full of categorical blocks makes pandas rebuild
     # its block layout and warn about fragmentation.
-    has_identity = (merged["_merge"] == "both").rename("has_identity")
+    has_identity = matched.rename("has_identity")
 
     # _merge was scaffolding for the flag above; it must not reach the parquet.
     return pd.concat([merged.drop(columns="_merge"), has_identity], axis=1)

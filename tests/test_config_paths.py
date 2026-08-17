@@ -78,3 +78,44 @@ def test_every_makefile_data_file_is_mapped(make_vars):
         f"Makefile declares data paths with no config.yaml twin: {sorted(unmapped)}. "
         "Add them to PATH_PAIRS, or to SENTINEL_ONLY if they are make-only sentinels."
     )
+
+
+# A stage that reads config.yaml but does not depend on it in the Makefile will
+# not rebuild when the config changes: `make data` reports "nothing to be done"
+# and hands back an artifact built under the old settings. Nothing errors, and
+# the stale parquet is indistinguishable from a fresh one.
+STAGE_RULE = re.compile(r"^\$\((\w+)\):\s*([^\n]*)\n((?:\t[^\n]*\n?)*)", re.MULTILINE)
+
+
+@pytest.fixture(scope="module")
+def stage_rules() -> dict[str, str]:
+    """Map each pipeline stage's target variable to its prerequisites.
+
+    Order-only prerequisites (after `|`) are dropped: those are the mkdir rules
+    for output directories, which are not stage inputs and never trigger a
+    rebuild. Line continuations are collapsed first so a rule split across
+    several lines parses the same as a single-line one.
+    """
+    text = (REPO_ROOT / "Makefile").read_text()
+    joined = re.sub(r"\\\n\s*", " ", text)
+
+    return {
+        target: prerequisites.split("|")[0]
+        for target, prerequisites, recipe in STAGE_RULE.findall(joined)
+        if "python -m fraud_engine" in recipe
+    }
+
+
+def test_stage_rules_are_found(stage_rules):
+    """Guards the guard: a parser that matches nothing passes vacuously."""
+    assert stage_rules, "no Makefile rule with a `python -m fraud_engine` recipe was parsed"
+
+
+def test_every_pipeline_stage_depends_on_the_config(stage_rules):
+    missing = sorted(
+        target for target, prereqs in stage_rules.items() if "$(CONFIG)" not in prereqs
+    )
+    assert not missing, (
+        f"Makefile stages run from config.yaml but do not depend on it: {missing}. "
+        "Editing config.yaml would leave their outputs stale without a word."
+    )

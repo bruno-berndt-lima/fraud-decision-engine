@@ -89,7 +89,9 @@ download:  ## Fetch the IEEE-CIS CSVs from Kaggle into data/raw/
 	$(KAGGLE) competitions download -c ieee-fraud-detection -p $(RAW_DIR)
 	cd $(RAW_DIR) && unzip -o ieee-fraud-detection.zip
 
-$(INTERIM): $(RAW_TXN) $(RAW_ID) src/fraud_engine/data/load.py | $(INTERIM_DIR)
+$(INTERIM): $(RAW_TXN) $(RAW_ID) $(CONFIG) \
+            src/fraud_engine/data/load.py src/fraud_engine/data/validate.py \
+            | $(INTERIM_DIR)
 	$(RUN) python -m fraud_engine.data.load
 
 $(SPLITS): $(INTERIM) $(CONFIG) src/fraud_engine/data/splits.py | $(SPLITS_DIR)

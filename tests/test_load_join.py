@@ -106,3 +106,43 @@ def test_duplicate_transaction_keys_are_rejected(identity):
     dupes = pd.DataFrame({"TransactionID": [2, 2], "TransactionAmt": [10.0, 20.0]})
     with pytest.raises(MergeError):
         join_identity(dupes, identity)
+
+
+def test_identity_row_matching_nothing_is_rejected(transactions):
+    """A partial identity file must fail rather than join what it can.
+
+    Every identity record in this dataset belongs to a transaction — 144,233 of
+    144,233 match — so a shortfall means the file is truncated or is not the
+    partner of this transaction file.
+    """
+    partial = pd.DataFrame(
+        {
+            "TransactionID": [2, 99],
+            "DeviceType": ["mobile", "desktop"],
+            "DeviceInfo": ["iOS", "Win"],
+        }
+    )
+    with pytest.raises(ValueError, match="2 identity rows but 1 matched"):
+        join_identity(transactions, partial)
+
+
+def test_disjoint_identity_file_is_rejected(transactions):
+    """The wrong-file case, which nothing else in the pipeline catches.
+
+    A LEFT join preserves the row count, so main's end-to-end check passes; the
+    schema asserts nothing about identity columns, so validation passes. Without
+    this guard the run writes a structurally valid parquet with `has_identity`
+    False on every row and the identity signal silently gone.
+
+    `match=` is deliberately specific: MergeError subclasses ValueError, so a
+    bare `raises(ValueError)` would also go green if the merge itself threw.
+    """
+    wrong_file = pd.DataFrame(
+        {
+            "TransactionID": [901, 902],
+            "DeviceType": ["mobile", "desktop"],
+            "DeviceInfo": ["iOS", "Win"],
+        }
+    )
+    with pytest.raises(ValueError, match="2 identity rows but 0 matched"):
+        join_identity(transactions, wrong_file)
