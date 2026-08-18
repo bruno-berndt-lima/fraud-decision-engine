@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Draft |
-| **Last updated** | 2026-08-12 |
+| **Last updated** | 2026-08-18 |
 | **Supersedes** | — |
 
 ---
@@ -242,6 +242,10 @@ gets reported as such rather than reframed:
 Each of these could be wrong. They are the source material for the limitations
 section in Phase 9.
 
+A6 and A8 are the two that cannot be tested at all — both are questions about how the
+vendor built the data, and neither has a published answer. They are recorded so the
+limitation is deliberate rather than discovered late.
+
 | # | Assumption | If wrong | How it would surface |
 |---|---|---|---|
 | A1 | 30-day label maturity captures most fraud chargebacks | Training labels understate fraud; model under-calls | Compare fraud rate in the most recent 30 days of training against earlier windows |
@@ -251,6 +255,7 @@ section in Phase 9.
 | A5 | A US e-commerce ticket distribution stands in for a production portfolio | Decision *rates* don't transfer, though the method does | Stated, not testable with this data |
 | A6 | `C*` and `D*` columns are safe to use | Vendor-computed aggregates over undisclosed lookback windows may leak future information past the purge gap | Not testable — the windows are not published |
 | A7 | Fraud patterns are stable enough for a model trained on days 0–119 to hold | Performance decays faster than expected | Phase 9 month-over-month PR-AUC |
+| A8 | `has_identity` describes the transaction, not an upstream fraud decision | The flag encodes another system's judgment rather than a property of the payment; its importance would not reproduce anywhere identity is collected by a different rule, and Phase 7 reason codes built on it would be unexplainable | Not testable — the collection rule is unpublished. Partial checks: whether the lift is stable across time and across `ProductCD` |
 
 ## 7. Open questions
 
