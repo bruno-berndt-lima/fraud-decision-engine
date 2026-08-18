@@ -288,12 +288,22 @@ def add_time_columns(transactions: pd.DataFrame) -> pd.DataFrame:
         Days since the reference. Relative, but internally consistent — this is
         what Phase 02 slices the temporal split on.
     ``hour``
-        Hour relative to the reference. Equals wall-clock hour *only if* that
-        reference is midnight-aligned. ``min(TransactionDT)`` is exactly 86,400 —
-        one whole day — which suggests it is, but that is an inference, not a
-        documented fact. Confirm it in the EDA notebook: plot volume by hour and
-        look for a plausible overnight trough. A flat or oddly-phased curve means
-        the alignment assumption is wrong.
+        Hour relative to the reference — a consistent 24-hour cycle, but **not**
+        wall-clock time. ``min(TransactionDT)`` being exactly 86,400 suggested a
+        midnight-aligned reference; the EDA disproved it.
+
+        Volume by hour swings 19x between bucket 9 (trough, 1,580) and bucket 19
+        (peak, 30,242) — an unmistakable diurnal cycle, but phased wrong for
+        bucket 0 to be midnight, which would put the daily low at 9am and the
+        peak at 7pm-1am. Placing the trough at a plausible pre-dawn hour puts
+        midnight at bucket 4-6; anything past bucket 6 implies people transact
+        least in the evening. That offset is consistent with UTC timestamps
+        against a mostly-US customer base, but the reference is still unpublished,
+        so it stays an inference.
+
+        Treat ``hour`` as a cyclic feature, not a label. "Fraud peaks at 2am" is
+        not a claim this column supports unless the offset is carried as a stated
+        assumption. See ``notebooks/01_eda.ipynb`` section 3.
     ``weekday``
         A consistent 7-day cycle, but position 0 is **not** necessarily Monday.
         Usable as a categorical feature; not usable as a claim. "Fraud peaks on
