@@ -1,18 +1,23 @@
 repos:
   # Ruff runs from uv.lock rather than a pre-commit-managed copy, so the hook
   # and `make lint` can never disagree about which version is authoritative.
+  #
+  # types_or, not types: `types` is an AND, and a .ipynb identifies as
+  # [file, json, jupyter, non-executable, text] with no `python` tag — so
+  # `types: [python]` skipped notebooks entirely. `make lint` runs `ruff .`,
+  # which does check them, so the hook passed locally and CI failed.
   - repo: local
     hooks:
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format
         language: system
-        types: [python]
+        types_or: [python, jupyter]
       - id: ruff-check
         name: ruff check
         entry: uv run ruff check --fix
         language: system
-        types: [python]
+        types_or: [python, jupyter]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
