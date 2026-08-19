@@ -172,3 +172,77 @@ def assign_splits(days: pd.Series, boundaries: dict[str, tuple[int, int]]) -> pd
         labels[(days >= start) & (days <= end)] = name
 
     return labels.astype(pd.CategoricalDtype(SPLIT_NAMES, ordered=True)).rename("split")
+
+
+def validate_splits(
+    days: pd.Series,
+    split: pd.Series,
+    boundaries: dict[str, tuple[int, int]],
+) -> pd.Series:
+    """Check an assignment against the data it was made from.
+
+    The counterpart to the guards in ``resolve_boundaries``: those compare the
+    config against itself, these compare it against the table. Runs before the
+    split artifact is written, so a violation leaves nothing on disk.
+
+    The load-bearing check is the last one. ``assign_splits`` returns null for
+    any day no split claims — the purge gap, but equally anything outside the
+    declared span — and this is the only place those are told apart.
+
+    Overlap needs no check here: a row carries one label, so belonging to two
+    splits is unrepresentable rather than merely untested.
+
+    Args:
+        days: The ``day`` column.
+        split: Labels from ``assign_splits``, aligned to ``days``.
+        boundaries: From ``resolve_boundaries``.
+
+    Returns:
+        ``split`` unchanged, so this composes into a pipeline expression.
+
+    Raises:
+        ValueError: On any violation, naming the split at fault.
+    """
+    if not days.index.equals(split.index):
+        raise ValueError("days and split must share an index; they are not aligned.")
+    if days.empty:
+        raise ValueError("no rows to split.")
+
+    train_start, train_end = boundaries["train"]
+    val_fit_start = boundaries["val_fit"][0]
+    test_end = boundaries["test"][1]
+
+    # Data wider than the span silently drops rows; span wider than the data
+    # means the config describes days that do not exist. Both are config errors.
+    first, last = int(days.min()), int(days.max())
+    if (first, last) != (train_start, test_end):
+        raise ValueError(
+            f"boundaries span days {train_start}-{test_end} but the data spans "
+            f"{first}-{last}. The declared span must match the table exactly."
+        )
+
+    for name, (start, end) in boundaries.items():
+        claimed = days[split == name]
+        if claimed.empty:
+            raise ValueError(f"{name} is empty: no rows fall in days {start}-{end}.")
+
+        # Verifies the assignment against the boundaries instead of trusting
+        # assign_splits to have applied them.
+        if claimed.min() < start or claimed.max() > end:
+            raise ValueError(
+                f"{name} contains days {int(claimed.min())}-{int(claimed.max())}, "
+                f"outside its declared range {start}-{end}."
+            )
+
+    # Every unclaimed row must be a gap row. Anything else is a day the
+    # boundaries do not cover, and nothing upstream can see it.
+    unclaimed = days[split.isna()]
+    stray = unclaimed[(unclaimed <= train_end) | (unclaimed >= val_fit_start)]
+    if not stray.empty:
+        raise ValueError(
+            f"{len(stray)} row(s) belong to no split and are outside the purge gap "
+            f"(days {train_end + 1}-{val_fit_start - 1}): days "
+            f"{sorted(int(day) for day in stray.unique())[:10]}."
+        )
+
+    return split
