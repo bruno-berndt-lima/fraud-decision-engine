@@ -60,3 +60,15 @@ eda:
   # days, which must hold the purge gap plus all three downstream slices. See
   # docs/problem-statement.md §7 item 5 for the arithmetic Phase 02 inherits.
   horizon_day: 120
+
+
+# ------------------------------------------------------------------------------
+# Phase 02 — Data split
+# ------------------------------------------------------------------------------
+splits:
+  gap_days: 30
+  train_start: 1
+  val_fit_start: 121
+  val_cal_start: 141
+  test_start: 161
+  test_end: 182
