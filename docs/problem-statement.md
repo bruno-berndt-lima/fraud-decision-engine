@@ -111,6 +111,12 @@ This creates a genuine tension, and 30 days is where it is resolved:
 30 days is a judgement, not a fact. It sets the purged gap between training and
 validation in Phase 2, and it is one of the assumptions listed in §6.
 
+It is also the project's most defensible decision with no number behind it, so
+Phase 05 measures what it costs: `experiments.md` E1 runs the same harness with
+the gap removed and reports the difference in PR-AUC and USD. The purged split
+ships either way — the point is to state the price rather than assert the
+principle.
+
 ### 3.4 Serving
 
 A single scoring request carries the transaction and its immediate attributes.
@@ -127,6 +133,8 @@ building a feature store.
 This is deliberate. Quantifying what the infrastructure would buy is a more
 useful result than either silently training on unservable features or quietly
 dropping them.
+
+Registered as `experiments.md` E3.
 
 ## 4. Cost model
 
