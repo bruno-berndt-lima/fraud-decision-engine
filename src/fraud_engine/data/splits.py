@@ -9,6 +9,8 @@ Nothing here is random — no seed, no shuffle, no stratification.
 
 from __future__ import annotations
 
+import pandas as pd
+
 # Chronological. The single source of split identity and order — consumers
 # iterate this rather than restating it.
 SPLIT_NAMES = ("train", "val_fit", "val_cal", "test")
@@ -115,3 +117,58 @@ def resolve_boundaries(splits_cfg: dict) -> dict[str, tuple[int, int]]:
     )
 
     return boundaries
+
+
+def assign_splits(days: pd.Series, boundaries: dict[str, tuple[int, int]]) -> pd.Series:
+    """Label each row with the split its day falls in.
+
+    Takes the ``day`` column rather than the frame: this needs one fact per row,
+    and a function that cannot see ``isFraud`` cannot leak it.
+
+    Ends are inclusive, matching ``resolve_boundaries``. Days no split claims
+    come back null — the purge gap, but also anything outside
+    ``[train_start, test_end]``. Telling those apart is ``validate_splits``'
+    job, not this one.
+
+    Args:
+        days: The ``day`` column. Index and length are preserved.
+        boundaries: From ``resolve_boundaries``.
+
+    Returns:
+        An ordered ``category`` Series named ``split``, aligned to ``days``,
+        with ``SPLIT_NAMES`` as categories and null for unclaimed days.
+        Categorical so an invalid label is unrepresentable rather than merely
+        wrong; ordered so ``groupby`` sorts chronologically without a key.
+
+    Raises:
+        ValueError: If ``boundaries`` does not match ``SPLIT_NAMES``, or if its
+            ranges are inverted or overlapping.
+    """
+    if tuple(boundaries) != SPLIT_NAMES:
+        raise ValueError(
+            f"boundaries keys {tuple(boundaries)} do not match SPLIT_NAMES "
+            f"{SPLIT_NAMES}. The order is load-bearing: the returned dtype is "
+            f"ordered, so chronology comes from this sequence."
+        )
+
+    # Checked against the ranges, not against the rows: an overlap only shows up
+    # in the data if some row happens to fall inside it, so a row-based check
+    # passes on an unlucky sample and on an empty Series.
+    previous_name, previous_end = None, None
+    for name, (start, end) in boundaries.items():
+        if start > end:
+            raise ValueError(f"{name}=({start}, {end}) is inverted and matches no rows.")
+        if previous_end is not None and start <= previous_end:
+            raise ValueError(
+                f"boundaries overlap: {name} starts on day {start}, on or before "
+                f"{previous_name} ends on day {previous_end}."
+            )
+        previous_name, previous_end = name, end
+
+    labels = pd.Series(index=days.index, dtype="object")
+    for name, (start, end) in boundaries.items():
+        # Two comparisons rather than .between() so the inclusivity is on the
+        # page instead of in a pandas default.
+        labels[(days >= start) & (days <= end)] = name
+
+    return labels.astype(pd.CategoricalDtype(SPLIT_NAMES, ordered=True)).rename("split")
