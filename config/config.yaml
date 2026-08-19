@@ -42,3 +42,21 @@ load:
   # Rows sampled to measure cardinality before the full typed read, so the file
   # is not parsed twice just to decide how to parse it.
   cardinality_sample_rows: 100000
+
+# ------------------------------------------------------------------------------
+# Phase 01 — EDA horizon
+# ------------------------------------------------------------------------------
+eda:
+  # The last day the Phase 01 EDA was allowed to look at. `day` is 1-indexed in
+  # this dataset (min TransactionDT is 86,400), so this is days 1–120 inclusive
+  # of a 182-day span.
+  #
+  # This is not a preference. It is a record of what has already been seen, and
+  # it binds Phase 02: every hypothesis in docs/hypotheses.md was formed against
+  # these rows, so any boundary placed at or below this day sits inside data that
+  # informed them. VAL-FIT, VAL-CAL and TEST must all begin after it.
+  #
+  # The cost of that is real and was accepted knowingly — days 121–182 is 62
+  # days, which must hold the purge gap plus all three downstream slices. See
+  # docs/problem-statement.md §7 item 5 for the arithmetic Phase 02 inherits.
+  horizon_day: 120

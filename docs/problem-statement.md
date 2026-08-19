@@ -256,7 +256,7 @@ late.
 | A4 | Review capacity is 1% of daily volume | Policy is infeasible or leaves capacity unused | Recall@capacity reported at several capacities |
 | A5 | A US e-commerce ticket distribution stands in for a production portfolio | Decision *rates* don't transfer, though the method does | Stated, not testable with this data |
 | A6 | `C*` and `D*` columns are safe to use | Vendor-computed aggregates over undisclosed lookback windows may leak future information past the purge gap | Not testable — the windows are not published |
-| A7 | Fraud patterns are stable enough for a model trained on days 0–119 to hold | Performance decays faster than expected | Phase 9 month-over-month PR-AUC |
+| A7 | Fraud patterns are stable enough for a model trained on days 1–120 to hold. `day` is 1-indexed in this data — `min(TransactionDT)` is 86,400, so there is no day 0 — and 120 is `eda.horizon_day` in `config/config.yaml`, the last day Phase 01 was allowed to look at | Performance decays faster than expected | Phase 9 month-over-month PR-AUC |
 | A8 | The residual signal in `has_identity`, once `ProductCD` is held fixed, describes the transaction rather than an upstream fraud decision | That residual encodes another system's judgment; it would not reproduce anywhere identity is collected by a different rule, and Phase 7 reason codes built on it would be unexplainable. Scope is limited: the flag agrees with `ProductCD != W` on 98.7% of rows, so most of its pooled 3.42× lift is channel, not risk. The within-product residual is 1.47×–2.08× | Collection rule unpublished, so not directly testable. Check whether the within-product residual is stable across time, and whether it survives alongside `ProductCD` in Phase 7 SHAP |
 
 ## 7. Open questions
@@ -274,3 +274,26 @@ late.
    routing.
 4. **Repeat-offender dynamics.** A blocked fraudster may retry with a different
    card or device. Per-transaction costing ignores this.
+5. **The day budget Phase 02 inherits.** Phase 01's EDA horizon
+   (`eda.horizon_day` = 120) is now spent: those rows informed every hypothesis
+   in `hypotheses.md`, so VAL-FIT, VAL-CAL and TEST must all start after day 120.
+   That leaves **days 121–182 — 62 days, 175,998 rows, 6,063 frauds** for the
+   purge gap plus all three slices. A 30-day gap consistent with A1 consumes
+   half of it, leaving 32 days and 92,427 rows to split three ways.
+
+   That is tight, and the ROADMAP warns about exactly this: a ~11-day TEST
+   cannot produce a month-over-month decay chart. The trade-off is real —
+   a shorter gap buys test span but weakens the label-maturity argument that is
+   the most defensible thing in the design, so shortening it to buy a prettier
+   Phase 9 chart is the wrong trade.
+
+   **The constraint is narrower than it first appears.** `test_transaction.csv`
+   spans **days 213–395** — 183 unlabelled days beginning 30 days after the
+   labelled data ends. PSI over feature distributions and prediction-distribution
+   drift need no labels at all, so the bulk of Phase 09 monitoring can run on
+   that horizon regardless of how small TEST is. Only the *labelled* PR-AUC decay
+   chart is bounded by the 32-day squeeze.
+
+   **Decide in Phase 02, not Phase 09:** either accept a short labelled decay
+   window and state that monitoring runs on the unlabelled horizon, or shrink
+   train. Do not shrink the purge gap.

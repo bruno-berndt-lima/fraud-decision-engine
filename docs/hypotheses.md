@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | 3 of 3 recorded — H1 falsified and H3 softened in Phase 01 |
 | **Last updated** | 2026-08-18 |
-| **Evidence window** | Days 1–120 (the Phase 01 EDA horizon) |
+| **Evidence window** | Days 1–120 — `eda.horizon_day` in `config/config.yaml` |
 
 ---
 
@@ -16,6 +16,10 @@ falsify it.
 
 All evidence is measured on days 1–120 only. The tail of the timeline is held back for
 the Phase 02 test set and has not been looked at.
+
+Because these rows informed every hypothesis below, they are spent: Phase 02 must place
+VAL-FIT, VAL-CAL and TEST entirely after day 120. That constraint and the day budget it
+leaves are recorded in `problem-statement.md` §7 item 5.
 
 ---
 
