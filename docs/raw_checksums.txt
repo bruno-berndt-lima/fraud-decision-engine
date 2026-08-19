@@ -1,0 +1,12 @@
+# SHA-256 of the raw pipeline inputs, in `shasum -a 256 -c` format.
+#
+# Enforced: `make data` will not run until these match. See data-provenance.md.
+#
+# Only the two files the pipeline reads are listed. test_transaction.csv and
+# test_identity.csv are recorded in data-provenance.md but deliberately not
+# checked here — they are unlabelled, no stage consumes them, and listing them
+# would make `make data` fail for anyone who deleted 639 MB they do not need.
+#
+# Paths are relative to data/raw/.
+3a5c83ab6b3cc13dcabe5ffa9f522307fd5f7f7b6e6f6a60c32284ca6283d642  train_transaction.csv
+b63c725d8377be90a995268d97f347c17d456b95db45807adcf9f59cd603c37c  train_identity.csv

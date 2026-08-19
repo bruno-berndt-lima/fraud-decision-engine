@@ -57,10 +57,16 @@ nothing; rows exclude the header.
 `test_transaction.csv` has 393 columns to `train_transaction.csv`'s 394 — the
 missing one is `isFraud`.
 
-To re-verify:
+The two files the pipeline reads also live in
+[`raw_checksums.txt`](raw_checksums.txt) in `shasum -c` format, which is the copy
+the build actually enforces — see [Checksum enforcement](#checksum-enforcement)
+below. The table here is the human-readable record; that file is the control.
+They must agree, and `tests/test_raw_checksums.py` asserts it.
+
+To re-verify on demand:
 
 ```bash
-cd data/raw && shasum -a 256 train_transaction.csv train_identity.csv
+make verify-data
 ```
 
 ## Which files are usable
@@ -89,9 +95,52 @@ is joined as a LEFT join on `TransactionID`, and its **absence is itself a
 signal**, so an explicit `has_identity` flag is created before any filling or
 imputation happens.
 
-## Open item
+## Checksum enforcement
 
-These checksums are currently recorded but not enforced. A recorded checksum that
-nothing verifies is documentation, not a control. Decide when writing `load.py`
-whether verification runs at load time (stronger, costs ~10s per run) or as a
-separate `make verify-data` target (cheaper, relies on being remembered).
+*Decided 2026-08-19, closing the open item this section previously held.*
+
+Verification runs **as a make prerequisite of the load**, via a stamp file at
+`data/raw/.verified`:
+
+```make
+$(VERIFIED): $(RAW_TXN) $(RAW_ID) $(RAW_SUMS)
+	rm -f $@
+	cd $(RAW_DIR) && shasum -a 256 -c $(abspath $(RAW_SUMS))
+	touch $@
+
+$(INTERIM): $(VERIFIED) ...
+```
+
+`make data` therefore cannot run against raw files that no longer hash to what is
+recorded above.
+
+**Why a stamp rather than either option originally sketched.** A standalone
+`.PHONY: verify-data` target is only a control when someone remembers to invoke
+it, and nothing in the pipeline would have depended on it. Hashing inside
+`load.py` is unforgettable but pays ~3s on every invocation, including the many
+reruns where nothing changed, and it pushes a build-integrity concern into a
+module whose job is dtypes and joins.
+
+The stamp gets both properties. Make re-runs the check exactly when
+`train_transaction.csv`, `train_identity.csv`, or `raw_checksums.txt` is newer
+than the stamp, and skips it otherwise — so it is free on repeat builds and
+mandatory on the builds where it matters.
+
+**What the stamp's presence means.** Exactly one thing: the check passed. The
+`rm -f` is why. `.DELETE_ON_ERROR:` does not cover this case — it only removes a
+target the failing recipe actually wrote, and a failing `shasum` never reaches
+the `touch`, so without that line a mismatch would leave the *previous* run's
+stamp sitting there claiming the data was verified. Clearing it first means a
+failed verification leaves no stamp, and every subsequent `make data` stays
+blocked until the mismatch is resolved.
+
+**Scope.** Only the two files the pipeline reads are enforced. `test_*.csv` are
+recorded in the table above but excluded from `raw_checksums.txt`: no stage
+consumes them, and listing them would make `make data` fail for anyone who
+deleted 639 MB of unlabelled data they do not need until Phase 09.
+
+**What this does not do.** It detects corruption and accidental substitution —
+the realistic failure, and the one that would otherwise surface as unexplainable
+metrics three phases later. It is not a security control: anyone who can modify
+`data/raw/` can modify `docs/raw_checksums.txt` in the same breath. Its value is
+that "the same data" stays a checkable claim.

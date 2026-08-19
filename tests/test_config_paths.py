@@ -26,7 +26,12 @@ PATH_PAIRS = [
 # Make represents a multi-file stage by a single sentinel file (see the comment
 # above the stage-output block in the Makefile). Python code works with the
 # directory instead, so these deliberately have no config twin.
-SENTINEL_ONLY = {"SPLITS", "FEATURES", "MODEL"}
+#
+# VERIFIED is a different kind of make-only file: a stamp recording that raw/
+# still hashes to docs/raw_checksums.txt. No Python reads it. It is listed here
+# rather than left to the suffix filter below, which skips it by accident —
+# Path(".verified").suffix is "" — so the exemption is stated, not incidental.
+SENTINEL_ONLY = {"SPLITS", "FEATURES", "MODEL", "VERIFIED"}
 
 
 @pytest.fixture(scope="module")
