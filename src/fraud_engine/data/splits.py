@@ -246,3 +246,74 @@ def validate_splits(
         )
 
     return split
+
+
+# The purge gap is not a split, but it is part of the partition and its size is
+# a reported number: how much training data the purge costs (experiments.md E1).
+GAP_LABEL = "gap"
+
+# Chronological. The gap always sits between train and val_fit — resolve_boundaries
+# derives exactly one, from gap_days — so the order follows from SPLIT_NAMES.
+SECTION_ORDER = (SPLIT_NAMES[0], GAP_LABEL, *SPLIT_NAMES[1:])
+
+
+def summarize(days: pd.Series, split: pd.Series, is_fraud: pd.Series) -> pd.DataFrame:
+    """Count rows and positives per section of the partition.
+
+    Phase 06's calibrator choice depends on how many positives ``val_cal``
+    holds — isotonic regression is unstable on a few hundred — so these counts
+    are an artifact of this phase, not a debugging print.
+
+    The gap gets a row. It is not a split, but "what the purge discards" is a
+    number the write-up needs, and it is the quantity E1 trades away.
+
+    Args:
+        days: The ``day`` column.
+        split: Labels from ``assign_splits``, aligned to ``days``.
+        is_fraud: The ``isFraud`` column, aligned to ``days``.
+
+    Returns:
+        A frame indexed by ``SECTION_ORDER`` — the four splits plus ``gap``, in
+        chronological order — with ``first_day``, ``last_day``, ``n_days``,
+        ``rows``, ``frauds`` and ``fraud_rate``. An empty gap (``gap_days: 0``)
+        is a row of zeros rather than a missing one.
+
+    Raises:
+        ValueError: If the inputs are not aligned, or if any *split* holds no
+            positives. The gap may hold none — it is discarded.
+    """
+    if not (days.index.equals(split.index) and days.index.equals(is_fraud.index)):
+        raise ValueError("days, split and is_fraud must share an index.")
+
+    section = split.astype("object").fillna(GAP_LABEL)
+    frame = pd.DataFrame({"day": days, "section": section, "is_fraud": is_fraud})
+
+    summary = (
+        frame.groupby("section")
+        .agg(
+            first_day=("day", "min"),
+            last_day=("day", "max"),
+            rows=("is_fraud", "size"),
+            frauds=("is_fraud", "sum"),
+        )
+        .reindex(SECTION_ORDER)
+    )
+
+    # reindex fills a section absent from the data with NaN. Zero rows is the
+    # honest count; the day span stays null because there are no days.
+    summary["rows"] = summary["rows"].fillna(0).astype(int)
+    summary["frauds"] = summary["frauds"].fillna(0).astype(int)
+    for column in ("first_day", "last_day"):
+        summary[column] = summary[column].astype("Int64")
+    summary["n_days"] = summary["last_day"] - summary["first_day"] + 1
+    summary["fraud_rate"] = summary["frauds"] / summary["rows"]
+
+    barren = [name for name in SPLIT_NAMES if summary.loc[name, "frauds"] == 0]
+    if barren:
+        raise ValueError(
+            f"split(s) hold no positives: {barren}. PR-AUC is undefined on a slice "
+            f"with no fraud and Phase 06 cannot fit a calibrator on one, so this "
+            f"fails here rather than in Phase 03. Widen the split or move the boundary."
+        )
+
+    return summary[["first_day", "last_day", "n_days", "rows", "frauds", "fraud_rate"]]
