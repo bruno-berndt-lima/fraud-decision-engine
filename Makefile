@@ -45,7 +45,7 @@ RAW_ID    := $(RAW_DIR)/train_identity.csv
 # tests/test_config_paths.py.
 VERIFIED  := $(RAW_DIR)/.verified
 INTERIM   := $(INTERIM_DIR)/transactions.parquet
-SPLITS    := $(SPLITS_DIR)/train_ids.parquet
+SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
 MODEL     := $(MODEL_DIR)/model.pkl
 
@@ -136,8 +136,9 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data features train
+.PHONY: data splits features train
 data:     $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
+splits:   $(SPLITS)    ## Assign transactions to temporal splits
 features: $(FEATURES)  ## Build train/val/test feature matrices
 train:    $(MODEL)     ## Train the model
 

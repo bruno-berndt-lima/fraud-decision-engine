@@ -19,7 +19,7 @@ PATH_PAIRS = [
     ("RAW_TXN", "paths.raw.transactions"),
     ("RAW_ID", "paths.raw.identity"),
     ("INTERIM", "paths.interim"),
-    ("SPLITS_DIR", "paths.splits_dir"),
+    ("SPLITS", "paths.splits"),
     ("FEATURES_DIR", "paths.features_dir"),
 ]
 
@@ -31,7 +31,7 @@ PATH_PAIRS = [
 # still hashes to docs/raw_checksums.txt. No Python reads it. It is listed here
 # rather than left to the suffix filter below, which skips it by accident —
 # Path(".verified").suffix is "" — so the exemption is stated, not incidental.
-SENTINEL_ONLY = {"SPLITS", "FEATURES", "MODEL", "VERIFIED"}
+SENTINEL_ONLY = {"FEATURES", "MODEL", "VERIFIED"}
 
 
 @pytest.fixture(scope="module")

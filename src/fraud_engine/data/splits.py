@@ -9,7 +9,14 @@ Nothing here is random — no seed, no shuffle, no stratification.
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 import pandas as pd
+
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
+
+log = logging.getLogger(__name__)
 
 # Chronological. The single source of split identity and order — consumers
 # iterate this rather than restating it.
@@ -317,3 +324,56 @@ def summarize(days: pd.Series, split: pd.Series, is_fraud: pd.Series) -> pd.Data
         )
 
     return summary[["first_day", "last_day", "n_days", "rows", "frauds", "fraud_rate"]]
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Cut the interim table into temporal splits and record what is in each.
+
+    Wiring only — every decision lives in the functions this calls. Invoked by
+    ``make features``' prerequisite as ``python -m fraud_engine.data.splits``.
+
+    Both checks run before either file is written, so a bad split leaves no
+    artifact behind: ``validate_splits`` on the structure, ``summarize`` on
+    whether every split has positives to score.
+
+    Args:
+        config_path: Path to ``config.yaml``. Defaults to a repo-root-relative
+            location, which is where the Makefile runs from.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths = config["paths"]
+
+    boundaries = resolve_boundaries(config["splits"])
+
+    # Three columns of 438. The split is a function of time alone; isFraud is
+    # here only to be counted, never to decide where a boundary falls.
+    frame = pd.read_parquet(paths["interim"], columns=["TransactionID", "day", "isFraud"])
+
+    split = assign_splits(frame["day"], boundaries)
+    validate_splits(frame["day"], split, boundaries)
+    summary = summarize(frame["day"], split, frame["isFraud"])
+
+    # Gap rows are kept with a null label rather than dropped: the file then
+    # describes the whole partition, including what the purge cost, and a
+    # downstream join cannot quietly lose rows it was never told about.
+    ids = pd.DataFrame({"TransactionID": frame["TransactionID"], "split": split})
+    ids = ids.sort_values("TransactionID", ignore_index=True)
+
+    splits_path = Path(paths["splits"])
+    splits_path.parent.mkdir(parents=True, exist_ok=True)
+    ids.to_parquet(splits_path, index=False)
+
+    summary_path = Path(paths["split_summary"])
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(summary_path)
+
+    log.info("boundaries (inclusive): %s", {k: f"{a}-{b}" for k, (a, b) in boundaries.items()})
+    log.info("\n%s", summary.to_string(formatters={"fraud_rate": "{:.2%}".format}))
+    log.info("wrote %s — %d rows", splits_path, len(ids))
+    log.info("wrote %s", summary_path)
+
+
+if __name__ == "__main__":
+    main()

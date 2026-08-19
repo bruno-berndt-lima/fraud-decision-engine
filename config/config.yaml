@@ -14,7 +14,12 @@ paths:
     transactions: data/raw/train_transaction.csv
     identity: data/raw/train_identity.csv
   interim: data/interim/transactions.parquet
-  splits_dir: data/splits
+  # One file, not four. A row carries one split label, so overlap between
+  # splits is unrepresentable rather than merely untested.
+  splits: data/splits/splits.parquet
+  # Tracked, unlike data/ — the per-split counts are a Phase 02 deliverable and
+  # the two E1 runs are compared table against table.
+  split_summary: reports/metrics/split_summary.csv
   features_dir: data/features
 
 # ------------------------------------------------------------------------------
