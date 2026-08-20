@@ -20,6 +20,7 @@ PATH_PAIRS = [
     ("RAW_ID", "paths.raw.identity"),
     ("INTERIM", "paths.interim"),
     ("SPLITS", "paths.splits"),
+    ("COST_MATRIX", "paths.cost_matrix"),
     ("FEATURES_DIR", "paths.features_dir"),
 ]
 

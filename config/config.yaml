@@ -20,6 +20,12 @@ paths:
   # Tracked, unlike data/ — the per-split counts are a Phase 02 deliverable and
   # the two E1 runs are compared table against table.
   split_summary: reports/metrics/split_summary.csv
+  # Where evaluate() results land, one JSON per scored run. Tracked, so runs
+  # stay comparable across phases and land in git history.
+  metrics_dir: reports/metrics
+  # Economic assumptions, versioned separately. report.py reads the review
+  # capacities from here so the sweep and the reports cannot diverge.
+  cost_matrix: config/cost_matrix.yaml
   features_dir: data/features
 
 # ------------------------------------------------------------------------------
