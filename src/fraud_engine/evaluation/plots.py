@@ -153,7 +153,8 @@ def plot_pr_curve(
     # Not (0, 1). At a 3.5% base rate every curve lives in the bottom tenth of a
     # full axis, and the shape - which is the whole point of the figure - becomes
     # unreadable. Scaled to the data, with the floor always in frame.
-    axes.set_ylim(0, max(peak * 1.3, base_rate * 3))
+    # Capped at 1: precision cannot exceed it, so headroom above is dead space.
+    axes.set_ylim(0, min(1.0, max(peak * 1.3, base_rate * 3)))
     axes.set_xlabel("Recall", color=INK_MUTED, fontsize=9)
     axes.set_ylabel("Precision", color=INK_MUTED, fontsize=9)
     axes.set_title(title, color=INK, fontsize=11, loc="left", pad=12)
