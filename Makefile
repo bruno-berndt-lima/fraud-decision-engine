@@ -130,7 +130,9 @@ $(SPLITS): $(INTERIM) $(CONFIG) src/fraud_engine/data/splits.py | $(SPLITS_DIR)
 # that arrive with one. Engineered features are Phase 04 and are not available
 # to it by design.
 $(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
-              src/fraud_engine/models/rules.py | $(REPORTS_DIR)
+              src/fraud_engine/models/rules.py \
+              src/fraud_engine/evaluation/report.py \
+              src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.rules
 
 $(FEATURES): $(SPLITS) $(CONFIG) src/fraud_engine/features/build.py | $(FEATURES_DIR)

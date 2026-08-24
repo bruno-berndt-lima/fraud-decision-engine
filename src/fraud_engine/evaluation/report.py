@@ -43,6 +43,13 @@ def git_revision() -> str | None:
     obvious well before then. A ``-dirty`` suffix matters more than the sha: a
     number produced from uncommitted code cannot be reproduced from the history.
 
+    ``reports/`` is excluded from the dirty check. It is where this function's
+    own caller writes, so including it makes every stage mark itself dirty for
+    having an output — the artifact is untracked until the run that produces it
+    is committed, which can only happen after the run. The question the suffix
+    answers is whether the *code* is in history; the state of the output
+    directory has no bearing on that. Untracked source still flags dirty.
+
     Returns:
         ``"<sha>"``, ``"<sha>-dirty"``, or None outside a git checkout.
     """
@@ -54,7 +61,7 @@ def git_revision() -> str | None:
             check=True,
         ).stdout.strip()
         dirty = subprocess.run(
-            ["git", "status", "--porcelain"],
+            ["git", "status", "--porcelain", "--", ":!reports"],
             capture_output=True,
             text=True,
             check=True,
