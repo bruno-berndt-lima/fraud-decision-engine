@@ -48,6 +48,9 @@ INTERIM   := $(INTERIM_DIR)/transactions.parquet
 SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
 MODEL     := $(MODEL_DIR)/model.pkl
+# Unlike every other stage output, this one is TRACKED: reports/ is a
+# deliverable. Represents the whole baselines stage per the note above.
+BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
 
 # ==============================================================================
 # Meta
@@ -122,6 +125,14 @@ $(INTERIM): $(VERIFIED) $(CONFIG) \
 $(SPLITS): $(INTERIM) $(CONFIG) src/fraud_engine/data/splits.py | $(SPLITS_DIR)
 	$(RUN) python -m fraud_engine.data.splits
 
+# Phase 03. Reads interim + splits directly and skips $(FEATURES) entirely:
+# the incumbent must be servable from a single request, so it uses only columns
+# that arrive with one. Engineered features are Phase 04 and are not available
+# to it by design.
+$(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+              src/fraud_engine/models/rules.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.models.rules
+
 $(FEATURES): $(SPLITS) $(CONFIG) src/fraud_engine/features/build.py | $(FEATURES_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
@@ -136,11 +147,12 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits features train
-data:     $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
-splits:   $(SPLITS)    ## Assign transactions to temporal splits
-features: $(FEATURES)  ## Build train/val/test feature matrices
-train:    $(MODEL)     ## Train the model
+.PHONY: data splits baselines features train
+data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
+splits:    $(SPLITS)    ## Assign transactions to temporal splits
+baselines: $(BASELINES) ## Score the rules baseline through the Phase 02 harness
+features:  $(FEATURES)  ## Build train/val/test feature matrices
+train:     $(MODEL)     ## Train the model
 
 # ==============================================================================
 # Housekeeping

@@ -83,3 +83,53 @@ splits:
   val_cal_start: 141
   test_start: 161
   test_end: 182
+
+# ------------------------------------------------------------------------------
+# Phase 03 — rules baseline (the incumbent)
+# ------------------------------------------------------------------------------
+# Weights are round(min(lift_half_A, lift_half_B)), measured on TRAIN days 1-90
+# split at day 45. Never fitted or tuned against validation: an incumbent
+# selected on the challenger's data makes the Phase 06 comparison meaningless.
+# Evidence and provenance per rule: docs/rules-baseline.md.
+#
+# These are CHOICES. The values fitted from train — the per-product amount cut
+# points and the amount ECDF — are computed by rules.fit() and never live here.
+baselines:
+  rules:
+    round_amount:
+      step: 50
+      min: 150
+      max: 500
+      weight: 2
+
+    # Not boolean: a lookup table of points per product. R and W score zero
+    # because both sit below the base rate — that is "nothing added", not
+    # evidence of safety.
+    product_tier:
+      C: 3
+      S: 2
+      H: 1
+      R: 0
+      W: 0
+
+    amount_percentile:
+      quantile: 0.99
+      weight: 1
+
+    new_card:
+      d1_max: 3
+      weight: 3
+
+    w_m4_m2:
+      weight: 1
+
+    # Five integer-weighted rules emit a single-digit number of distinct scores,
+    # so the daily capacity cut lands inside a tied block and row order decides
+    # who gets reviewed. Breaking ties by amount aligns the incumbent with the
+    # USD headline. Held below 1 so it can never outweigh a rule.
+    amount_tiebreaker: 0.5
+
+    # The tiebreaker needs an amount percentile for a SINGLE transaction at
+    # serving time, so ranking within the batch is not available. The amount
+    # distribution is fitted on train as a quantile grid of this many points.
+    amount_ecdf_points: 1001
