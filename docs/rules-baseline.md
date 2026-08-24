@@ -50,9 +50,9 @@ stability check's benefit — the rounding is what keeps an unstable 1.16× and 
 1.42× from being treated as meaningfully different.
 
 An exploratory comparison on the training window found the real-valued variant scored no
-better (see *Provenance of the numbers* below). That is corroboration, not the reason,
-and it is a train-window figure — it does not license a claim about which scheme
-generalises.
+better. That is corroboration, not the reason. It was measured on train, by analysis that
+is not part of the pipeline and cannot be reproduced from this repository, so no figure
+for it is quoted here and it licenses no claim about which scheme generalises.
 
 ---
 
@@ -224,10 +224,10 @@ than hidden — the alternative is letting row order make the same decision sile
 worse.
 
 **It shrinks the ambiguity, it does not eliminate it.** Exact-duplicate amounts share a
-rank, so some ties survive by construction. No figure is quoted here for how much
-improves — see *Provenance of the numbers*. Whatever `ambiguous_days` reports on VAL-FIT
-and VAL-CAL is the number that gets published, and it is reported rather than engineered
-away.
+rank, so some ties survive by construction. How much it improves is not quoted here:
+the only measurement predates the pipeline and is not reproducible from this repository.
+Whatever `ambiguous_days` reports on VAL-FIT and VAL-CAL is the number that gets
+published, and it is reported rather than engineered away.
 
 ---
 

@@ -75,8 +75,8 @@ ablation would measure a smaller training set rather than an unpurged one.
 
 ## E2 — Class weighting versus doing nothing
 
-**Status:** registered. Runs **twice** — logistic regression in Phase 03,
-LightGBM in Phase 05.
+**Status:** first run complete — logistic regression, Phase 03. LightGBM run
+still to come in Phase 05.
 
 Split in two because the answer is not expected to be the same. A tree ensemble
 optimising a ranking metric is fairly indifferent to class weights; a linear
@@ -93,6 +93,36 @@ Phase 05. Same harness both times, PR-AUC and recall@capacity on `VAL-FIT`.
 Reported even if the answer is "no meaningful difference", which is the likely
 outcome for a tree ensemble on a well-specified ranking metric — and is itself
 the point worth making.
+
+### Result — logistic regression, Phase 03
+
+**Class weighting made it worse.** Not "no meaningful difference": a clear loss
+on the metrics this project selected in advance.
+
+| | PR-AUC | ROC-AUC | recall @ 1% |
+|---|---:|---:|---:|
+| `class_weight=None` | **0.3217** | 0.8259 | **16.2%** |
+| `class_weight='balanced'` | 0.2935 | **0.8271** | 14.3% |
+
+VAL-FIT, base rate 0.0346. VAL-CAL agrees and the gap widens: 0.2289 against
+0.1954 PR-AUC, 13.9% against 10.9% recall.
+
+**The two metrics disagree, and that is the interesting part.** ROC-AUC is
+marginally *better* weighted; PR-AUC and recall@capacity are clearly worse.
+Weighting inflates the loss contribution of the 3.5% positive class, which pulls
+the decision surface toward separating classes on average — what ROC-AUC
+rewards. What this project needs is precise ranking in the top 1% of scores,
+and that is where the reweighting costs accuracy. Had this project reported
+ROC-AUC as primary, the same run would have looked like a small win.
+
+**Consequence.** The Phase 03 baseline of record is the unweighted run. The
+weighted variant stays in `reports/metrics/logistic_balanced.json` — recording
+the loss is the point, so it is not deleted.
+
+**Carry into Phase 05.** This does not predict the LightGBM answer and must not
+be used to skip it. A linear model's coefficients move under reweighting; a tree
+ensemble's split ordering is far less sensitive, so "no meaningful difference"
+remains the expected outcome there. Two model families, two runs, two results.
 
 ---
 
