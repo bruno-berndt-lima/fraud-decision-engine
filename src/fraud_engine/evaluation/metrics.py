@@ -198,6 +198,47 @@ def roc_auc(y_true: pd.Series, y_score: pd.Series) -> float:
     return float(roc_auc_score(y_true, y_score))
 
 
+def recall_ceiling(y_true: pd.Series, days: pd.Series, capacity: float) -> float:
+    """The best recall *any* ranker could reach at this capacity.
+
+    Capacity binds long before recall reaches 1.0: if a day carries more fraud
+    than the review budget holds, no ranking can catch all of it. So a recall of
+    5% is uninterpretable on its own — against a ceiling of 29% it is a fifth of
+    what was available, against a ceiling of 6% it is nearly everything.
+
+    Measured, not derived, because the ceiling depends on how fraud is
+    distributed across days: the same fraud count concentrated on a few days
+    yields a lower ceiling than the same count spread evenly.
+
+    Implemented by ranking on the labels themselves — the oracle scorer.
+
+    Args:
+        y_true: Binary labels, 1 for fraud.
+        days: The day each transaction falls on.
+        capacity: Fraction of each day's volume that can be reviewed.
+
+    Returns:
+        The oracle's recall at this capacity, in [0, 1].
+    """
+    return recall_at_capacity(y_true, y_true.astype(float), days, capacity).recall
+
+
+def _capacity_entry(
+    y_true: pd.Series,
+    y_score: pd.Series,
+    days: pd.Series,
+    capacity: float,
+) -> dict:
+    """One capacity's result, carrying the ceiling it should be read against."""
+    entry = recall_at_capacity(y_true, y_score, days, capacity)._asdict()
+    ceiling = recall_ceiling(y_true, days, capacity)
+    entry["recall_ceiling"] = ceiling
+    # Guarded rather than assumed positive: a capacity small enough to floor
+    # every day's quota to zero catches nothing, and the ceiling is then 0 too.
+    entry["share_of_ceiling"] = entry["recall"] / ceiling if ceiling else float("nan")
+    return entry
+
+
 def evaluate(
     y_true: pd.Series,
     y_score: pd.Series,
@@ -222,7 +263,9 @@ def evaluate(
 
     Returns:
         ``{n, positives, base_rate, pr_auc, roc_auc, recall_at_capacity}``,
-        where the last is a list of ``CapacityResult`` dicts, one per capacity.
+        where the last is a list of ``CapacityResult`` dicts, one per capacity,
+        each extended with ``recall_ceiling`` and ``share_of_ceiling`` — see
+        ``recall_ceiling`` for why a recall figure is unreadable without them.
 
     Raises:
         ValueError: If the inputs are misaligned, not binary, or single-class.
@@ -236,6 +279,6 @@ def evaluate(
         "pr_auc": pr_auc(y_true, y_score),
         "roc_auc": roc_auc(y_true, y_score),
         "recall_at_capacity": [
-            recall_at_capacity(y_true, y_score, days, capacity)._asdict() for capacity in capacities
+            _capacity_entry(y_true, y_score, days, capacity) for capacity in capacities
         ],
     }

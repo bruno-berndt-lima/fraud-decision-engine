@@ -12,7 +12,13 @@ import pandas as pd
 import pytest
 from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 
-from fraud_engine.evaluation.metrics import evaluate, pr_auc, recall_at_capacity, roc_auc
+from fraud_engine.evaluation.metrics import (
+    evaluate,
+    pr_auc,
+    recall_at_capacity,
+    recall_ceiling,
+    roc_auc,
+)
 
 BASE_RATE = 0.035
 
@@ -247,3 +253,56 @@ def test_evaluate_reports_no_accuracy():
     days = pd.Series(np.arange(len(y_true)) % 10, index=y_true.index)
 
     assert "accuracy" not in evaluate(y_true, y_score, days, capacities=[0.1])
+
+
+# ---- recall_ceiling ----------------------------------------------------------
+
+
+def test_the_ceiling_bounds_any_scorer():
+    """No ranking can beat the oracle, whatever the scores look like."""
+    y_true, y_score = population()
+    days = pd.Series((y_true.index % 30) + 1, index=y_true.index)
+
+    for capacity in (0.005, 0.01, 0.05):
+        measured = recall_at_capacity(y_true, y_score, days, capacity).recall
+        assert measured <= recall_ceiling(y_true, days, capacity)
+
+
+def test_the_ceiling_is_one_when_capacity_exceeds_the_fraud_rate():
+    """With room for every fraud on every day, a perfect ranker misses none."""
+    y_true, _ = population()
+    days = pd.Series((y_true.index % 30) + 1, index=y_true.index)
+    assert recall_ceiling(y_true, days, 1.0) == pytest.approx(1.0)
+
+
+def test_the_ceiling_binds_far_below_one_at_a_realistic_capacity():
+    """The point of reporting it: 1.0 is not the number to read recall against."""
+    y_true, _ = population()
+    days = pd.Series((y_true.index % 30) + 1, index=y_true.index)
+    assert recall_ceiling(y_true, days, 0.01) < 0.5
+
+
+def test_concentrated_fraud_lowers_the_ceiling():
+    """Why it is measured, not derived from the base rate.
+
+    Same fraud count, same capacity, different distribution across days: piling
+    fraud onto one day puts more of it beyond that day's budget.
+    """
+    n_days, per_day = 10, 100
+    days = pd.Series([d for d in range(1, n_days + 1) for _ in range(per_day)])
+
+    spread = pd.Series([1 if i % per_day == 0 else 0 for i in range(len(days))])
+    concentrated = pd.Series([1 if i < n_days else 0 for i in range(len(days))])
+    assert spread.sum() == concentrated.sum()
+
+    assert recall_ceiling(concentrated, days, 0.02) < recall_ceiling(spread, days, 0.02)
+
+
+def test_evaluate_reports_the_ceiling_alongside_every_capacity():
+    y_true, y_score = population()
+    days = pd.Series((y_true.index % 30) + 1, index=y_true.index)
+
+    result = evaluate(y_true, y_score, days, [0.005, 0.01])
+    for entry in result["recall_at_capacity"]:
+        assert 0 <= entry["share_of_ceiling"] <= 1
+        assert entry["recall"] <= entry["recall_ceiling"]
