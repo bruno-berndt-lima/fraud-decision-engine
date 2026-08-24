@@ -1,0 +1,78 @@
+{
+  "name": "rules_baseline",
+  "created": "2026-08-24T19:17:20+00:00",
+  "git_revision": "919fb8140c75349f4892a234ec0702d5463b98b3",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.12806792135209105,
+      "roc_auc": 0.7529543334439077,
+      "recall_at_capacity": [
+        {
+          "recall": 0.035175879396984924,
+          "reviewed": 279,
+          "caught": 70,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 5
+        },
+        {
+          "recall": 0.05678391959798995,
+          "reviewed": 567,
+          "caught": 113,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 7
+        },
+        {
+          "recall": 0.10251256281407035,
+          "reviewed": 1140,
+          "caught": 204,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 11
+        }
+      ]
+    },
+    "val_cal": {
+      "n": 56949,
+      "positives": 1796,
+      "base_rate": 0.031536989235983075,
+      "pr_auc": 0.0935912086725212,
+      "roc_auc": 0.7278100125760706,
+      "recall_at_capacity": [
+        {
+          "recall": 0.027282850779510023,
+          "reviewed": 275,
+          "caught": 49,
+          "positives": 1796,
+          "capacity": 0.005,
+          "ambiguous_days": 6
+        },
+        {
+          "recall": 0.043429844097995544,
+          "reviewed": 559,
+          "caught": 78,
+          "positives": 1796,
+          "capacity": 0.01,
+          "ambiguous_days": 3
+        },
+        {
+          "recall": 0.08184855233853007,
+          "reviewed": 1130,
+          "caught": 147,
+          "positives": 1796,
+          "capacity": 0.02,
+          "ambiguous_days": 11
+        }
+      ]
+    }
+  }
+}
