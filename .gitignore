@@ -4,9 +4,11 @@ data/**
 !data/**/.gitkeep
 
 # ---------- Models & experiment tracking ----------
-models/
-mlruns/
-mlartifacts/
+# Leading slash = repo root only. Unanchored, `models/` also matches
+# src/fraud_engine/models/ and silently hides the package.
+/models/
+/mlruns/
+/mlartifacts/
 *.pkl
 *.joblib
 *.parquet
