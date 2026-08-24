@@ -51,6 +51,7 @@ MODEL     := $(MODEL_DIR)/model.pkl
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
+LOGISTIC  := $(REPORTS_DIR)/metrics/logistic_baseline.json
 
 # ==============================================================================
 # Meta
@@ -135,6 +136,14 @@ $(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
               src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.rules
 
+# Two records from one run - E2 requires both variants reported, so they are
+# produced together and logistic_baseline.json stands for the pair.
+$(LOGISTIC): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+             src/fraud_engine/models/logistic.py \
+             src/fraud_engine/evaluation/report.py \
+             src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.models.logistic
+
 $(FEATURES): $(SPLITS) $(CONFIG) src/fraud_engine/features/build.py | $(FEATURES_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
@@ -152,7 +161,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 .PHONY: data splits baselines features train
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
-baselines: $(BASELINES) ## Score the rules baseline through the Phase 02 harness
+baselines: $(BASELINES) $(LOGISTIC) ## Score both baselines through the Phase 02 harness
 features:  $(FEATURES)  ## Build train/val/test feature matrices
 train:     $(MODEL)     ## Train the model
 

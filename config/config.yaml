@@ -133,3 +133,23 @@ baselines:
     # serving time, so ranking within the batch is not available. The amount
     # distribution is fitted on train as a quantile grid of this many points.
     amount_ecdf_points: 1001
+
+  # ----------------------------------------------------------------------------
+  # Logistic regression — the "is the problem learnable, is complexity earning
+  # its keep" reference point. Not the incumbent; that is the rules engine.
+  # ----------------------------------------------------------------------------
+  logistic:
+    # Column families rather than hand-picked members: cherry-picking members is
+    # itself a selection decision, and one nobody could later justify.
+    #
+    # Excluded on purpose: card1/2/3/5 and addr1/2 (high-cardinality identifiers
+    # needing target encoding, which is Phase 04 and belongs inside CV folds);
+    # V1-V339 (Phase 04 decides with evidence, not gut feel); dist1/dist2 and
+    # R_emaildomain (>60% null); and `day` — the split axis, which would let the
+    # model learn the timeline instead of fraud.
+    d_max_null_frac: 0.50   # keeps D1, D3, D4, D10, D15 on train
+    max_iter: 1000
+    # No tuning happened here. C is the sklearn default, stated rather than
+    # implied, because a baseline tuned against VAL-FIT stops being a reference
+    # point and becomes a second model competing on the challenger's terms.
+    C: 1.0

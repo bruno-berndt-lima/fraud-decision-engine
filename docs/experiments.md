@@ -75,13 +75,20 @@ ablation would measure a smaller training set rather than an unpurged one.
 
 ## E2 — Class weighting versus doing nothing
 
-**Status:** registered, not yet run. Phase 05.
+**Status:** registered. Runs **twice** — logistic regression in Phase 03,
+LightGBM in Phase 05.
+
+Split in two because the answer is not expected to be the same. A tree ensemble
+optimising a ranking metric is fairly indifferent to class weights; a linear
+model is not, because weighting changes the coefficients themselves. Reporting
+one run and generalising from it would be the mistake.
 
 At a 3.5% positive rate the reflex is to resample. This project does not, by
 default: class weighting is run as an explicit A/B against unweighted training
 and the result recorded either way, rather than SMOTE being applied because the
-problem is imbalanced. LightGBM's `scale_pos_weight` against no weighting, same
-harness, PR-AUC and recall@capacity on `VAL-FIT`.
+problem is imbalanced. `class_weight='balanced'` against `None` for the Phase 03
+logistic regression, and LightGBM's `scale_pos_weight` against no weighting in
+Phase 05. Same harness both times, PR-AUC and recall@capacity on `VAL-FIT`.
 
 Reported even if the answer is "no meaningful difference", which is the likely
 outcome for a tree ensemble on a well-specified ranking metric — and is itself
