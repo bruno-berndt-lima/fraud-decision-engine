@@ -1,7 +1,7 @@
 {
   "name": "rules_baseline",
-  "created": "2026-08-25T16:37:41+00:00",
-  "git_revision": "644eefb612d4ac217d6a14fcf562f1c8f540041d",
+  "created": "2026-08-25T16:53:29+00:00",
+  "git_revision": "b02bde61ad9cd0f99708d2e14a75be4c3447f0bc-dirty",
   "capacities": [
     0.005,
     0.01,
