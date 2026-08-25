@@ -1,7 +1,7 @@
 {
   "name": "logistic_baseline",
-  "created": "2026-08-25T16:54:00+00:00",
-  "git_revision": "b02bde61ad9cd0f99708d2e14a75be4c3447f0bc-dirty",
+  "created": "2026-08-25T18:52:19+00:00",
+  "git_revision": "edd5e5016e5bb23e99f681397af6869e3900e681",
   "capacities": [
     0.005,
     0.01,
