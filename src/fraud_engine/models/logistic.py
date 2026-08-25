@@ -33,7 +33,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
-from fraud_engine.evaluation.report import build_report, load_capacities, write_report
+from fraud_engine.evaluation.report import load_capacities, write_run
 
 log = logging.getLogger(__name__)
 
@@ -259,8 +259,10 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
         scored = frame.copy()
         scored["score"] = pipeline.predict_proba(frame[list(FEATURE_COLUMNS)])[:, 1]
 
-        path = write_report(build_report(name, scored, capacities), paths["metrics_dir"])
-        log.info("%-20s class_weight=%-9s -> %s", name, class_weight, path)
+        metrics_path, _ = write_run(
+            name, scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
+        )
+        log.info("%-20s class_weight=%-9s -> %s", name, class_weight, metrics_path)
 
 
 if __name__ == "__main__":

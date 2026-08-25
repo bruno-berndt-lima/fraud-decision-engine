@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
-from fraud_engine.evaluation.report import build_report, load_capacities, write_report
+from fraud_engine.evaluation.report import load_capacities, write_run
 
 log = logging.getLogger(__name__)
 
@@ -379,15 +379,16 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     frame["score"] = score(frame, rules, constants)
 
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
-    report = build_report(REPORT_NAME, frame, capacities)
-    path = write_report(report, paths["metrics_dir"])
+    metrics_path, predictions_path = write_run(
+        REPORT_NAME, frame, capacities, paths["metrics_dir"], paths["predictions_dir"]
+    )
 
     for rule in rules:
         log.info("%-20s %-11s %s", rule.name, f"[{rule.provenance}]", rule.rationale)
     log.info(
         "fitted amount cut points: %s", {k: round(v, 2) for k, v in constants["amount_p99"].items()}
     )
-    log.info("wrote %s", path)
+    log.info("wrote %s and %s", metrics_path, predictions_path)
 
 
 if __name__ == "__main__":

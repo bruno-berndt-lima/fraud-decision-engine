@@ -5,6 +5,11 @@ feature: Phase 03 writes the rules baseline and logistic regression, Phase 05
 the model, Phase 06 adds USD — and comparing them is a read rather than a
 reconciliation.
 
+A run also leaves its **score vector** on disk, because a summary cannot be
+re-plotted: a PR curve needs every threshold, not three capacities. ``write_run``
+writes both from one frame, so the figure and the record are two views of the
+same numbers rather than two computations that happen to agree.
+
 No plotting here. Figures live in ``plots.py``, which owns every matplotlib
 import, so this module stays importable anywhere the package is installed —
 including the Phase 08 container, which has no reason to carry a plotting
@@ -31,6 +36,11 @@ from fraud_engine.evaluation.metrics import evaluate
 DEFAULT_SPLITS = ("val_fit", "val_cal")
 
 REQUIRED_COLUMNS = ("isFraud", "score", "day", "split")
+
+# What a predictions parquet carries. TransactionID is the join key across runs —
+# without it two runs cannot be checked for having scored the same rows, and a
+# comparison figure would silently overlay curves drawn on different populations.
+PREDICTION_COLUMNS = ("TransactionID", "split", "day", "isFraud", "score")
 
 # Names become filenames. Anything outside this cannot escape metrics_dir.
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -102,6 +112,23 @@ def load_capacities(cost_matrix: dict) -> list[float]:
         )
 
     return sorted(values)
+
+
+def load_operating_capacity(cost_matrix: dict) -> float:
+    """The committed review capacity — the one operating point, not the sweep.
+
+    ``load_capacities`` returns the range Phase 06 tests the conclusion across;
+    this is the single value §3.2 commits to and the figures mark. Separate
+    functions because confusing the two turns a sensitivity range into a claim
+    about what the team can actually staff.
+
+    Args:
+        cost_matrix: Parsed ``config/cost_matrix.yaml``.
+
+    Returns:
+        The capacity, as a fraction of daily transaction volume.
+    """
+    return float(cost_matrix["constraints"]["review_capacity"]["value"])
 
 
 def evaluate_splits(
@@ -204,3 +231,93 @@ def write_report(report: dict, metrics_dir: Path | str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2) + "\n")
     return path
+
+
+def write_predictions(
+    name: str,
+    frame: pd.DataFrame,
+    predictions_dir: Path | str,
+    splits: tuple[str, ...] = DEFAULT_SPLITS,
+) -> Path:
+    """Write a run's score vector to ``predictions_dir/<name>.parquet``.
+
+    The metrics record answers "how good was this run"; this answers "what did
+    it actually say", which is what a PR curve needs — every threshold, not
+    three capacities. Derived data, so it lives under ``data/`` and is
+    gitignored: the tracked artifacts are the record and the figures drawn from
+    this.
+
+    **Filtered to ``splits``, exactly as the report is.** The same gate that
+    keeps test out of the metrics record keeps it out of this file, so a stage
+    reading predictions cannot plot a split the run was not asked to score. It
+    is the invariant made structural rather than repeated.
+
+    Args:
+        name: Run identifier, matching the metrics record. Becomes the filename.
+        frame: Scored rows, carrying ``PREDICTION_COLUMNS``.
+        predictions_dir: Directory to write into. Created if absent.
+        splits: Which splits to keep. Defaults to validation only.
+
+    Returns:
+        The path written.
+
+    Raises:
+        ValueError: If ``name`` is unusable as a filename, a column is missing,
+            or no row survives the split filter.
+    """
+    if not _SAFE_NAME.match(name):
+        raise ValueError(
+            f"name {name!r} must be letters, digits, underscores or hyphens — it "
+            f"becomes a filename under predictions_dir."
+        )
+
+    missing = [column for column in PREDICTION_COLUMNS if column not in frame.columns]
+    if missing:
+        raise ValueError(f"frame is missing {missing}; needs {list(PREDICTION_COLUMNS)}.")
+
+    kept = frame.loc[frame["split"].isin(splits), list(PREDICTION_COLUMNS)]
+    if kept.empty:
+        raise ValueError(
+            f"no rows in splits {list(splits)}. Present in the frame: "
+            f"{sorted(value for value in frame['split'].dropna().unique())}."
+        )
+
+    path = Path(predictions_dir) / f"{name}.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    kept.reset_index(drop=True).to_parquet(path, index=False)
+    return path
+
+
+def write_run(
+    name: str,
+    frame: pd.DataFrame,
+    capacities: list[float],
+    metrics_dir: Path | str,
+    predictions_dir: Path | str,
+    splits: tuple[str, ...] = DEFAULT_SPLITS,
+) -> tuple[Path, Path]:
+    """Write both of a run's artifacts from one scored frame.
+
+    One call rather than two so the record and the scores it summarises cannot
+    come from different computations. A caller that writes only the report
+    leaves a run that can be compared numerically but never plotted; one that
+    writes them separately can let them drift. Neither is reachable from here.
+
+    Args:
+        name: Run identifier. Names both files.
+        frame: Scored rows, carrying ``REQUIRED_COLUMNS`` and
+            ``PREDICTION_COLUMNS``.
+        capacities: Review capacities to report.
+        metrics_dir: Where the JSON record goes.
+        predictions_dir: Where the score vector goes.
+        splits: Which splits to score and keep. Defaults to validation only.
+
+    Returns:
+        ``(metrics_path, predictions_path)``.
+
+    Raises:
+        ValueError: Per ``build_report`` and ``write_predictions``.
+    """
+    metrics_path = write_report(build_report(name, frame, capacities, splits), metrics_dir)
+    predictions_path = write_predictions(name, frame, predictions_dir, splits)
+    return metrics_path, predictions_path

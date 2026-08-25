@@ -11,10 +11,14 @@ import pytest
 
 from fraud_engine.evaluation.report import (
     DEFAULT_SPLITS,
+    PREDICTION_COLUMNS,
     build_report,
     evaluate_splits,
     load_capacities,
+    load_operating_capacity,
+    write_predictions,
     write_report,
+    write_run,
 )
 
 CAPACITIES = [0.05, 0.1]
@@ -36,6 +40,7 @@ def make_frame(per_day: int = 60, seed: int = 0) -> pd.DataFrame:
     """A scored frame with every split populated and both classes present."""
     rng = np.random.default_rng(seed)
     parts = []
+    next_id = 1
     for day, split in LAYOUT.items():
         is_fraud = np.zeros(per_day, dtype=int)
         is_fraud[: per_day // 10] = 1
@@ -43,6 +48,7 @@ def make_frame(per_day: int = 60, seed: int = 0) -> pd.DataFrame:
         parts.append(
             pd.DataFrame(
                 {
+                    "TransactionID": range(next_id, next_id + per_day),
                     "isFraud": is_fraud,
                     "score": rng.random(per_day),
                     "day": day,
@@ -50,6 +56,7 @@ def make_frame(per_day: int = 60, seed: int = 0) -> pd.DataFrame:
                 }
             )
         )
+        next_id += per_day
     return pd.concat(parts, ignore_index=True)
 
 
@@ -167,3 +174,75 @@ def test_written_json_is_indented_and_newline_terminated(tmp_path):
     text = write_report(build_report("run", make_frame(), CAPACITIES), tmp_path).read_text()
     assert text.endswith("\n")
     assert "\n  " in text
+
+
+# ---- load_operating_capacity -------------------------------------------------
+
+
+def test_the_operating_capacity_is_the_committed_one_not_the_sweep():
+    cost_matrix = make_cost_matrix(headline=0.01, sweep=(0.005, 0.01, 0.02))
+    assert load_operating_capacity(cost_matrix) == 0.01
+    assert load_capacities(cost_matrix) == [0.005, 0.01, 0.02]
+
+
+# ---- write_predictions -------------------------------------------------------
+
+
+def test_predictions_carry_only_the_declared_columns(tmp_path):
+    path = write_predictions("run", make_frame(), tmp_path)
+    assert list(pd.read_parquet(path).columns) == list(PREDICTION_COLUMNS)
+
+
+def test_predictions_exclude_every_split_the_run_did_not_score(tmp_path):
+    """The gate that keeps test out of the record keeps it out of the scores."""
+    written = pd.read_parquet(write_predictions("run", make_frame(), tmp_path))
+    assert set(written["split"]) == set(DEFAULT_SPLITS)
+    assert "test" not in set(written["split"])
+
+
+def test_predictions_follow_an_explicit_split_request(tmp_path):
+    written = pd.read_parquet(write_predictions("run", make_frame(), tmp_path, splits=("test",)))
+    assert set(written["split"]) == {"test"}
+
+
+def test_predictions_reject_a_name_that_would_escape_the_directory(tmp_path):
+    with pytest.raises(ValueError, match="letters, digits"):
+        write_predictions("../escape", make_frame(), tmp_path)
+
+
+def test_predictions_reject_a_frame_without_the_join_key(tmp_path):
+    with pytest.raises(ValueError, match="TransactionID"):
+        write_predictions("run", make_frame().drop(columns=["TransactionID"]), tmp_path)
+
+
+def test_predictions_reject_a_split_that_holds_no_rows(tmp_path):
+    with pytest.raises(ValueError, match="no rows in splits"):
+        write_predictions("run", make_frame(), tmp_path, splits=("val_holdout",))
+
+
+# ---- write_run ---------------------------------------------------------------
+
+
+def test_write_run_leaves_both_artifacts_under_one_name(tmp_path):
+    metrics_path, predictions_path = write_run(
+        "run", make_frame(), CAPACITIES, tmp_path / "metrics", tmp_path / "predictions"
+    )
+    assert metrics_path.name == "run.json"
+    assert predictions_path.name == "run.parquet"
+    assert json.loads(metrics_path.read_text())["name"] == "run"
+
+
+def test_the_record_and_the_scores_describe_the_same_rows(tmp_path):
+    """The point of one call: a figure drawn from the parquet cannot disagree
+    with the metrics record sitting beside it."""
+    frame = make_frame()
+    metrics_path, predictions_path = write_run(
+        "run", frame, CAPACITIES, tmp_path / "metrics", tmp_path / "predictions"
+    )
+
+    record = json.loads(metrics_path.read_text())
+    written = pd.read_parquet(predictions_path)
+    for split in DEFAULT_SPLITS:
+        rows = written[written["split"] == split]
+        assert record["splits"][split]["n"] == len(rows)
+        assert record["splits"][split]["positives"] == int(rows["isFraud"].sum())

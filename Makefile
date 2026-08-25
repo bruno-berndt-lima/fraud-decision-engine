@@ -18,14 +18,15 @@ RUN    := uv run
 KAGGLE := uvx kaggle
 
 # ---- Directories -------------------------------------------------------------
-DATA_DIR     := data
-RAW_DIR      := $(DATA_DIR)/raw
-INTERIM_DIR  := $(DATA_DIR)/interim
-SPLITS_DIR   := $(DATA_DIR)/splits
-FEATURES_DIR := $(DATA_DIR)/features
-MODEL_DIR    := models
-REPORTS_DIR  := reports
-CONFIG_DIR   := config
+DATA_DIR        := data
+RAW_DIR         := $(DATA_DIR)/raw
+INTERIM_DIR     := $(DATA_DIR)/interim
+SPLITS_DIR      := $(DATA_DIR)/splits
+FEATURES_DIR    := $(DATA_DIR)/features
+PREDICTIONS_DIR := $(DATA_DIR)/predictions
+MODEL_DIR       := models
+REPORTS_DIR     := reports
+CONFIG_DIR      := config
 
 # ---- Config (stage inputs: editing these should trigger a rebuild) -----------
 CONFIG      := $(CONFIG_DIR)/config.yaml
@@ -52,6 +53,10 @@ MODEL     := $(MODEL_DIR)/model.pkl
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
 LOGISTIC  := $(REPORTS_DIR)/metrics/logistic_baseline.json
+# Each baselines run writes a JSON record AND a predictions parquet. Per the
+# note above, the JSON stands for the pair — so the figures stage depends on the
+# records, not on the parquets it actually reads. Also tracked.
+FIGURES   := $(REPORTS_DIR)/figures/pr_curve_baselines.png
 
 # ==============================================================================
 # Meta
@@ -90,7 +95,7 @@ check: lint test  ## Everything CI runs
 # ==============================================================================
 # Pipeline
 # ==============================================================================
-$(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(MODEL_DIR) $(REPORTS_DIR):
+$(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(PREDICTIONS_DIR) $(MODEL_DIR) $(REPORTS_DIR):
 	mkdir -p $@
 
 .PHONY: download
@@ -133,7 +138,7 @@ $(SPLITS): $(INTERIM) $(CONFIG) src/fraud_engine/data/splits.py | $(SPLITS_DIR)
 $(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
               src/fraud_engine/models/rules.py \
               src/fraud_engine/evaluation/report.py \
-              src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
+              src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.models.rules
 
 # Two records from one run - E2 requires both variants reported, so they are
@@ -141,8 +146,17 @@ $(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
 $(LOGISTIC): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
              src/fraud_engine/models/logistic.py \
              src/fraud_engine/evaluation/report.py \
-             src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
+             src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.models.logistic
+
+# Reads the predictions both stages above wrote — never a model. A figure is a
+# view of what a run said, so redrawing it must not be able to produce numbers
+# the metrics record disagrees with.
+$(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
+            src/fraud_engine/evaluation/figures.py \
+            src/fraud_engine/evaluation/plots.py \
+            src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.evaluation.figures
 
 $(FEATURES): $(SPLITS) $(CONFIG) src/fraud_engine/features/build.py | $(FEATURES_DIR)
 	$(RUN) python -m fraud_engine.features.build
@@ -158,10 +172,11 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines features train
+.PHONY: data splits baselines figures features train
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
-baselines: $(BASELINES) $(LOGISTIC) ## Score both baselines through the Phase 02 harness
+baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
+figures:   $(FIGURES)   ## Redraw the baseline comparison figures from predictions
 features:  $(FEATURES)  ## Build train/val/test feature matrices
 train:     $(MODEL)     ## Train the model
 
@@ -170,7 +185,7 @@ train:     $(MODEL)     ## Train the model
 # ==============================================================================
 .PHONY: clean
 clean:  ## Remove derived data, models and caches (never raw/ or reports/)
-	find $(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) \
+	find $(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(PREDICTIONS_DIR) \
 	-type f ! -name '.gitkeep' -delete
 	rm -rf $(MODEL_DIR)
 	find src tests -type d -name '__pycache__' -prune -exec rm -rf {} +

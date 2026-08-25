@@ -23,6 +23,13 @@ paths:
   # Where evaluate() results land, one JSON per scored run. Tracked, so runs
   # stay comparable across phases and land in git history.
   metrics_dir: reports/metrics
+  # The score vector behind each of those JSONs, one parquet per run. Derived
+  # data, so gitignored — but written by the same call that writes the record,
+  # so a figure drawn from it cannot disagree with the metrics it sits beside.
+  # Carries only the splits the run actually scored; see report.DEFAULT_SPLITS.
+  predictions_dir: data/predictions
+  # Figures are deliverables and live under the tracked reports/ tree.
+  figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
   # capacities from here so the sweep and the reports cannot diverge.
   cost_matrix: config/cost_matrix.yaml
