@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | 3 of 3 recorded — H1 falsified and H3 softened in Phase 01 |
-| **Last updated** | 2026-08-18 |
+| **Last updated** | 2026-08-25 |
 | **Evidence window** | Days 1–120 — `eda.horizon_day` in `config/config.yaml` |
 
 ---
@@ -210,3 +210,33 @@ recorded.
 > collected because something already looked wrong, the flag encodes an upstream fraud
 > decision. That belongs in `problem-statement.md` §6 as an assumption, alongside A6 on
 > `C*`/`D*` provenance.
+
+> **On `D8` and `D9` — a structural finding, not a hypothesis.** The `D*` family is
+> documented as day-deltas, and two members do not behave like the other thirteen: `D8`
+> is the only non-integer-valued one (10,896 distinct values, median 41.62), and `D9`
+> holds just 24 values inside [0, 1]. They are not two features. They are one
+> measurement stored twice.
+>
+> Measured on days 1–120, like everything else here, though the relationship is
+> arithmetic rather than statistical and does not depend on the window:
+>
+> - `D8` and `D9` share an **identical null mask** — both 86.4%, the same rows.
+> - `D9` equals the **fractional part of `D8`** to within float32 storage noise
+>   (maximum deviation 4.1e-5).
+> - `round(D9 × 24)` equals the derived `hour` column on **100.00%** of non-null rows.
+>
+> So `D8` is a day-delta carried at sub-day resolution — `floor(D8)` is integer-valued
+> and spans 0–1707 days — and `D9` is nothing but its time-of-day component, rescaled
+> to a fraction of a day.
+>
+> **Consequence for Phase 04.** `D9` carries no information beyond the `hour` column
+> already derived from `TransactionDT`; it should be dropped as a known duplicate rather
+> than rediscovered by correlation clustering. `D8` should be split into `floor(D8)`,
+> the actual timedelta, and its fraction — which is `hour` a third time. Used raw it
+> mixes two unrelated quantities on one axis, and a linear model reading it assumes an
+> extra hour of day and an extra day of age move the log-odds by the same amount.
+> Neither column currently reaches a model: at 86.4% null both fall outside
+> `d_max_null_frac: 0.50`, so nothing downstream is wrong today.
+>
+> Knowing the units does not recover the definition. A6 stands — the lookback windows
+> are undocumented, and this says nothing about *which* prior event `D8` measures.
