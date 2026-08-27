@@ -139,3 +139,96 @@ request-computable features; the history-dependent model runs alongside it, and
 the difference in PR-AUC and USD saved is reported as **the measured cost of not
 building a feature store** — a more useful result than either silently training
 on unservable features or quietly dropping them.
+
+---
+
+## E4 — Which feature families earn their place
+
+**Status:** acceptance rule registered and the floor measured. Family results to
+follow, Phase 04.
+
+**Question.** Of the feature families this phase builds — amount transforms,
+frequency encodings, entity aggregates, velocity, V-block representatives —
+which actually add signal, and which only appear to?
+
+**Why it needs registering in advance.** The roadmap's trap for this phase is
+"adding features until the metric moves, with no hypothesis". The defence is not
+willpower; it is deciding *before* the first family exists how large a movement
+has to be to count. Otherwise every family is accepted, because on a metric with
+this much variance every family moves the number.
+
+### Method
+
+Families are evaluated as **groups**, never column by column. One run per family
+through the Phase 02 harness, each adding only that family's columns to a fixed
+probe.
+
+**The probe is the Phase 03 logistic pipeline**, with `class_weight=None` —
+E2's stronger variant — extended by a single `ColumnTransformer` branch that
+median-imputes and scales the family's columns. Fixing the probe is what makes
+the comparison about features: a probe whose baseline moved between runs would
+be measuring itself.
+
+**`VAL-FIT` only.** Choosing which features ship is tuning, and `VAL-CAL` is held
+back so the Phase 06 calibrator and threshold meet data no tuning decision has
+touched. `report.write_run` scores both validation slices by default, so the
+family runs name their splits explicitly.
+
+**Baseline.** `family_none` — the probe with no family added — scores **0.32169**
+PR-AUC on `VAL-FIT`, reproducing `logistic_baseline.json` to full precision. That
+equality is the check that the Phase 04 feature matrices did not perturb the
+Phase 03 result.
+
+### The acceptance rule
+
+> A family is accepted only if it beats `family_none` by more than the **largest**
+> PR-AUC gain achieved by the same number of columns of pure Gaussian noise,
+> over 20 seeds.
+
+Measured rather than assumed, because the number turned out to be large.
+Twenty seeds, one meaningless column each, against a 0.32169 baseline:
+
+| | delta vs `family_none` |
+|---|---:|
+| mean | +0.00094 |
+| std | 0.00142 |
+| min (seed 5) | −0.00143 |
+| p95 | +0.00283 |
+| **max (seed 0)** | **+0.00433** |
+| above baseline | 14 of 20 |
+
+So a column carrying no information at all can add **+0.0043 PR-AUC** — about
+1.3% relative. Any family claiming less than that has demonstrated nothing.
+
+**The max rather than the 95th percentile.** A 5%-per-family error rate across
+roughly six families gives a 26% chance of accepting at least one pure-noise
+family somewhere in the sweep. The max costs almost nothing in sensitivity and
+removes that.
+
+**The floor is measured at the family's own width.** More columns are more
+chances for the fit to read signal into noise, so the floor rises with width; a
+width-1 floor would understate what a six-column family has to clear. Each
+family's sweep is run at its own width and recorded beside it.
+
+**An observation, recorded rather than explained away.** 14 of 20 noise runs
+landed *above* baseline, and the mean delta is positive at +0.00094 — a sign test
+gives p ≈ 0.06. Marginal, and not pursued: the acceptance rule uses the maximum,
+which is unaffected by a small shift in the centre.
+
+### What gets reported
+
+PR-AUC and recall@capacity on `VAL-FIT` for every family, **including the ones
+that fail the bar**. A family that does not clear the floor is reported as not
+clearing it, not quietly dropped.
+
+### What the result does not do
+
+**It does not settle anything for Phase 05.** The probe is linear. A family whose
+value lies in interactions — which is most of what a gradient-boosted tree is for
+— will read flat here. A family below the bar is *unproven against a linear
+probe*, not useless, and stays available for Phase 05 to re-test rather than
+being deleted.
+
+**The floor does not transfer.** +0.0043 is the noise floor for this probe on
+this metric on this split. LightGBM needs its own if the same question is asked
+of it.

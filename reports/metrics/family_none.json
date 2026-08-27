@@ -1,0 +1,51 @@
+{
+  "name": "family_none",
+  "created": "2026-08-27T17:23:41+00:00",
+  "git_revision": "5b44eefd18ebc8a0f1bb0ee9beaf40b5f29d6139-dirty",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.3216861226377848,
+      "roc_auc": 0.8258515239064413,
+      "recall_at_capacity": [
+        {
+          "recall": 0.10050251256281408,
+          "reviewed": 279,
+          "caught": 200,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.14020100502512564,
+          "share_of_ceiling": 0.7168458781362007
+        },
+        {
+          "recall": 0.1623115577889447,
+          "reviewed": 567,
+          "caught": 323,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 1,
+          "recall_ceiling": 0.28492462311557787,
+          "share_of_ceiling": 0.5696649029982364
+        },
+        {
+          "recall": 0.23919597989949748,
+          "reviewed": 1140,
+          "caught": 476,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 1,
+          "recall_ceiling": 0.5728643216080402,
+          "share_of_ceiling": 0.4175438596491228
+        }
+      ]
+    }
+  }
+}

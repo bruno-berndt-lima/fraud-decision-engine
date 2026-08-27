@@ -133,6 +133,7 @@ def build_pipeline(
     delta_columns: list[str],
     logistic_cfg: dict,
     class_weight: str | None,
+    extra_numeric: tuple[str, ...] = (),
 ) -> Pipeline:
     """The preprocessing and the model, as one object that can only be fitted whole.
 
@@ -146,6 +147,10 @@ def build_pipeline(
         delta_columns: From ``select_delta_columns``.
         logistic_cfg: The ``baselines.logistic`` config block.
         class_weight: ``None`` or ``"balanced"``. See E2.
+        extra_numeric: Engineered columns to append, treated like the counts —
+            median-imputed and scaled. Empty by default, which is what keeps
+            this module's own two runs reproducible as the feature work grows:
+            an empty branch adds no column and no fitted parameter.
 
     Returns:
         An unfitted pipeline.
@@ -178,6 +183,7 @@ def build_pipeline(
             ),
             ("counts", numeric, list(COUNT_COLUMNS)),
             ("deltas", delta, delta_columns),
+            ("engineered", numeric, list(extra_numeric)),
             (
                 "categorical",
                 # handle_unknown="ignore" is load-bearing on a temporal split:
