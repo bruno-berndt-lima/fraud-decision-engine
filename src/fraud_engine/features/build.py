@@ -7,7 +7,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
-from fraud_engine.features import aggregations, amounts, encoders, velocity
+from fraud_engine.features import aggregations, amounts, encoders, vblock, velocity
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def order_by_time(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.sort_values(["TransactionDT", "TransactionID"], ignore_index=True)
 
 
-def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
+def build_features(frame: pd.DataFrame, features_cfg: dict) -> tuple[pd.DataFrame, dict]:
     """Add the engineered columns.
 
     The seam every feature family lands in, and its position between
@@ -90,17 +90,45 @@ def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
     net that should never fire: inheriting its median would mean the evaluation
     harness quietly choosing a value production would never produce.
 
+    **The fitted families are fitted here, once**, and their tables come back with
+    the frame. Refitting them afterwards for writing was the earlier shape and it
+    was wrong: it assumed a family only ever *adds* columns, and the V-block
+    reduction replaces its source, so the second fit had nothing left to read.
+    One fit also means no file on disk can describe a different fit from the one
+    the matrices were built with.
+
     Args:
         frame: Every transaction, in the order ``order_by_time`` established.
         features_cfg: The ``features:`` config block, passed on to each family.
 
     Returns:
-        ``frame`` with the engineered columns added.
+        ``frame`` with the engineered columns, and ``{name: fitted}`` for the
+        families that have something a served model must carry.
     """
     frame = amounts.add_amount_features(frame, features_cfg["amounts"])
-    frame = encoders.add_frequency_features(frame)
-    frame = aggregations.add_amount_stats(frame, features_cfg["aggregations"])
-    return velocity.add_velocity_features(frame, features_cfg["velocity"])
+
+    frequencies = encoders.fit_frequencies(
+        frame[frame["split"] == "train"], encoders.FREQUENCY_COLUMNS
+    )
+    frame = encoders.apply_frequencies(frame, frequencies)
+
+    amount_stats = aggregations.fit_amount_stats(
+        frame[frame["split"] == "train"],
+        aggregations.ENTITY_COLUMNS,
+        features_cfg["aggregations"]["prior_strength"],
+    )
+    frame = aggregations.apply_amount_stats(frame, amount_stats)
+
+    frame = velocity.add_velocity_features(frame, features_cfg["velocity"])
+
+    reduction = vblock.fit(frame[frame["split"] == "train"], features_cfg["vblock"])
+    frame = vblock.apply_fitted(frame, reduction)
+
+    return frame, {
+        "encoders": frequencies,
+        "amount_stats": amount_stats,
+        "vblock": reduction,
+    }
 
 
 def partition(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -190,30 +218,24 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     frame = pd.read_parquet(paths["interim"])
     splits = pd.read_parquet(paths["splits"], columns=["TransactionID", "split"])
 
-    frame = build_features(order_by_time(attach_splits(frame, splits)), config["features"])
+    frame, artifacts = build_features(
+        order_by_time(attach_splits(frame, splits)), config["features"]
+    )
     matrices = partition(frame)
 
     log.info("purged %d gap rows", len(frame) - sum(len(matrix) for matrix in matrices.values()))
     write_matrices(matrices, Path(paths["features_dir"]))
 
-    # Refitted rather than threaded out of build_features, so every family keeps
-    # the same (frame, cfg) -> frame shape. value_counts over seven columns is
-    # milliseconds and deterministic, so the two fits cannot disagree.
-    encoders.write_tables(
-        encoders.fit_frequencies(frame[frame["split"] == "train"], encoders.FREQUENCY_COLUMNS),
-        paths["encoders"],
-    )
-    log.info("wrote %s", paths["encoders"])
-
-    aggregations.write_tables(
-        aggregations.fit_amount_stats(
-            frame[frame["split"] == "train"],
-            aggregations.ENTITY_COLUMNS,
-            config["features"]["aggregations"]["prior_strength"],
-        ),
-        paths["amount_stats"],
-    )
-    log.info("wrote %s", paths["amount_stats"])
+    # The tables the fitted families produced on the way through, written as they
+    # were fitted. Nothing is refitted here, so no file can describe a different
+    # fit from the one the matrices were built with.
+    for name, write in (
+        ("encoders", encoders.write_tables),
+        ("amount_stats", aggregations.write_tables),
+        ("vblock", vblock.write_tables),
+    ):
+        write(artifacts[name], paths[name])
+        log.info("wrote %s", paths[name])
 
 
 if __name__ == "__main__":

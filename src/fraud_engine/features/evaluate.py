@@ -5,11 +5,12 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
-from fraud_engine.features import aggregations, amounts, encoders, velocity
+from fraud_engine.features import aggregations, amounts, encoders, vblock, velocity
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -29,6 +30,27 @@ FAMILIES: dict[str, tuple[str, ...]] = {
     "entity": aggregations.COLUMNS,
     "velocity": velocity.COLUMNS,
 }
+
+# Families whose membership is chosen by a fit, so it is not knowable until
+# build.py has run. Declared by the prefix every one of their columns carries.
+FAMILY_PREFIXES = {"vblock": vblock.PREFIX}
+
+
+def resolve_families(features_dir: Path | str) -> dict[str, tuple[str, ...]]:
+    """``FAMILIES`` with the prefix-declared families filled in from the matrices.
+
+    The V-block family keeps whichever columns survived its correlation
+    threshold, so hardcoding a list here would let the registry drift from the
+    threshold in config without either of them looking wrong. Reading the built
+    matrix's schema — the names only, not the data — asks the artifact instead.
+    """
+    names = pq.read_schema(Path(features_dir) / "train.parquet").names
+
+    resolved = dict(FAMILIES)
+    for family, prefix in FAMILY_PREFIXES.items():
+        resolved[family] = tuple(name for name in names if name.startswith(prefix))
+    return resolved
+
 
 NOISE_COLUMN = "_noise"
 
@@ -144,9 +166,11 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     logistic_cfg = config["baselines"]["logistic"]
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
 
-    # Only what the probe and the families need. The matrices are 438 columns
-    # wide, and every column read is carried through every fit in this run.
-    family_columns = [column for columns in FAMILIES.values() for column in columns]
+    families = resolve_families(paths["features_dir"])
+
+    # Only what the probe and the families need. The matrices are hundreds of
+    # columns wide, and every column read is carried through every fit in this run.
+    family_columns = [column for columns in families.values() for column in columns]
     columns = list(dict.fromkeys([*SOURCE_COLUMNS, *family_columns]))
 
     frame = prepare(load_matrices(paths["features_dir"], columns))
@@ -154,7 +178,7 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     delta_columns = select_delta_columns(train, logistic_cfg["d_max_null_frac"])
 
     pr_auc = {}
-    for name, extra_numeric in FAMILIES.items():
+    for name, extra_numeric in families.items():
         scored = score_with(frame, extra_numeric, delta_columns, logistic_cfg)
         metrics_path, _ = write_run(
             f"family_{name}",

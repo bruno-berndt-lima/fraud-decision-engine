@@ -37,6 +37,8 @@ paths:
   encoders: models/encoders.parquet
   # Per-entity typical amount and spread. Same rationale as encoders above.
   amount_stats: models/amount_stats.parquet
+  # Which V columns survived the reduction, and the medians they are filled with.
+  vblock: models/vblock.parquet
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -229,3 +231,28 @@ features:
     # the slow end of the same scale. Longer than the widest window, so it can
     # never be confused with a real gap.
     first_seen_gap_days: 30
+
+  # ----------------------------------------------------------------------------
+  # V-block reduction
+  # ----------------------------------------------------------------------------
+  # The thresholds ARE the decision; the surviving column list is derived from
+  # them on train. A frozen list of two hundred names here would record the
+  # outcome without recording the reasoning, and could not be diffed usefully.
+  vblock:
+    # Two columns at or above this absolute correlation are treated as the same
+    # variable and one is kept. 0.90 is the conventional line, chosen rather than
+    # discovered — and the finding is that the block is far less redundant than
+    # its reputation: a third of it goes, not four fifths.
+    correlation_threshold: 0.90
+
+    # Held higher for the presence flags. Several NaN groups share a source and
+    # their flags are near-identical; a linear model pays for each copy. Above
+    # this they collapse to one.
+    presence_threshold: 0.95
+
+    # The floor below which nothing is fitted, in rows. A presence flag needs this
+    # many on its rarer side, and a column needs this many non-null training rows
+    # to be kept — its median is imposed on every gap in it, and one drawn from a
+    # handful of observations is noise. Matches the probe's own OneHotEncoder
+    # min_frequency, which excludes rare levels for the same stated reason.
+    min_observed_rows: 50

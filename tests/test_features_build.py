@@ -24,6 +24,7 @@ from fraud_engine.features.build import (
     write_matrices,
 )
 from fraud_engine.features.encoders import FREQUENCY_COLUMNS
+from fraud_engine.features.vblock import V_COLUMNS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,25 +35,32 @@ FEATURES_CFG = {
     "amounts": {"round_step": 50, "round_min": 150, "round_max": 500, "round_product": "H"},
     "aggregations": {"prior_strength": 10},
     "velocity": {"first_seen_gap_days": 30},
+    "vblock": {
+        "correlation_threshold": 0.9,
+        "presence_threshold": 0.95,
+        "min_observed_rows": 50,
+    },
 }
 
 
 def interim(ids, dts) -> pd.DataFrame:
     """An interim-like frame: what this stage reads, plus what it hands a family."""
     ids = list(ids)
-    frame = pd.DataFrame(
+    return pd.DataFrame(
         {
             "TransactionID": ids,
             "TransactionDT": list(dts),
             "TransactionAmt": [100.0 + index for index in range(len(ids))],
             "ProductCD": ["W"] * len(ids),
+            # Present but uninteresting. The families read them; none of these
+            # tests is about what they contain. The V block is null throughout,
+            # which is the cheapest way to give the reduction something well
+            # defined to do. Built in one call rather than assigned column by
+            # column, which fragments the frame and buries every other warning.
+            **dict.fromkeys(FREQUENCY_COLUMNS, "x"),
+            **dict.fromkeys(V_COLUMNS, float("nan")),
         }
     )
-    # Present but uninteresting. The families read them; none of these tests is
-    # about what they contain.
-    for column in FREQUENCY_COLUMNS:
-        frame[column] = "x"
-    return frame
 
 
 def labelled(split_labels) -> pd.DataFrame:
@@ -147,9 +155,9 @@ def test_the_row_sequence_survives_the_seam():
     frame = order_by_time(interim([1, 2, 3], [300, 100, 200]))
     frame["split"] = "train"
 
-    assert list(build_features(frame, FEATURES_CFG)["TransactionID"]) == list(
-        frame["TransactionID"]
-    )
+    built, _ = build_features(frame, FEATURES_CFG)
+
+    assert list(built["TransactionID"]) == list(frame["TransactionID"])
 
 
 def test_the_seam_needs_the_split_label():
@@ -235,11 +243,12 @@ def calendar():
             "TransactionAmt": days * 10.0,
             "ProductCD": "W",
             **dict.fromkeys(FREQUENCY_COLUMNS, "x"),
+            **dict.fromkeys(V_COLUMNS, float("nan")),
         }
     )
     splits = pd.DataFrame({"TransactionID": days, "split": assign_splits(days, boundaries)})
 
-    frame = build_features(order_by_time(attach_splits(frame, splits)), FEATURES_CFG)
+    frame, _ = build_features(order_by_time(attach_splits(frame, splits)), FEATURES_CFG)
     return boundaries, partition(frame)
 
 

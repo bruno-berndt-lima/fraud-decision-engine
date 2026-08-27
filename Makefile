@@ -173,7 +173,8 @@ $(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
              src/fraud_engine/features/amounts.py \
              src/fraud_engine/features/encoders.py \
              src/fraud_engine/features/aggregations.py \
-             src/fraud_engine/features/velocity.py | $(FEATURES_DIR) $(MODEL_DIR)
+             src/fraud_engine/features/velocity.py \
+             src/fraud_engine/features/vblock.py | $(FEATURES_DIR) $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
 # Both depend on logistic.py because the probe IS the logistic pipeline: a change

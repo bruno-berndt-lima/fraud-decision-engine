@@ -538,3 +538,83 @@ unique — and a test reproduces the tie case that broke the first attempt.
 **This is the phase's only tier-3 family.** A trailing count needs the card's
 history at request time, which a single API call does not carry. E3 is where
 that cost gets priced.
+
+### Result — the V block: the only family that clears the bar, by twenty-two times
+
+339 Vesta columns reduced to 228 representatives and 6 presence flags.
+
+| | PR-AUC | ROC-AUC | recall @ 0.5% | recall @ 1% | recall @ 2% |
+|---|---:|---:|---:|---:|---:|
+| `family_none` | 0.32169 | 0.82585 | 10.05% | 16.23% | 23.92% |
+| `family_vblock` | 0.43360 | 0.84478 | 11.66% | 21.66% | 33.92% |
+| delta | **+0.11192** | +0.01893 | +0.01608 | +0.05427 | +0.10000 |
+
+The bar is +0.005. This clears it by a factor of twenty-two, and sits roughly
+seventy standard deviations above the noise floor. At the committed 1% review
+capacity it is **16.2% of fraud caught rising to 21.7%**; at 2%, 23.9% to 33.9%.
+
+**Predicted, and the only one that was.** The blind-spot table registered before
+any family was built marked the V block as the single family a linear probe
+could see — "a dense, largely linear block — yes". Four families were marked no
+or barely, and four families returned nothing or worse. The one marked yes
+returned this.
+
+### The caveat this number cannot be reported without
+
+Phase 01 recorded a trap about `C1`-`C14` and `D1`-`D15`: they are already
+aggregates, computed by Vesta over lookback windows it never published, across
+the whole dataset, before we saw a row. The purge protects *labels*; it does
+nothing about features built from information beyond the training window.
+
+**That trap applies identically to all 339 V columns, and after this result it
+stops being a footnote.** Essentially all of the measured signal in this phase
+lives in features whose construction cannot be audited. Any headline number this
+project reports rests substantially on them.
+
+What is and is not clean, precisely:
+
+- **This project's pipeline is clean, and tested.** The NaN grouping is
+  structural, the correlation clustering and the medians are fitted on training
+  rows alone, and the probe's own fit sees only train.
+  `test_validation_rows_choose_neither_the_columns_nor_the_fill` is the specific
+  guard, and it exists because correlation deciding which columns to drop is a
+  subtler leak than a fitted median — nothing about the output would look wrong.
+- **The exposure is inherited and unfixable.** The windows are not documented.
+  It cannot be measured, corrected, or bounded from inside this repository.
+
+The honest treatment is to state it in the README as the project's principal
+limitation rather than to discount the number, and to be precise that it is a
+property of the dataset rather than of the pipeline.
+
+### What the reduction found
+
+**The block is far less redundant than its reputation.** At an absolute
+correlation of 0.90 within NaN group, two thirds of the columns survive as
+distinct. The folklore that the V block is mostly copies of a handful of
+signals is not what the training window says.
+
+**Missingness is structural and carries its own signal.** The 339 columns fall
+into a small number of groups sharing an identical null pattern, almost perfectly
+contiguous in the V numbering — Vesta built the block in batches. Most of those
+patterns turn out to be `has_identity` under another name and were deduplicated
+away; one is the opposite, present on a minority of rows, negatively correlated
+with `has_identity`, and protective.
+
+**The raw block is replaced, not supplemented.** A matrix carrying both `V95` and
+`vb_V95` has been duplicated rather than reduced, and the next stage to reach for
+"every numeric column" would get a perfectly correlated pair for each one. The
+originals remain in `interim/transactions.parquet`, and the original name is
+recoverable from the prefix, so Phase 07 can still trace a contribution to the
+Vesta column it came from.
+
+### What Phase 04 actually concluded
+
+Four families of hand-built features — amount structure, frequency encoding,
+entity deviation, velocity — moved the metric by less than chance, three of them
+downward. One block of somebody else's pre-computed feature engineering moved it
+by twenty-two times the detection threshold.
+
+That is the phase's result, and it is worth more than the opposite outcome would
+have been. It says where the signal in this dataset actually lives, it says what
+a linear model can and cannot use, and it says that the most important thing to
+write down about this project is a limitation rather than a win.
