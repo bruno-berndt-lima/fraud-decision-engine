@@ -158,7 +158,11 @@ $(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
             src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.evaluation.figures
 
-$(FEATURES): $(SPLITS) $(CONFIG) src/fraud_engine/features/build.py | $(FEATURES_DIR)
+# Phase 04. $(INTERIM) is named even though $(SPLITS) already depends on it:
+# build.py reads the interim table itself, and a rule should declare the
+# dependencies a stage has rather than the ones it happens to inherit.
+$(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
+             src/fraud_engine/features/build.py | $(FEATURES_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
 $(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py | $(MODEL_DIR)
