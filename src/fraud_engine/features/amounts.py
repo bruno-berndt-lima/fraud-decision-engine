@@ -12,10 +12,11 @@ falsifier and the claim stops being falsifiable.
 
 Two things are deliberately absent. A log of the amount, because the probe's own
 `amount` branch already applies one — adding it here would measure nothing. And
-any decimal-places feature: on train days 1-90 the 3-decimal group carries a
-3.17x lift, but 100% of those rows are `ProductCD` C and the lift within C is
-1.01x. It is the same proxy H3 found sitting behind address-presence, and the
-probe already carries `ProductCD`.
+any decimal-places feature: on train, amounts carrying three decimal places look
+strongly predictive until `ProductCD` is controlled for, at which point the
+effect vanishes — every such row is one product, and the probe already carries
+`ProductCD`. It is the proxy H3 found sitting behind address-presence, wearing a
+different name. E4 has the figures.
 """
 
 from __future__ import annotations
@@ -60,10 +61,10 @@ def thousandths(amount: pd.Series) -> pd.Series:
 def is_whole_dollar(amount: pd.Series) -> pd.Series:
     """Roundness with no band — H2's falsifier.
 
-    H2 predicts this carries nothing on its own, and measurement on train agrees:
-    54.1% of rows, 1.02x lift. A plain round-number feature that *did* carry the
-    signal would make the band incidental and H2 wrong, which is exactly why it
-    ships rather than being left out for scoring poorly.
+    H2 predicts this carries nothing on its own, and measurement on train agrees.
+    A plain round-number feature that *did* carry the signal would make the band
+    incidental and H2 wrong, which is exactly why it ships rather than being left
+    out for scoring poorly.
     """
     return thousandths(amount) % UNITS_PER_DOLLAR == 0
 
@@ -71,9 +72,9 @@ def is_whole_dollar(amount: pd.Series) -> pd.Series:
 def is_round_in_band(amount: pd.Series, step: int, low: int, high: int) -> pd.Series:
     """A multiple of ``step`` dollars, between ``low`` and ``high`` inclusive.
 
-    H2's claim. On train: 5.3% of rows at 2.26x lift, against 1.20x for "$50
-    multiple" with no band and 1.02x for roundness alone — the band is doing the
-    work, not the roundness.
+    H2's claim. Measured on train, the band lifts fraud risk well above both a
+    bare "$50 multiple" and roundness alone: the band is doing the work, not the
+    roundness.
 
     Args:
         amount: ``TransactionAmt``, in USD.

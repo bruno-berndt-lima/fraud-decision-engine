@@ -74,8 +74,9 @@ def fit_amount_stats(
     """Each entity's typical amount and spread, measured on the training rows alone.
 
     Null is a level of its own, as in ``encoders`` — and for `addr1` a populous
-    one: H3 found null-address rows are 99.2% `ProductCD` C, which is a real
-    population with a real typical amount, not an absence.
+    one: H3 found null-address rows are almost entirely a single `ProductCD`,
+    which makes them a real population with a real typical amount, not an
+    absence.
 
     Args:
         train: The training rows, and only those.

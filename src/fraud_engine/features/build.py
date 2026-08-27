@@ -48,10 +48,9 @@ def order_by_time(frame: pd.DataFrame) -> pd.DataFrame:
 
     Every trailing-window feature reads rows in this order, so the tie-break is
     part of the feature definition and not a formatting choice. ``TransactionDT``
-    is a whole number of seconds and 33,932 rows share one with another
-    transaction — up to eight at a time — so without a second key those rows'
-    window counts would depend on the order the interim table happened to
-    arrive in.
+    is a whole number of seconds and a meaningful share of rows collide on one,
+    several at a time, so without a second key those rows' window counts would
+    depend on the order the interim table happened to arrive in.
 
     ``TransactionID`` is unique, so the ordering is total and the result does
     not depend on the sort algorithm's stability.

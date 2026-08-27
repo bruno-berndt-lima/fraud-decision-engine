@@ -9,7 +9,7 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
-from fraud_engine.features import aggregations, amounts, encoders
+from fraud_engine.features import aggregations, amounts, encoders, velocity
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -27,6 +27,7 @@ FAMILIES: dict[str, tuple[str, ...]] = {
     "amount": amounts.COLUMNS,
     "frequency": encoders.COLUMNS,
     "entity": aggregations.COLUMNS,
+    "velocity": velocity.COLUMNS,
 }
 
 NOISE_COLUMN = "_noise"
@@ -69,7 +70,7 @@ def load_matrices(features_dir: Path | str, columns: Sequence[str]) -> pd.DataFr
 
     for name in SPLIT_NAMES:
         matrix = pd.read_parquet(features_dir / f"{name}.parquet", columns=list(columns))
-        # Categorical rather than object: 590,540 repeated short strings cost
+        # Categorical rather than object: one repeated short string per row costs
         # tens of megabytes as objects, and the categories are a closed set.
         matrix["split"] = pd.Categorical([name] * len(matrix), categories=SPLIT_NAMES)
         matrices.append(matrix)

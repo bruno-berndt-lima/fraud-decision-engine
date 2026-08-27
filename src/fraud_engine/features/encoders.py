@@ -3,8 +3,8 @@
 How common a level is, measured on the training rows and joined onto every
 split. This is **rarity, not identity**: it deliberately discards which card or
 which address a row carries and keeps only how often that value appears. H3's
-fixed-volume lifts — addr1 3.20x, card2 3.13x, card1 2.14x — are about identity
-and do not transfer here.
+fixed-volume lifts for these same columns are about identity, and do not transfer
+here.
 
 Fitted on train alone, per the project's encoder invariant. The invariant is
 conservative in this case and knowingly so: frequency encoding reads no labels,
@@ -24,7 +24,7 @@ from pathlib import Path
 import pandas as pd
 
 # The identifiers logistic.py left out. P_emaildomain is absent because the probe
-# already one-hots it, R_emaildomain because it is 72.8% null on train.
+# already one-hots it, R_emaildomain because most of its train rows are null.
 FREQUENCY_COLUMNS = ("card1", "card2", "card3", "card5", "addr1", "addr2", "DeviceInfo")
 
 # Null is a level, not an absence. Missingness is signal in this dataset —
@@ -66,7 +66,7 @@ def fit_frequencies(train: pd.DataFrame, columns: tuple[str, ...]) -> dict[str, 
     happened to fit on", so the same table refitted on a longer window says
     something different about an unchanged world; a share does not. That matters
     because this table is a serving artifact that outlives its fitting window —
-    and because E1 refits on a window 31% longer.
+    and because E1 refits on a longer one.
 
     Args:
         train: The training rows, and only those.

@@ -2,7 +2,7 @@
 
 Every frame here is synthetic. Nothing in this suite has ever needed `data/`,
 and the stage's contract is row bookkeeping — which twelve rows state more
-clearly than 590,540 do.
+clearly than the whole dataset does.
 
 The exception is the split boundaries. The `calendar` fixture drives the
 committed config through the whole stage at one transaction per day, so a
@@ -33,6 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FEATURES_CFG = {
     "amounts": {"round_step": 50, "round_min": 150, "round_max": 500, "round_product": "H"},
     "aggregations": {"prior_strength": 10},
+    "velocity": {"first_seen_gap_days": 30},
 }
 
 
@@ -121,9 +122,9 @@ def test_rows_come_back_in_transaction_dt_order():
 
 
 def test_transaction_dt_ties_break_by_transaction_id():
-    """5.7% of the dataset shares a TransactionDT with another row, up to eight at
-    once. Without the second key those rows' trailing-window counts would depend
-    on whatever order the interim table happened to arrive in."""
+    """A meaningful share of the dataset shares a TransactionDT with another row,
+    several at once. Without the second key those rows' trailing-window counts
+    would depend on whatever order the interim table happened to arrive in."""
     assert list(order_by_time(interim([9, 4, 7], [100, 100, 100]))["TransactionID"]) == [4, 7, 9]
 
 

@@ -58,7 +58,7 @@ def test_a_level_is_valued_as_its_share_of_the_training_rows():
 
 def test_the_rates_of_one_column_sum_to_one():
     """A share, not a count — the property that survives a refit on a different
-    window, which E1 will do with a training set 31% longer."""
+    window, which E1 will do with a longer training set."""
     table = fit_frequencies(frame().head(6), ("card1",))["card1"]
 
     assert table.sum() == pytest.approx(1.0)
