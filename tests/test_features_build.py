@@ -31,7 +31,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # row bookkeeping, and should not start failing because H2's band was revised.
 # That the committed config satisfies the family lives in test_features_amounts.
 FEATURES_CFG = {
-    "amounts": {"round_step": 50, "round_min": 150, "round_max": 500, "round_product": "H"}
+    "amounts": {"round_step": 50, "round_min": 150, "round_max": 500, "round_product": "H"},
+    "aggregations": {"prior_strength": 10},
 }
 
 
@@ -239,6 +240,19 @@ def calendar():
 
     frame = build_features(order_by_time(attach_splits(frame, splits)), FEATURES_CFG)
     return boundaries, partition(frame)
+
+
+def test_the_literal_config_covers_every_block_a_family_reads(calendar):
+    """FEATURES_CFG is a literal so revising H2's band cannot cascade into
+    unrelated test failures. The cost is drift: three families in a row have
+    broken this module by adding a config block the literal did not have, each
+    time as a KeyError deep inside a fixture. This is what notices instead.
+
+    `evaluation` is excluded — it configures the noise floor, not build_features.
+    """
+    config = yaml.safe_load((REPO_ROOT / "config" / "config.yaml").read_text())
+
+    assert set(config["features"]) - {"evaluation"} <= set(FEATURES_CFG)
 
 
 def test_each_matrix_holds_exactly_the_days_its_boundary_claims(calendar):

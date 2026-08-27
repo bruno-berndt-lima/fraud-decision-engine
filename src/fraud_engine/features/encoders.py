@@ -47,12 +47,14 @@ def encoded_name(column: str) -> str:
 COLUMNS = tuple(encoded_name(column) for column in FREQUENCY_COLUMNS)
 
 
-def _levels(values: pd.Series) -> pd.Series:
+def levels(values: pd.Series) -> pd.Series:
     """A column as lookup keys, with null promoted to a level of its own.
 
-    Both the fit and the apply go through here, so the two agree on how a level
-    is spelled. That matters more than how it is spelled: ``card1`` arrives as a
-    float and 13926.0 has to be the same key on both sides of the join.
+    Every fit and every apply in the project goes through here — this module's
+    and ``aggregations``' — so all of them agree on how a level is spelled. That
+    matters more than how it is spelled: ``card1`` arrives as a float and
+    13926.0 has to be the same key on both sides of every join. Two families
+    disagreeing on the spelling would silently group the same card differently.
     """
     return values.astype("object").fillna(MISSING).astype(str)
 
@@ -73,7 +75,7 @@ def fit_frequencies(train: pd.DataFrame, columns: tuple[str, ...]) -> dict[str, 
     Returns:
         ``{column: Series}``, indexed by level and valued as a share of ``train``.
     """
-    return {column: _levels(train[column]).value_counts().div(len(train)) for column in columns}
+    return {column: levels(train[column]).value_counts().div(len(train)) for column in columns}
 
 
 def apply_frequencies(frame: pd.DataFrame, tables: dict[str, pd.Series]) -> pd.DataFrame:
@@ -88,7 +90,7 @@ def apply_frequencies(frame: pd.DataFrame, tables: dict[str, pd.Series]) -> pd.D
     """
     return frame.assign(
         **{
-            encoded_name(column): _levels(frame[column])
+            encoded_name(column): levels(frame[column])
             .map(table)
             .fillna(UNSEEN_FREQUENCY)
             .astype("float32")

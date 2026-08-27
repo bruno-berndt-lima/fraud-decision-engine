@@ -35,6 +35,8 @@ paths:
   # rebuilt by `make features` — but written rather than held in memory, because
   # "this family is servable from a static lookup" is a claim the file settles.
   encoders: models/encoders.parquet
+  # Per-entity typical amount and spread. Same rationale as encoders above.
+  amount_stats: models/amount_stats.parquet
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -202,3 +204,17 @@ features:
     # 14.58x within this product. The interaction column is what lets a linear
     # probe see that at all.
     round_product: H
+
+  # ----------------------------------------------------------------------------
+  # Entity aggregates
+  # ----------------------------------------------------------------------------
+  aggregations:
+    # Shrinkage strength k, in transactions: a per-entity mean and spread backed
+    # by k observations counts equally with the training window's own. At k=10 a
+    # card seen once is scored almost entirely against the global distribution,
+    # which is the honest answer for an entity nothing is known about, and a card
+    # seen hundreds of times is scored against itself.
+    #
+    # Not tuned. Tuning it against VAL-FIT would make the family a small fitted
+    # model rather than a feature.
+    prior_strength: 10

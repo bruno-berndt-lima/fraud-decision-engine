@@ -7,7 +7,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
-from fraud_engine.features import amounts, encoders
+from fraud_engine.features import aggregations, amounts, encoders
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +99,8 @@ def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
         ``frame`` with the engineered columns added.
     """
     frame = amounts.add_amount_features(frame, features_cfg["amounts"])
-    return encoders.add_frequency_features(frame)
+    frame = encoders.add_frequency_features(frame)
+    return aggregations.add_amount_stats(frame, features_cfg["aggregations"])
 
 
 def partition(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -203,6 +204,16 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
         paths["encoders"],
     )
     log.info("wrote %s", paths["encoders"])
+
+    aggregations.write_tables(
+        aggregations.fit_amount_stats(
+            frame[frame["split"] == "train"],
+            aggregations.ENTITY_COLUMNS,
+            config["features"]["aggregations"]["prior_strength"],
+        ),
+        paths["amount_stats"],
+    )
+    log.info("wrote %s", paths["amount_stats"])
 
 
 if __name__ == "__main__":

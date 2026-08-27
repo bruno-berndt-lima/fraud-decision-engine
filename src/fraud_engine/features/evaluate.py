@@ -9,7 +9,7 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
-from fraud_engine.features import amounts, encoders
+from fraud_engine.features import aggregations, amounts, encoders
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -26,6 +26,7 @@ FAMILIES: dict[str, tuple[str, ...]] = {
     "none": (),
     "amount": amounts.COLUMNS,
     "frequency": encoders.COLUMNS,
+    "entity": aggregations.COLUMNS,
 }
 
 NOISE_COLUMN = "_noise"

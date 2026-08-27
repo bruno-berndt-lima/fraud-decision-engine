@@ -411,3 +411,79 @@ a static lookup shipped beside the model, no online store, no entity history.
 deterministic given its seeds, so recomputing it per family run spent eighteen
 minutes reproducing a constant; family runs now take under ninety seconds, which
 is what makes the remaining families cheap to evaluate.
+
+### Result — the entity family: negative, and the best of the three on recall
+
+Six columns over two entities — `card1` and `addr1` — each contributing the
+entity's typical amount, the signed z-score of this transaction against it, and
+that z-score's absolute value.
+
+| | PR-AUC | ROC-AUC | recall @ 0.5% | recall @ 1% | recall @ 2% |
+|---|---:|---:|---:|---:|---:|
+| `family_none` | 0.32169 | 0.82585 | 10.05% | 16.23% | 23.92% |
+| `family_entity` | 0.31718 | 0.82197 | 10.10% | 16.73% | 24.47% |
+| delta | **−0.00451** | −0.00388 | +0.00050 | +0.00503 | +0.00553 |
+
+**Below the floor's observed minimum** (−0.00356), about 2.9σ below zero.
+
+**Predicted, and for the registered reason.** |z| against `card1` is flat across
+four quintiles and then spikes — on `VAL-FIT`, 0.84x, 0.87x, 0.72x, 0.83x,
+**1.75x**. The signal is real, it is on rows the fit never saw, and it covers a
+fifth of the data. A linear term cannot represent flat-then-spike any better than
+it could represent the frequency curve, so it spends coefficients on the shape it
+can reach and pays for them.
+
+**It is the strongest family so far on recall@capacity** — +0.50pp at the 1%
+capacity, +0.55pp at 2%, and the only one that does not lose ground at 0.5%.
+Under the rule settled above this is an observation and no claim is made from it.
+Recording it is the point.
+
+**Design note: shrinkage, and what testing it caught.** Per-entity means and
+spreads are pulled toward the training window's own by `(n·observed + k·prior) /
+(n + k)` at k=10. That stops two degenerate readings: a card seen once would
+otherwise have a mean equal to its only amount, a z-score of exactly zero, and
+would read as perfectly typical on one observation; and a card whose amounts
+never vary would have zero spread and divide by it.
+
+Writing the tests found that the second guarantee was conditional and the
+docstring had stated it flatly: shrinkage keeps an entity's spread positive only
+if the *prior* is positive, and a training window with no amount variance gives
+0/0. `fit_amount_stats` now refuses that input rather than emitting NaN into a
+stage that promises null-free columns. Unreachable on real data; the point is
+that the claim now matches the code.
+
+`models/amount_stats.parquet` carries the fitted table with its own fallback row,
+making this family **tier 2** on the serving table alongside frequency encoding.
+
+### The three families together — the actual Phase 04 result
+
+| family | coverage | shape of the relationship | PR-AUC delta |
+|---|---:|---|---:|
+| amount | 0.33% of rows | spiky | −0.00115 |
+| frequency | 100% | non-monotonic by rarity | −0.00517 |
+| entity | 100% | flat, then a spike | −0.00451 |
+
+Three families, three negative deltas, **all three predicted in advance** by the
+blind-spot table registered before any of them was built. The two with full
+coverage are the two that hurt most, and that is the expected direction rather
+than a puzzle: a linear model handed six or seven columns whose shape it cannot
+represent does not ignore them — it fits coefficients to the part it can reach,
+and at `C=1.0` nothing shrinks those to zero. Having the feature is worse than
+not having it, for this model.
+
+**This is the phase's result, and it is not "the features do not work".** Each
+family carries measured signal that generalises to `VAL-FIT` — 5.71x lift on the
+amount interaction, 1.75x on the top |z| quintile — and each is invisible or
+costly to a linear probe for a reason stated before it was measured. The
+instrument is the finding.
+
+**It also makes the Phase 03 logistic baseline more useful than it was.** The gap
+between it and the Phase 05 model is now partly *explained* rather than merely
+observed: part of what a gradient-boosted tree buys on this dataset is the
+ability to use features whose shape a linear model cannot express.
+
+**Registered prediction for Phase 05.** Retraining these families against the
+tuned LightGBM should show gains where the linear probe showed losses,
+concentrated in the entity and frequency families. If it does not — if a tree
+also gains nothing from them — then the diagnosis here is wrong and the features
+are genuinely weak, and that outcome gets recorded too.
