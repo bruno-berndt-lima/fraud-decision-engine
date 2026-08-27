@@ -232,3 +232,102 @@ being deleted.
 **The floor does not transfer.** +0.0043 is the noise floor for this probe on
 this metric on this split. LightGBM needs its own if the same question is asked
 of it.
+
+### Result — the noise floor, measured twice
+
+Twenty seeds at width 1 and twenty at width 3, against `family_none` = 0.32169:
+
+| width | mean | std | min | max | p95 | above baseline |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | +0.00094 | 0.00142 | −0.00143 | +0.00433 | +0.00283 | 14 / 20 |
+| 3 | −0.00005 | 0.00155 | −0.00356 | +0.00257 | +0.00216 | 8 / 20 |
+
+**Two corrections to the registration above, both from the data.**
+
+*The floor does not rise with width* — at least not between 1 and 3. The standard
+deviation moves 0.00142 → 0.00155, and the maximum falls. At 316,000 training
+rows under L2 at `C=1.0`, three meaningless columns are not meaningfully more
+dangerous than one. The instruction to re-measure per family width is therefore
+withdrawn: `n_columns` stays, because a fifteen-column V-block family may yet
+behave differently, but a fresh twenty-seed sweep per family costs nine minutes
+and buys almost nothing.
+
+*The upward shift was chance.* The registration recorded 14 of 20 above baseline
+at width 1 (sign test p ≈ 0.06) and declined to pursue it. At width 3 it is 8 of
+20 and the mean is −0.00005. It did not replicate.
+
+**The bar, revised.** Pooling all 40 draws: mean ≈ +0.0004, σ ≈ 0.0015, largest
+observed +0.0043. Max-observed and mean-plus-3σ agree closely, so:
+
+> A family must add **≥ +0.005 PR-AUC** on `VAL-FIT` to be believed.
+
+Stated as one number rather than a per-width maximum because the maximum of
+twenty draws is itself unstable — it moved by more between widths than the
+underlying spread did.
+
+### Result — the amount family: rejected
+
+| | PR-AUC | ROC-AUC | recall @ 1% | recall @ 2% |
+|---|---:|---:|---:|---:|
+| `family_none` | 0.32169 | 0.82585 | 16.23% | 23.92% |
+| `family_amount` | 0.32054 | 0.82092 | 16.53% | 24.47% |
+| delta | **−0.00115** | −0.00493 | +0.00302 | +0.00553 |
+
+**Rejected: the delta is negative.** It sits about 0.7σ from the width-3 mean —
+indistinguishable from three columns of noise, in the unhelpful direction.
+
+**Why, and it is not because the feature is wrong.** H2's signal is real and it
+generalises: `amt_round_band_product` carries 6.02× lift on train and **5.71× on
+`VAL-FIT`**, data it was never fitted against. It is simply tiny — 187 of 57,464
+rows, holding 37 frauds, **1.9% of all fraud in the split**. PR-AUC scores the
+whole ranking. A feature touching a third of a percent of rows cannot move it,
+however good it is on those rows.
+
+That is a coverage result, not a quality one, and it restates H3's note that risk
+ranking and money ranking disagree: high lift and high value are different
+quantities.
+
+**H2 is not falsified by this.** H2 predicts a *SHAP* result in Phase 07 — spiky
+contributions at $150 / $300 / $450 — and its own falsifier held here exactly as
+written: `amt_whole_dollar` is worth 1.02× on train and 1.05× on `VAL-FIT`,
+nothing. A linear probe failing to profit from an indicator says little about
+what a gradient-boosted tree will do with it. The columns stay in the matrices
+for Phase 05 to re-test.
+
+### Registration defect, recorded rather than repaired quietly
+
+Recall@capacity moved **up** while PR-AUC moved down: +6 frauds caught at the 1%
+capacity, +11 at 2%. That is the operationally meaningful direction, and it is
+also exactly what this experiment exists to stop anyone claiming — **there is no
+noise floor for recall@capacity**, so six frauds out of 1,990 may be nothing.
+
+The defect is real and predates the result: this rule was registered naming
+PR-AUC alone, while the project names *two* primary metrics and a USD headline.
+It should have specified both from the start.
+
+**Resolution, settled before the next family was built** — deliberately, so that
+it is a rule and not a reaction to the number above.
+
+> **PR-AUC is the single acceptance gate.** Recall@capacity is measured against
+> its own floor and reported for every family, but never decides acceptance.
+
+Two reasons, neither of which is "PR-AUC gave the answer we already had".
+
+*One gate, so there is nothing to shop for.* The moment two metrics can each
+admit a family, every borderline family gets argued on whichever one flatters
+it, and the pre-registration stops doing any work.
+
+*PR-AUC is the more stable statistic.* It is threshold-free and scores the whole
+ranking. Recall@capacity is a single cut over roughly 570 reviewed rows, so it
+carries more variance per unit of signal — a poor instrument for detecting the
+small effects feature families produce.
+
+The narrowing costs little, because **recall@capacity is not being ignored — it
+is being optimised properly later.** Phase 06 derives the decision threshold
+against a real cost matrix on `VAL-CAL`. Using it as a feature gate in Phase 04
+would be a worse version of a job that phase does with the right instrument.
+
+**Consequence, stated plainly.** The amount family stays rejected on −0.00115,
+and its +6 frauds at the 1% capacity are recorded as an observation, not a
+result. If Phase 05 finds the same columns valuable to a tree, that is a fact
+about linear probes, not a reason to revisit this decision.

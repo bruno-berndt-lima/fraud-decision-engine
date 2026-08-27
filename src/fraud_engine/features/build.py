@@ -7,6 +7,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
+from fraud_engine.features import amounts
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +66,8 @@ def order_by_time(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.sort_values(["TransactionDT", "TransactionID"], ignore_index=True)
 
 
-def build_features(frame: pd.DataFrame) -> pd.DataFrame:
-    """Add the engineered columns. Returns ``frame`` unchanged until one exists.
+def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
+    """Add the engineered columns.
 
     The seam every feature family lands in, and its position between
     ``order_by_time`` and ``partition`` is the contract:
@@ -84,13 +85,20 @@ def build_features(frame: pd.DataFrame) -> pd.DataFrame:
 
     ``partition`` runs last. Always.
 
+    **Families arrive null-free.** Where a column can be missing, the family
+    decides its own fill here, in the module that knows what missing means for
+    it — a velocity of "no history" is 0, not a median. The probe's imputer is a
+    net that should never fire: inheriting its median would mean the evaluation
+    harness quietly choosing a value production would never produce.
+
     Args:
         frame: Every transaction, in the order ``order_by_time`` established.
+        features_cfg: The ``features:`` config block, passed on to each family.
 
     Returns:
         ``frame`` with the engineered columns added.
     """
-    return frame
+    return amounts.add_amount_features(frame, features_cfg["amounts"])
 
 
 def partition(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -180,7 +188,7 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     frame = pd.read_parquet(paths["interim"])
     splits = pd.read_parquet(paths["splits"], columns=["TransactionID", "split"])
 
-    frame = build_features(order_by_time(attach_splits(frame, splits)))
+    frame = build_features(order_by_time(attach_splits(frame, splits)), config["features"])
     matrices = partition(frame)
 
     log.info("purged %d gap rows", len(frame) - sum(len(matrix) for matrix in matrices.values()))

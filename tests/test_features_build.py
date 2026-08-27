@@ -26,10 +26,25 @@ from fraud_engine.features.build import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+# Literal rather than read from config.yaml: these tests are about the stage's
+# row bookkeeping, and should not start failing because H2's band was revised.
+# That the committed config satisfies the family lives in test_features_amounts.
+FEATURES_CFG = {
+    "amounts": {"round_step": 50, "round_min": 150, "round_max": 500, "round_product": "H"}
+}
+
 
 def interim(ids, dts) -> pd.DataFrame:
-    """An interim-like frame: the two columns this stage actually reads."""
-    return pd.DataFrame({"TransactionID": list(ids), "TransactionDT": list(dts)})
+    """An interim-like frame: what this stage reads, plus what it hands a family."""
+    ids = list(ids)
+    return pd.DataFrame(
+        {
+            "TransactionID": ids,
+            "TransactionDT": list(dts),
+            "TransactionAmt": [100.0 + index for index in range(len(ids))],
+            "ProductCD": ["W"] * len(ids),
+        }
+    )
 
 
 def labelled(split_labels) -> pd.DataFrame:
@@ -122,7 +137,9 @@ def test_the_row_sequence_survives_the_seam():
     stops being trivial the moment a family reindexes or reorders, which would
     misalign the `split` mask that fitted families select train rows with."""
     frame = order_by_time(interim([1, 2, 3], [300, 100, 200]))
-    assert list(build_features(frame)["TransactionID"]) == list(frame["TransactionID"])
+    assert list(build_features(frame, FEATURES_CFG)["TransactionID"]) == list(
+        frame["TransactionID"]
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -190,10 +207,19 @@ def calendar():
     boundaries = resolve_boundaries(config["splits"])
 
     days = pd.Series(range(1, 183))
-    frame = pd.DataFrame({"TransactionID": days, "TransactionDT": days * 86_400, "day": days})
+    frame = pd.DataFrame(
+        {
+            "TransactionID": days,
+            "TransactionDT": days * 86_400,
+            "day": days,
+            "TransactionAmt": days * 10.0,
+            "ProductCD": "W",
+        }
+    )
     splits = pd.DataFrame({"TransactionID": days, "split": assign_splits(days, boundaries)})
 
-    return boundaries, partition(build_features(order_by_time(attach_splits(frame, splits))))
+    frame = build_features(order_by_time(attach_splits(frame, splits)), FEATURES_CFG)
+    return boundaries, partition(frame)
 
 
 def test_each_matrix_holds_exactly_the_days_its_boundary_claims(calendar):

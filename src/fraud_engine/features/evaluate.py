@@ -10,6 +10,7 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
+from fraud_engine.features import amounts
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -20,8 +21,12 @@ from fraud_engine.models.logistic import (
 
 log = logging.getLogger(__name__)
 
-# Name -> the engineered columns it contributes.
-FAMILIES: dict[str, tuple[str, ...]] = {"none": ()}
+# Name -> the engineered columns it contributes. "none" is the bare probe, the
+# reference every delta and the noise floor itself are measured against.
+FAMILIES: dict[str, tuple[str, ...]] = {
+    "none": (),
+    "amount": amounts.COLUMNS,
+}
 
 NOISE_COLUMN = "_noise"
 

@@ -179,4 +179,22 @@ features:
     # The floor rises with width: more columns are more chances for the fit to
     # read signal into noise. A family is judged against a floor measured at its
     # own width, so this list grows as families arrive.
-    noise_widths: [1]
+    #
+    # 1 is the reference. 3 is the amount family.
+    noise_widths: [1, 3]
+
+  # ----------------------------------------------------------------------------
+  # Amount transforms — the row-local family
+  # ----------------------------------------------------------------------------
+  # These restate H2 (docs/hypotheses.md), and are deliberately NOT shared with
+  # baselines.rules.round_amount, which is the incumbent's own copy of the same
+  # finding. One key for both would let retuning the rules engine silently move
+  # the challenger's features.
+  amounts:
+    round_step: 50
+    round_min: 150
+    round_max: 500
+    # H2 measures the effect concentrating here: $300 goes from 4.74x pooled to
+    # 14.58x within this product. The interaction column is what lets a linear
+    # probe see that at all.
+    round_product: H

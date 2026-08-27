@@ -1,6 +1,6 @@
 {
-  "name": "family_none",
-  "created": "2026-08-27T18:05:55+00:00",
+  "name": "family_amount",
+  "created": "2026-08-27T18:06:22+00:00",
   "git_revision": "4b76ec9ab28669f4ccf47c5e83317cd07fb18367-dirty",
   "capacities": [
     0.005,
@@ -12,38 +12,38 @@
       "n": 57464,
       "positives": 1990,
       "base_rate": 0.03463037727968815,
-      "pr_auc": 0.3216861226377848,
-      "roc_auc": 0.8258515239064413,
+      "pr_auc": 0.3205379953738121,
+      "roc_auc": 0.8209223008723538,
       "recall_at_capacity": [
         {
-          "recall": 0.10050251256281408,
+          "recall": 0.09899497487437187,
           "reviewed": 279,
-          "caught": 200,
+          "caught": 197,
           "positives": 1990,
           "capacity": 0.005,
           "ambiguous_days": 0,
           "recall_ceiling": 0.14020100502512564,
-          "share_of_ceiling": 0.7168458781362007
+          "share_of_ceiling": 0.7060931899641577
         },
         {
-          "recall": 0.1623115577889447,
+          "recall": 0.16532663316582916,
           "reviewed": 567,
-          "caught": 323,
+          "caught": 329,
           "positives": 1990,
           "capacity": 0.01,
-          "ambiguous_days": 1,
+          "ambiguous_days": 3,
           "recall_ceiling": 0.28492462311557787,
-          "share_of_ceiling": 0.5696649029982364
+          "share_of_ceiling": 0.580246913580247
         },
         {
-          "recall": 0.23919597989949748,
+          "recall": 0.24472361809045226,
           "reviewed": 1140,
-          "caught": 476,
+          "caught": 487,
           "positives": 1990,
           "capacity": 0.02,
-          "ambiguous_days": 1,
+          "ambiguous_days": 0,
           "recall_ceiling": 0.5728643216080402,
-          "share_of_ceiling": 0.4175438596491228
+          "share_of_ceiling": 0.42719298245614035
         }
       ]
     }

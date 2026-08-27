@@ -166,7 +166,8 @@ $(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
 # build.py reads the interim table itself, and a rule should declare the
 # dependencies a stage has rather than the ones it happens to inherit.
 $(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
-             src/fraud_engine/features/build.py | $(FEATURES_DIR)
+             src/fraud_engine/features/build.py \
+             src/fraud_engine/features/amounts.py | $(FEATURES_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
 # Depends on logistic.py because the probe IS the logistic pipeline: a change to
