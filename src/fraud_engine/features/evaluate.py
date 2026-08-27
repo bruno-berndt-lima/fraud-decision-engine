@@ -4,13 +4,12 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
-from fraud_engine.features import amounts
+from fraud_engine.features import amounts, encoders
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -26,6 +25,7 @@ log = logging.getLogger(__name__)
 FAMILIES: dict[str, tuple[str, ...]] = {
     "none": (),
     "amount": amounts.COLUMNS,
+    "frequency": encoders.COLUMNS,
 }
 
 NOISE_COLUMN = "_noise"
@@ -116,64 +116,15 @@ def score_with(
     return scored
 
 
-def noise_floor(
-    frame: pd.DataFrame,
-    delta_columns: list[str],
-    logistic_cfg: dict,
-    capacities: list[float],
-    seeds: Sequence[int],
-    n_columns: int = 1,
-) -> pd.DataFrame:
-    """VAL-FIT PR-AUC with ``n_columns`` meaningless columns added, once per seed.
-
-    The probe is deterministic given its data, so this is not run-to-run
-    variance. It is how far columns carrying no information at all can move the
-    metric by chance — and a family that beats the baseline by less than this
-    spread has demonstrated nothing.
-
-    Measured at a chosen width because the floor rises with it: more columns are
-    more chances for the fit to read signal into noise. A floor taken at one
-    column understates what a six-column family has to clear.
-
-    Args:
-        frame: Every non-gap row, carrying ``split``.
-        delta_columns: From ``select_delta_columns``, measured on train.
-        logistic_cfg: The ``baselines.logistic`` config block.
-        capacities: Review capacities, only so ``evaluate`` has its full input.
-        seeds: One run per seed. The spread across them is the result; a single
-            seed is one draw and says nothing.
-        n_columns: How many noise columns to add, matching the width of the
-            family being judged.
-
-    Returns:
-        One row per seed: ``seed``, ``n_columns``, ``pr_auc``.
-    """
-    noise_columns = tuple(f"{NOISE_COLUMN}{index}" for index in range(n_columns))
-
-    # One copy, reused: each seed overwrites the noise columns rather than
-    # rebuilding a half-million-row frame per draw.
-    working = frame.copy()
-    measured = []
-
-    for seed in seeds:
-        rng = np.random.default_rng(seed)
-        for column in noise_columns:
-            working[column] = rng.standard_normal(len(working))
-
-        scored = score_with(working, noise_columns, delta_columns, logistic_cfg)
-        pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
-
-        measured.append({"seed": seed, "n_columns": n_columns, "pr_auc": pr_auc})
-        log.info("noise seed=%-4d width=%d  val_fit pr_auc=%.5f", seed, n_columns, pr_auc)
-
-    return pd.DataFrame(measured)
-
-
 def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     """Score every feature family through the Phase 02 harness, on VAL-FIT alone.
 
     Wiring only. Invoked by ``make families`` as
     ``python -m fraud_engine.features.evaluate``.
+
+    The noise floor lives in ``floor.py`` and is not measured here: it is
+    deterministic given its seeds, so re-measuring it per family run would spend
+    eighteen minutes recomputing a constant.
 
     VAL-CAL is not scored, and must not be. Choosing which features ship is
     tuning, and VAL-CAL is held back precisely so the calibrator and the
@@ -189,7 +140,6 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     config = load_config(config_path)
     paths = config["paths"]
     logistic_cfg = config["baselines"]["logistic"]
-    evaluation_cfg = config["features"]["evaluation"]
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
 
     # Only what the probe and the families need. The matrices are 438 columns
@@ -220,36 +170,6 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     for name, value in pr_auc.items():
         if name != "none":
             log.info("family %-14s delta vs none: %+.5f", name, value - pr_auc["none"])
-
-    floor = pd.concat(
-        [
-            noise_floor(
-                frame,
-                delta_columns,
-                logistic_cfg,
-                capacities,
-                range(evaluation_cfg["noise_seeds"]),
-                width,
-            )
-            for width in evaluation_cfg["noise_widths"]
-        ],
-        ignore_index=True,
-    )
-    floor["delta"] = floor["pr_auc"] - pr_auc["none"]
-
-    floor_path = Path(paths["noise_floor"])
-    floor_path.parent.mkdir(parents=True, exist_ok=True)
-    floor.to_csv(floor_path, index=False)
-
-    for width, measured in floor.groupby("n_columns"):
-        log.info(
-            "noise floor width=%d over %d seeds: mean %+.5f, max %+.5f",
-            width,
-            len(measured),
-            measured["delta"].mean(),
-            measured["delta"].max(),
-        )
-    log.info("wrote %s", floor_path)
 
 
 if __name__ == "__main__":

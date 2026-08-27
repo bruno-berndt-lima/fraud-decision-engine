@@ -31,6 +31,10 @@ paths:
   # The measured spread of PR-AUC under meaningless columns — the bar a feature
   # family has to clear. Tracked: it is a decision input, not derived data.
   noise_floor: reports/metrics/noise_floor.csv
+  # The fitted frequency tables. Gitignored with the rest of models/ — derived,
+  # rebuilt by `make features` — but written rather than held in memory, because
+  # "this family is servable from a static lookup" is a claim the file settles.
+  encoders: models/encoders.parquet
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review

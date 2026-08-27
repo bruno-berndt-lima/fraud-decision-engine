@@ -7,7 +7,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
-from fraud_engine.features import amounts
+from fraud_engine.features import amounts, encoders
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +98,8 @@ def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
     Returns:
         ``frame`` with the engineered columns added.
     """
-    return amounts.add_amount_features(frame, features_cfg["amounts"])
+    frame = amounts.add_amount_features(frame, features_cfg["amounts"])
+    return encoders.add_frequency_features(frame)
 
 
 def partition(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:
@@ -193,6 +194,15 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
 
     log.info("purged %d gap rows", len(frame) - sum(len(matrix) for matrix in matrices.values()))
     write_matrices(matrices, Path(paths["features_dir"]))
+
+    # Refitted rather than threaded out of build_features, so every family keeps
+    # the same (frame, cfg) -> frame shape. value_counts over seven columns is
+    # milliseconds and deterministic, so the two fits cannot disagree.
+    encoders.write_tables(
+        encoders.fit_frequencies(frame[frame["split"] == "train"], encoders.FREQUENCY_COLUMNS),
+        paths["encoders"],
+    )
+    log.info("wrote %s", paths["encoders"])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Tests for the feature-family evaluation stage.
+"""Tests for the feature-family evaluation stage and the noise floor.
 
 Synthetic frames again, and small ones: a probe fit on 800 rows takes
 milliseconds where the real one takes 26 seconds, and none of the properties
@@ -17,7 +17,8 @@ import pandas as pd
 import pytest
 
 from fraud_engine.data.splits import SPLIT_NAMES
-from fraud_engine.features.evaluate import load_matrices, noise_floor, score_with
+from fraud_engine.features.evaluate import load_matrices, score_with
+from fraud_engine.features.floor import noise_floor
 from fraud_engine.models.logistic import (
     COUNT_COLUMNS,
     DELTA_COLUMNS,

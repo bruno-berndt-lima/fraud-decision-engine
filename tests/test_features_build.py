@@ -23,6 +23,7 @@ from fraud_engine.features.build import (
     partition,
     write_matrices,
 )
+from fraud_engine.features.encoders import FREQUENCY_COLUMNS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,7 +38,7 @@ FEATURES_CFG = {
 def interim(ids, dts) -> pd.DataFrame:
     """An interim-like frame: what this stage reads, plus what it hands a family."""
     ids = list(ids)
-    return pd.DataFrame(
+    frame = pd.DataFrame(
         {
             "TransactionID": ids,
             "TransactionDT": list(dts),
@@ -45,6 +46,11 @@ def interim(ids, dts) -> pd.DataFrame:
             "ProductCD": ["W"] * len(ids),
         }
     )
+    # Present but uninteresting. The families read them; none of these tests is
+    # about what they contain.
+    for column in FREQUENCY_COLUMNS:
+        frame[column] = "x"
+    return frame
 
 
 def labelled(split_labels) -> pd.DataFrame:
@@ -137,9 +143,21 @@ def test_the_row_sequence_survives_the_seam():
     stops being trivial the moment a family reindexes or reorders, which would
     misalign the `split` mask that fitted families select train rows with."""
     frame = order_by_time(interim([1, 2, 3], [300, 100, 200]))
+    frame["split"] = "train"
+
     assert list(build_features(frame, FEATURES_CFG)["TransactionID"]) == list(
         frame["TransactionID"]
     )
+
+
+def test_the_seam_needs_the_split_label():
+    """A fitted family reaches the training window through `split`, so the label
+    has to still be on the frame. If `partition` ever moved above the seam, this
+    is what would notice — the fit would silently have nowhere to look."""
+    frame = order_by_time(interim([1, 2], [100, 200]))
+
+    with pytest.raises(KeyError):
+        build_features(frame, FEATURES_CFG)
 
 
 # ------------------------------------------------------------------------------
@@ -214,6 +232,7 @@ def calendar():
             "day": days,
             "TransactionAmt": days * 10.0,
             "ProductCD": "W",
+            **dict.fromkeys(FREQUENCY_COLUMNS, "x"),
         }
     )
     splits = pd.DataFrame({"TransactionID": days, "split": assign_splits(days, boundaries)})

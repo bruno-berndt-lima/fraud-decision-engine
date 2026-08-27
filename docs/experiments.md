@@ -142,10 +142,10 @@ on unservable features or quietly dropping them.
 
 ---
 
-## E4 — Which feature families earn their place
+## E4 — What each feature family measurably adds
 
-**Status:** acceptance rule registered and the floor measured. Family results to
-follow, Phase 04.
+**Status:** detection threshold registered, floor measured, first family
+reported. Phase 04.
 
 **Question.** Of the feature families this phase builds — amount transforms,
 frequency encodings, entity aggregates, velocity, V-block representatives —
@@ -154,8 +154,16 @@ which actually add signal, and which only appear to?
 **Why it needs registering in advance.** The roadmap's trap for this phase is
 "adding features until the metric moves, with no hypothesis". The defence is not
 willpower; it is deciding *before* the first family exists how large a movement
-has to be to count. Otherwise every family is accepted, because on a metric with
-this much variance every family moves the number.
+has to be to count. Otherwise every family looks like it worked, because on a
+metric with this much variance every family moves the number.
+
+**This experiment does not select features.** Every family built in this phase
+ships in the feature matrices regardless of what it measures here, and Phase 05
+trains on all of them. A gradient-boosted tree is robust to columns it cannot
+use, and pre-selecting with a linear probe would discard precisely the features
+a tree exists to exploit. What follows is a **detection threshold** — how large a
+movement has to be before it is worth believing — not a gate. Nothing is
+accepted or rejected; families are characterised.
 
 ### Method
 
@@ -179,11 +187,11 @@ PR-AUC on `VAL-FIT`, reproducing `logistic_baseline.json` to full precision. Tha
 equality is the check that the Phase 04 feature matrices did not perturb the
 Phase 03 result.
 
-### The acceptance rule
+### The detection threshold
 
-> A family is accepted only if it beats `family_none` by more than the **largest**
-> PR-AUC gain achieved by the same number of columns of pure Gaussian noise,
-> over 20 seeds.
+> A family's delta is distinguishable from chance only if it exceeds the
+> **largest** PR-AUC gain achieved by the same number of columns of pure
+> Gaussian noise, over 20 seeds.
 
 Measured rather than assumed, because the number turned out to be large.
 Twenty seeds, one meaningless column each, against a 0.32169 baseline:
@@ -201,8 +209,8 @@ So a column carrying no information at all can add **+0.0043 PR-AUC** — about
 1.3% relative. Any family claiming less than that has demonstrated nothing.
 
 **The max rather than the 95th percentile.** A 5%-per-family error rate across
-roughly six families gives a 26% chance of accepting at least one pure-noise
-family somewhere in the sweep. The max costs almost nothing in sensitivity and
+roughly six families gives a 26% chance of calling at least one pure-noise family
+real somewhere in the sweep. The max costs almost nothing in sensitivity and
 removes that.
 
 **The floor is measured at the family's own width.** More columns are more
@@ -212,14 +220,32 @@ family's sweep is run at its own width and recorded beside it.
 
 **An observation, recorded rather than explained away.** 14 of 20 noise runs
 landed *above* baseline, and the mean delta is positive at +0.00094 — a sign test
-gives p ≈ 0.06. Marginal, and not pursued: the acceptance rule uses the maximum,
-which is unaffected by a small shift in the centre.
+gives p ≈ 0.06. Marginal, and not pursued: the threshold uses the maximum, which
+is unaffected by a small shift in the centre.
 
 ### What gets reported
 
-PR-AUC and recall@capacity on `VAL-FIT` for every family, **including the ones
-that fail the bar**. A family that does not clear the floor is reported as not
-clearing it, not quietly dropped.
+PR-AUC and recall@capacity on `VAL-FIT` for every family, **including — and
+especially — the ones that move nothing.** A family below the threshold is
+reported as below it, with the reason where one is known.
+
+### Blind spots, registered in advance
+
+The probe is linear, so a family whose relationship with fraud is non-monotonic,
+step-shaped, or symmetric cannot register no matter how real it is. Naming these
+before the runs is what keeps a null result from being read as evidence of
+absence:
+
+| family | shape of the relationship | linear probe can see it? |
+|---|---|---|
+| amount / round bands | spiky, and 0.33% of rows | no |
+| frequency encoding | non-monotonic on train: 0.75x, 0.98x, 1.24x, 0.95x, 1.08x by rarity quintile | no |
+| velocity | step-like — one transaction is normal, eight is not | barely |
+| entity deviation | symmetric in the absolute z-score | not unless the absolute value is built |
+| V-block reduction | a dense, largely linear block | yes |
+
+A null result on a row marked "no" is uninformative about the feature and
+informative about the probe. Phase 05 is where those families get a fair test.
 
 ### What the result does not do
 
@@ -265,7 +291,7 @@ Stated as one number rather than a per-width maximum because the maximum of
 twenty draws is itself unstable — it moved by more between widths than the
 underlying spread did.
 
-### Result — the amount family: rejected
+### Result — the amount family: no measurable gain
 
 | | PR-AUC | ROC-AUC | recall @ 1% | recall @ 2% |
 |---|---:|---:|---:|---:|
@@ -273,8 +299,9 @@ underlying spread did.
 | `family_amount` | 0.32054 | 0.82092 | 16.53% | 24.47% |
 | delta | **−0.00115** | −0.00493 | +0.00302 | +0.00553 |
 
-**Rejected: the delta is negative.** It sits about 0.7σ from the width-3 mean —
-indistinguishable from three columns of noise, in the unhelpful direction.
+**Below the threshold, and negative.** It sits about 0.7σ from the width-3 mean
+— indistinguishable from three columns of noise, in the unhelpful direction. The
+columns stay in the matrices; this is a measurement, not a removal.
 
 **Why, and it is not because the feature is wrong.** H2's signal is real and it
 generalises: `amt_round_band_product` carries 6.02× lift on train and **5.71× on
@@ -308,14 +335,14 @@ It should have specified both from the start.
 **Resolution, settled before the next family was built** — deliberately, so that
 it is a rule and not a reaction to the number above.
 
-> **PR-AUC is the single acceptance gate.** Recall@capacity is measured against
-> its own floor and reported for every family, but never decides acceptance.
+> **The threshold applies to PR-AUC alone.** Recall@capacity is measured against
+> its own floor and reported for every family, but no claim is made from it.
 
 Two reasons, neither of which is "PR-AUC gave the answer we already had".
 
-*One gate, so there is nothing to shop for.* The moment two metrics can each
-admit a family, every borderline family gets argued on whichever one flatters
-it, and the pre-registration stops doing any work.
+*One threshold, so there is nothing to shop for.* The moment two metrics can
+each vindicate a family, every borderline family gets argued on whichever one
+flatters it, and the pre-registration stops doing any work.
 
 *PR-AUC is the more stable statistic.* It is threshold-free and scores the whole
 ranking. Recall@capacity is a single cut over roughly 570 reviewed rows, so it
@@ -324,10 +351,63 @@ small effects feature families produce.
 
 The narrowing costs little, because **recall@capacity is not being ignored — it
 is being optimised properly later.** Phase 06 derives the decision threshold
-against a real cost matrix on `VAL-CAL`. Using it as a feature gate in Phase 04
-would be a worse version of a job that phase does with the right instrument.
+against a real cost matrix on `VAL-CAL`. Reading feature claims off it in Phase
+04 would be a worse version of a job that phase does with the right instrument.
 
-**Consequence, stated plainly.** The amount family stays rejected on −0.00115,
-and its +6 frauds at the 1% capacity are recorded as an observation, not a
-result. If Phase 05 finds the same columns valuable to a tree, that is a fact
-about linear probes, not a reason to revisit this decision.
+**Consequence, stated plainly.** The amount family's +6 frauds at the 1% capacity
+are recorded as an observation, not a result.
+
+### Handoff to Phase 05
+
+Phase 04 hands Phase 05 **every family it builds**, with a measured delta and a
+stated blind spot beside each. The numbers here are evidence about what a linear
+model can use; they are not a feature-selection decision, and Phase 05's DoD
+contains no ablation of its own. Running the family comparison again with the
+trained LightGBM — where the fits are already being paid for, and where E3's
+servable-versus-history question needs a model that can actually use velocity —
+belongs there rather than here.
+
+### Result — the frequency family: worse than noise
+
+Seven columns — `card1`, `card2`, `card3`, `card5`, `addr1`, `addr2`,
+`DeviceInfo` — each encoded as its level's share of the training rows.
+
+| | PR-AUC | ROC-AUC | recall @ 0.5% | recall @ 1% | recall @ 2% |
+|---|---:|---:|---:|---:|---:|
+| `family_none` | 0.32169 | 0.82585 | 10.05% | 16.23% | 23.92% |
+| `family_frequency` | 0.31652 | 0.82269 | 9.75% | 16.08% | 24.12% |
+| delta | **−0.00517** | −0.00316 | −0.00302 | −0.00151 | +0.00201 |
+
+**Below the minimum of all 40 noise draws** (−0.00356). Seven columns of
+frequency encoding cost this probe more than seven columns of pure noise would.
+
+**The blind spot registered above fired exactly as written.** Rarity's
+relationship with fraud is not monotonic — by quintile on train, `card1` runs
+0.75x, 0.98x, **1.24x**, 0.95x, 1.08x. A linear model can only fit a monotonic
+term to that, so it does not merely fail to gain: it spends coefficients on a
+shape it cannot represent, adding variance with no signal to pay for it. At
+`C=1.0` nothing shrinks those coefficients to zero.
+
+**Caveat on the strength of the claim.** The floor was measured at widths 1 and
+3; this family is width 7. Against the pooled σ of 0.00156 the delta is about
+3.3σ, which indicates real harm rather than chance — but the extrapolation to
+width 7 is not itself measured, so "worse than noise" is well-indicated and not
+certified.
+
+**What this does not say.** Frequency encoding is standard practice for
+gradient-boosted trees, and for a good reason this result illustrates rather than
+contradicts: a tree splits on the *value* of a frequency, so a non-monotonic
+relationship is exactly what it handles and exactly what a linear term cannot.
+The result here is about the probe, and it is the cleanest demonstration in the
+phase of why a null — or negative — reading from a linear probe is uninformative
+about a feature.
+
+The seven columns stay in the matrices, and `models/encoders.parquet` carries the
+fitted rates. That file is what makes the family **tier 2** on the serving table:
+a static lookup shipped beside the model, no online store, no entity history.
+
+**Method note.** Measuring the floor was split out of the family run
+(`make floor` against `make families`) after this result. The floor is
+deterministic given its seeds, so recomputing it per family run spent eighteen
+minutes reproducing a constant; family runs now take under ninety seconds, which
+is what makes the remaining families cheap to evaluate.

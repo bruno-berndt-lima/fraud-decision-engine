@@ -1,6 +1,6 @@
 {
-  "name": "family_none",
-  "created": "2026-08-27T20:00:16+00:00",
+  "name": "family_frequency",
+  "created": "2026-08-27T20:01:12+00:00",
   "git_revision": "d6202f562514b5726498d035e18d612fd9d96e09-dirty",
   "capacities": [
     0.005,
@@ -12,38 +12,38 @@
       "n": 57464,
       "positives": 1990,
       "base_rate": 0.03463037727968815,
-      "pr_auc": 0.3216861226377848,
-      "roc_auc": 0.8258515239064413,
+      "pr_auc": 0.3165200654547293,
+      "roc_auc": 0.8226923183534937,
       "recall_at_capacity": [
         {
-          "recall": 0.10050251256281408,
+          "recall": 0.09748743718592964,
           "reviewed": 279,
-          "caught": 200,
+          "caught": 194,
           "positives": 1990,
           "capacity": 0.005,
           "ambiguous_days": 0,
           "recall_ceiling": 0.14020100502512564,
-          "share_of_ceiling": 0.7168458781362007
+          "share_of_ceiling": 0.6953405017921146
         },
         {
-          "recall": 0.1623115577889447,
+          "recall": 0.16080402010050251,
           "reviewed": 567,
-          "caught": 323,
+          "caught": 320,
           "positives": 1990,
           "capacity": 0.01,
-          "ambiguous_days": 1,
+          "ambiguous_days": 3,
           "recall_ceiling": 0.28492462311557787,
-          "share_of_ceiling": 0.5696649029982364
+          "share_of_ceiling": 0.5643738977072311
         },
         {
-          "recall": 0.23919597989949748,
+          "recall": 0.24120603015075376,
           "reviewed": 1140,
-          "caught": 476,
+          "caught": 480,
           "positives": 1990,
           "capacity": 0.02,
           "ambiguous_days": 1,
           "recall_ceiling": 0.5728643216080402,
-          "share_of_ceiling": 0.4175438596491228
+          "share_of_ceiling": 0.42105263157894735
         }
       ]
     }

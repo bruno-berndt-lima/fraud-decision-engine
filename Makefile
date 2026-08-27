@@ -57,10 +57,13 @@ LOGISTIC  := $(REPORTS_DIR)/metrics/logistic_baseline.json
 # note above, the JSON stands for the pair — so the figures stage depends on the
 # records, not on the parquets it actually reads. Also tracked.
 FIGURES   := $(REPORTS_DIR)/figures/pr_curve_baselines.png
-# Phase 04. Stands for the whole family-evaluation stage per the note above: the
-# per-family records land beside it in $(REPORTS_DIR)/metrics. Tracked, like the
-# other reports/ outputs.
+# Phase 04. Two separate stages, deliberately. The floor calibrates the probe and
+# is deterministic given its seeds, so it is measured when the probe changes, not
+# when the families do — folding it into the family run would recompute a
+# constant for eighteen minutes. FAMILIES stands for the per-family records, per
+# the single-sentinel note above. Both tracked, like the other reports/ outputs.
 FAMILY_FLOOR := $(REPORTS_DIR)/metrics/noise_floor.csv
+FAMILIES     := $(REPORTS_DIR)/metrics/family_none.json
 
 # ==============================================================================
 # Meta
@@ -167,15 +170,24 @@ $(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
 # dependencies a stage has rather than the ones it happens to inherit.
 $(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
              src/fraud_engine/features/build.py \
-             src/fraud_engine/features/amounts.py | $(FEATURES_DIR)
+             src/fraud_engine/features/amounts.py \
+             src/fraud_engine/features/encoders.py | $(FEATURES_DIR) $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.features.build
 
-# Depends on logistic.py because the probe IS the logistic pipeline: a change to
-# build_pipeline changes every family's number, so the records must go stale.
+# Both depend on logistic.py because the probe IS the logistic pipeline: a change
+# to build_pipeline changes every family's number and the floor they are read
+# against, so both must go stale.
 $(FAMILY_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+                 src/fraud_engine/features/floor.py \
                  src/fraud_engine/features/evaluate.py \
                  src/fraud_engine/models/logistic.py \
-                 src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+                 src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.features.floor
+
+$(FAMILIES): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+             src/fraud_engine/features/evaluate.py \
+             src/fraud_engine/models/logistic.py \
+             src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.features.evaluate
 
 $(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py | $(MODEL_DIR)
@@ -189,13 +201,14 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families train
+.PHONY: data splits baselines figures features families floor train
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
 figures:   $(FIGURES)   ## Redraw the baseline comparison figures from predictions
 features:  $(FEATURES)  ## Build train/val/test feature matrices
-families:  $(FAMILY_FLOOR) ## Score each feature family against the noise floor
+families:  $(FAMILIES)  ## Score each feature family on VAL-FIT
+floor:     $(FAMILY_FLOOR) ## Re-measure how far chance alone moves the metric
 train:     $(MODEL)     ## Train the model
 
 # ==============================================================================
