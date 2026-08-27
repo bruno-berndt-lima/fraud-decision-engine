@@ -7,7 +7,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
-from fraud_engine.features import aggregations, amounts, encoders
+from fraud_engine.features import aggregations, amounts, encoders, velocity
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +99,8 @@ def build_features(frame: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
     """
     frame = amounts.add_amount_features(frame, features_cfg["amounts"])
     frame = encoders.add_frequency_features(frame)
-    return aggregations.add_amount_stats(frame, features_cfg["aggregations"])
+    frame = aggregations.add_amount_stats(frame, features_cfg["aggregations"])
+    return velocity.add_velocity_features(frame, features_cfg["velocity"])
 
 
 def partition(frame: pd.DataFrame) -> dict[str, pd.DataFrame]:

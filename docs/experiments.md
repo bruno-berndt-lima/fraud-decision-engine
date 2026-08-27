@@ -487,3 +487,54 @@ tuned LightGBM should show gains where the linear probe showed losses,
 concentrated in the entity and frequency families. If it does not — if a tree
 also gains nothing from them — then the diagnosis here is wrong and the features
 are genuinely weak, and that outcome gets recorded too.
+
+### Result — the velocity family: the first that costs nothing
+
+Four columns over `card1`: transactions in the trailing 1h, 24h and 7d, and the
+log seconds since that card was last seen.
+
+| | PR-AUC | ROC-AUC | recall @ 0.5% | recall @ 1% | recall @ 2% |
+|---|---:|---:|---:|---:|---:|
+| `family_none` | 0.32169 | 0.82585 | 10.05% | 16.23% | 23.92% |
+| `family_velocity` | 0.32208 | 0.82542 | 10.05% | 16.13% | 24.32% |
+| delta | **+0.00039** | −0.00043 | 0.00000 | −0.00101 | +0.00402 |
+
+**Positive, and meaningless as a positive:** +0.00039 is 0.25σ against a floor σ
+of 0.00156, and the bar is +0.005. Velocity did not help.
+
+**It is a different null from the other three, and the difference is the point.**
+This is the only family in the phase whose relationship with fraud is
+*monotone* — log seconds since the card was last seen runs 1.49x, 1.00x, 0.90x,
+0.97x, 0.71x by quintile on train. The three non-monotone families each cost the
+probe between 0.001 and 0.005; the one monotone family costs nothing. A linear
+model is not harmed by a shape it can represent.
+
+**Half the diagnosis held; half did not, and that is recorded rather than
+argued away.** "The instrument cannot see these shapes" explains the amount,
+frequency and entity results. It does not explain velocity, where the shape was
+representable and the metric still did not move. Two candidates, neither tested:
+the recency signal may be partly redundant with `D3`, already in the probe at
+Spearman 0.34 — Vesta's own day-deltas are undocumented aggregates and this is
+the one that behaves like a recency measure; or a 2.1x spread across quintiles
+is simply too little for a global ranking metric on 1,990 positives. Phase 05's
+retrain is where that separates.
+
+**Deliberately not in the family, both measured first.** Burst ratios — a short
+window against a long one, the scale-free form of a count — turn over at the top
+(0.89x, 1.04x, 1.10x, 1.14x, 0.83x) and carry less than recency alone. And a
+first-sighting indicator: a card's first transaction has no predecessor, and its
+0.63x lift sits on top of the slowest recency quintile's 0.71x, so it belongs at
+the slow end of that scale rather than as a column of its own.
+
+**Implementation note, because it nearly went wrong quietly.** The first version
+used `groupby(...).rolling(window, on=...)`, whose result is indexed by
+timestamp rather than by row. With 33,932 rows sharing a `TransactionDT`,
+unwinding that misaligns counts across cards. Pandas happened to raise on this
+data; on a slightly different frame it would have returned wrong numbers with no
+error. The shipped version counts by binary search over each card's transaction
+times, so alignment depends on a row's position and never on its timestamp being
+unique — and a test reproduces the tie case that broke the first attempt.
+
+**This is the phase's only tier-3 family.** A trailing count needs the card's
+history at request time, which a single API call does not carry. E3 is where
+that cost gets priced.

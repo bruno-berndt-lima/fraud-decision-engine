@@ -1,0 +1,51 @@
+{
+  "name": "family_velocity",
+  "created": "2026-08-27T20:48:43+00:00",
+  "git_revision": "de332ac13eb68137e7b2432f824eb439342ff7be-dirty",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.32208067331085277,
+      "roc_auc": 0.8254180463553663,
+      "recall_at_capacity": [
+        {
+          "recall": 0.10050251256281408,
+          "reviewed": 279,
+          "caught": 200,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.14020100502512564,
+          "share_of_ceiling": 0.7168458781362007
+        },
+        {
+          "recall": 0.16130653266331657,
+          "reviewed": 567,
+          "caught": 321,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.28492462311557787,
+          "share_of_ceiling": 0.5661375661375662
+        },
+        {
+          "recall": 0.24321608040201004,
+          "reviewed": 1140,
+          "caught": 484,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.5728643216080402,
+          "share_of_ceiling": 0.42456140350877186
+        }
+      ]
+    }
+  }
+}

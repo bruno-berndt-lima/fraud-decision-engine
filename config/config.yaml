@@ -218,3 +218,14 @@ features:
     # Not tuned. Tuning it against VAL-FIT would make the family a small fitted
     # model rather than a feature.
     prior_strength: 10
+
+  # ----------------------------------------------------------------------------
+  # Velocity — the only tier-3 family
+  # ----------------------------------------------------------------------------
+  velocity:
+    # What "seconds since this card was last seen" means for a card never seen
+    # before. Not a null and not a flag: measured on train, a first sighting
+    # carries 0.63x lift against the slowest quintile's 0.71x, so it belongs at
+    # the slow end of the same scale. Longer than the widest window, so it can
+    # never be confused with a real gap.
+    first_seen_gap_days: 30
