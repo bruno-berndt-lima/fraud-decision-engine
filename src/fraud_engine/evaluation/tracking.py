@@ -24,6 +24,9 @@ from pathlib import Path
 
 import mlflow
 
+from fraud_engine.data.load import load_config
+from fraud_engine.evaluation.report import git_revision
+
 # Everything MLflow writes lives under the configured store directory: the
 # database beside the artifacts, so the whole record moves or is deleted as one
 # thing. Names are fixed here rather than in config — they are internal layout,
@@ -156,3 +159,42 @@ def flatten_metrics(report: dict) -> dict[str, float]:
                 put(f"{split}.{metric}_at_{suffix}", entry[metric])
 
     return flat
+
+
+def log_provenance(config_path: Path) -> None:
+    """Record what produced this run, onto the run already open.
+
+    Params rather than tags: params are immutable and become sortable columns in
+    the comparison view, which is the point. Split boundaries in particular have
+    to be columns — E1 varies ``gap_days`` and compares the two runs, and a value
+    visible only inside an attached file cannot be sorted on.
+
+    **The revision is ours, under the name the JSON already uses.** MLflow has a
+    standard ``mlflow.source.git.commit`` tag and does not populate it here, so
+    there is no second answer to overwrite; and it could not hold this one
+    anyway, because ``git_revision`` marks a dirty tree and a commit hash field
+    has nowhere to put that. The mark is the part that matters: a number from
+    uncommitted code cannot be reproduced from history.
+
+    **Both config files are attached.** ``cost_matrix.yaml`` is versioned
+    separately and every recall@capacity depends on it, so a run recorded
+    without it is comparable to nothing once those assumptions move.
+
+    Args:
+        config_path: Path to ``config.yaml``.
+
+    Raises:
+        RuntimeError: If no run is open. Logging outside a run makes MLflow
+            start one, which would bury the provenance in a stray run rather
+            than fail.
+    """
+    if mlflow.active_run() is None:
+        raise RuntimeError("log_provenance needs an open run; call it inside start_run")
+
+    config = load_config(config_path)
+
+    mlflow.log_param("git_revision", git_revision())
+    mlflow.log_params({f"split.{key}": value for key, value in config["splits"].items()})
+
+    mlflow.log_artifact(config_path)
+    mlflow.log_artifact(config["paths"]["cost_matrix"])
