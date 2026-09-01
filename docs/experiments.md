@@ -618,3 +618,68 @@ That is the phase's result, and it is worth more than the opposite outcome would
 have been. It says where the signal in this dataset actually lives, it says what
 a linear model can and cannot use, and it says that the most important thing to
 write down about this project is a limitation rather than a win.
+
+---
+
+## E5 — Is the train/validation gap the model, or the data it was given?
+
+**Status:** registered, not yet run. Phase 09.
+
+**Question.** Identity coverage falls sharply across the split boundary. How much
+of the gap between training and validation performance is the model failing to
+generalise, and how much is validation simply carrying less information per row?
+
+**The observation that prompted it**, measured in Phase 05 while fitting the
+LightGBM category vocabulary:
+
+| split | `has_identity` | `id_31` null |
+|---|---|---|
+| train (days 1–90) | 29.02% | 71.69% |
+| val_fit (121–140) | 17.87% | 82.67% |
+| val_cal (141–160) | 17.29% | 83.17% |
+
+A 38% relative fall in the share of rows carrying an identity block. This reaches
+further than the 38 `id_*` columns: Phase 04 found that most of the V-block
+presence flags are `has_identity` under another name, and the V block is where
+essentially all measured signal lives.
+
+**Why it is worth a run.** Without it, the default reading of any train/validation
+gap is overfitting, and the fix that reading suggests is regularisation. If a
+material share of the gap is feature availability, that fix is aimed at the wrong
+thing — and the same confusion propagates into Phase 09's decay chart, where a
+decline could be fraud behaviour changing or data collection changing. Those have
+opposite responses: one calls for retraining, the other for fixing an upstream
+pipeline. Nothing else in the project distinguishes them.
+
+**Method.** Stratify, do not re-fit. The shipped model scores the validation
+splits as it already does; the metrics are then reported separately for rows with
+and without an identity block, on both sides of the split boundary.
+
+| | train rows | validation rows |
+|---|---|---|
+| `has_identity` true | PR-AUC, recall@capacity | PR-AUC, recall@capacity |
+| `has_identity` false | PR-AUC, recall@capacity | PR-AUC, recall@capacity |
+
+If performance within each stratum is close across the boundary while the pooled
+figures differ, the gap is composition rather than generalisation, and the size
+of the compositional part is what this reports.
+
+**Two constraints, both load-bearing:**
+
+1. **`VAL-FIT` and `VAL-CAL` only.** The coverage numbers above stop at day 160
+   deliberately. Test's own coverage was read once, incidentally, during Phase 05
+   and is excluded from every figure and argument here — the honest handling of an
+   unnecessary look is to refuse to use it, not to pretend it did not happen.
+2. **No re-fit, no re-tune.** This is a re-reading of scores the shipped model
+   already produced. A model fitted per stratum would answer a different question
+   and would spend a training decision on something measurement can settle.
+
+**What gets reported.** The four cells above, and the share of the pooled gap
+attributable to composition. Both directions are publishable: "the gap is almost
+entirely generalisation" is as useful as the alternative, because it retires an
+explanation that would otherwise stay plausible forever.
+
+**What the result does not do.** It changes no threshold, no hyperparameter and
+no feature. The shipped model is already chosen by then. It changes how the
+Phase 09 decay chart is *read*, and it is a caveat on the Phase 05 headline
+rather than a correction to it.
