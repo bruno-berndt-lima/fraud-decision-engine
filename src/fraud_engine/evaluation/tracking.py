@@ -65,3 +65,94 @@ def configure_tracking(tracking_cfg: dict) -> None:
     if mlflow.get_experiment_by_name(name) is None:
         mlflow.create_experiment(name, artifact_location=artifacts.as_uri())
     mlflow.set_experiment(name)
+
+
+# What varies between runs, and therefore what the comparison view is for.
+# ``n``, ``positives`` and ``base_rate`` are constant for a given split, so they
+# are not comparisons — they are the check that two runs scored the same
+# population, which is worth three columns.
+SPLIT_METRICS = ("pr_auc", "roc_auc", "base_rate", "n", "positives")
+
+# Per capacity. ``reviewed`` and ``caught`` are omitted: with n fixed they are
+# monotone in recall and say nothing extra, and every excluded column makes the
+# comparison table harder to read. ``recall_ceiling`` is a property of the data
+# rather than of the run; ``share_of_ceiling`` is the part that varies.
+# ``ambiguous_days`` stays because it flags a capacity cut landing inside a tied
+# block of scores, which is otherwise invisible here.
+CAPACITY_METRICS = ("recall", "share_of_ceiling", "ambiguous_days")
+
+
+def capacity_suffix(capacity: float) -> str:
+    """A review capacity as a whole number of basis points, for use in a name.
+
+    Basis points rather than a percentage so the suffix carries no decimal
+    point, leaving the dot to mean one thing: the split prefix. A capacity that
+    is not a whole number of basis points is refused rather than rounded,
+    because rounding is how two capacities silently become one name.
+
+    Args:
+        capacity: A review capacity as a fraction, e.g. ``0.01``.
+
+    Returns:
+        e.g. ``"100bps"``.
+
+    Raises:
+        ValueError: If the capacity is not a whole number of basis points.
+    """
+    points = capacity * 10_000
+    rounded = round(points)
+
+    if abs(points - rounded) > 1e-9:
+        raise ValueError(
+            f"capacity {capacity!r} is {points} basis points, which is not whole; "
+            "it has no unambiguous metric name"
+        )
+
+    return f"{rounded}bps"
+
+
+def flatten_metrics(report: dict) -> dict[str, float]:
+    """A metrics record as MLflow's flat ``{name: float}`` space.
+
+    MLflow takes scalars; ``build_report`` produces a nested record whose
+    per-capacity results are a list. The flattening is therefore a naming
+    scheme, and the scheme is the part that is expensive to change: renaming a
+    metric partitions the run history into "before" and "after" and the
+    comparison view — the whole reason the tool is here — stops working across
+    the boundary.
+
+    ``{split}.{metric}``, and ``{split}.{metric}_at_{capacity}bps`` for the
+    per-capacity results. The dot is the split prefix and nothing else, which is
+    what makes the MLflow UI group the columns.
+
+    Whatever splits the record holds are flattened. This is not the guard on
+    scoring TEST — that lives in ``report.DEFAULT_SPLITS``. If a test column
+    appears here, the run already touched test and the leak happened upstream.
+
+    Args:
+        report: A record as ``report.build_report`` returned it.
+
+    Returns:
+        ``{name: value}``, ready for ``mlflow.log_metrics``.
+
+    Raises:
+        ValueError: If two entries claim the same name — which would otherwise
+            mean one silently overwriting the other.
+    """
+    flat: dict[str, float] = {}
+
+    def put(name: str, value: float) -> None:
+        if name in flat:
+            raise ValueError(f"duplicate metric name {name!r}: one value would overwrite the other")
+        flat[name] = float(value)
+
+    for split, block in report["splits"].items():
+        for metric in SPLIT_METRICS:
+            put(f"{split}.{metric}", block[metric])
+
+        for entry in block["recall_at_capacity"]:
+            suffix = capacity_suffix(entry["capacity"])
+            for metric in CAPACITY_METRICS:
+                put(f"{split}.{metric}_at_{suffix}", entry[metric])
+
+    return flat
