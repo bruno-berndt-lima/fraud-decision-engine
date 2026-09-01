@@ -20,6 +20,8 @@ which the skinny package omits and which MLflow 3 now requires.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import mlflow
@@ -198,3 +200,34 @@ def log_provenance(config_path: Path) -> None:
 
     mlflow.log_artifact(config_path)
     mlflow.log_artifact(config["paths"]["cost_matrix"])
+
+
+@contextmanager
+def tracked_run(name: str, params: dict, config_path: Path) -> Iterator[None]:
+    """Open a run, record what it is and what produced it, and close it.
+
+    Provenance is logged before the caller's params, so a run identifies itself
+    before it describes its settings — and so a run that dies mid-body still
+    says which commit it came from.
+
+    A failing body does not lose the run: ``start_run`` marks it FAILED and
+    keeps everything logged so far. A crashed experiment that leaves no trace is
+    how the same mistake gets made twice.
+
+    ``log_params`` raises if a key is already set to a different value, so a
+    caller cannot quietly shadow ``git_revision`` or a ``split.*`` boundary. That
+    collision is a bug worth hearing about, not a precedence rule.
+
+    Args:
+        name: Run name, as it appears in the comparison view.
+        params: This run's own settings — hyperparameters, feature set, variant.
+        config_path: Path to ``config.yaml``, for ``log_provenance``.
+
+    Yields:
+        Nothing. Log metrics and models inside the block with ``mlflow`` calls;
+        the run is already active.
+    """
+    with mlflow.start_run(run_name=name):
+        log_provenance(config_path)
+        mlflow.log_params(params)
+        yield
