@@ -68,3 +68,50 @@ def fit_categories(train: pd.DataFrame, min_rows: int) -> dict[str, pd.Index]:
         vocabulary[column] = pd.Index([*frequent, *SENTINELS], dtype="object")
 
     return vocabulary
+
+
+def apply_categories(frame: pd.DataFrame, vocabulary: dict[str, pd.Index]) -> pd.DataFrame:
+    """Re-level every categorical against the fitted vocabulary.
+
+    This is where the split files stop carrying a vocabulary built from the
+    whole table. Afterwards each categorical holds exactly the levels
+    ``fit_categories`` learned, in that order, so a code means the same thing in
+    every split — which is the property that lets the model be trained on one and
+    scored on another at all.
+
+    Order matters in the body: nulls become ``MISSING`` *before* the membership
+    test, because a null is not an unrecognised value. Testing first would route
+    every missing field into ``OTHER`` and merge two facts the model should be
+    able to tell apart.
+
+    Args:
+        frame: Any split's matrix.
+        vocabulary: ``{column: levels}`` from ``fit_categories``.
+
+    Returns:
+        A new frame — the input is not modified — whose fitted columns are
+        null-free and carry the fitted dtype.
+
+    Raises:
+        ValueError: If the frame carries a categorical the fit never saw. Left
+            alone it would keep its whole-frame vocabulary, which is the exact
+            defect this function exists to remove, and nothing downstream would
+            look wrong.
+        KeyError: If a fitted column is absent from the frame.
+    """
+    unfitted = set(frame.select_dtypes("category").columns) - set(vocabulary)
+    if unfitted:
+        raise ValueError(
+            f"categorical columns with no fitted vocabulary: {sorted(unfitted)}; "
+            "they would keep the vocabulary the whole table gave them"
+        )
+
+    prepared = frame.copy()
+
+    for column, levels in vocabulary.items():
+        values = prepared[column].astype("object").fillna(MISSING)
+        prepared[column] = values.where(values.isin(levels), OTHER).astype(
+            pd.CategoricalDtype(levels)
+        )
+
+    return prepared
