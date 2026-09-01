@@ -275,3 +275,14 @@ tracking:
   # phase would put the runs the comparison view exists to compare into separate
   # tables.
   experiment_name: fraud-decision-engine
+
+# ------------------------------------------------------------------------------
+# Phase 05 — LightGBM
+# ------------------------------------------------------------------------------
+model:
+  # Occurrences in train below which a category level is not learned separately.
+  # A tree splitting on a level backed by three transactions has memorised three
+  # transactions. 50 matches the logistic probe's OneHotEncoder min_frequency
+  # and the V-block's min_observed_rows, so "too rare to fit" means one thing
+  # across the project.
+  min_category_rows: 50
