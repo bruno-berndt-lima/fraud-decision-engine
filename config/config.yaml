@@ -256,3 +256,22 @@ features:
     # handful of observations is noise. Matches the probe's own OneHotEncoder
     # min_frequency, which excludes rare levels for the same stated reason.
     min_observed_rows: 50
+
+# ------------------------------------------------------------------------------
+# Phase 05 — experiment tracking
+# ------------------------------------------------------------------------------
+tracking:
+  # A directory, not a URI. MLflow 3 retired the file store, so the local
+  # backend is now SQLite, and a sqlite: URI embeds an absolute path that has to
+  # be resolved anyway. Pointing this at a tracking server would change
+  # authentication and artifact proxying too, so one key was never going to
+  # cover it.
+  #
+  # Gitignored: a store, not a deliverable. The deliverables are the tracked
+  # JSONs in reports/metrics/, and every run writes both.
+  store: mlruns
+
+  # One experiment for the project, one run per training attempt. Splitting by
+  # phase would put the runs the comparison view exists to compare into separate
+  # tables.
+  experiment_name: fraud-decision-engine

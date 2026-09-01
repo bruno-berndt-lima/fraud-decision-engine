@@ -8,11 +8,15 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.19.1",
+    "lightgbm>=4.7.0",
+    "mlflow-skinny>=3.15.2",
     "pandas>=3.0.5",
     "pandera>=0.32.1",
     "pyarrow>=25.0.1",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.9.0",
+    "sqlalchemy>=2.0.52",
 ]
 
 [build-system]
@@ -28,6 +32,14 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.2",
 ]
+
+[tool.uv]
+# cryptography stopped shipping macOS x86_64 wheels after 46.0.3, and this is an
+# Intel Mac. Without the ceiling it is built from source, which needs OpenSSL
+# headers that are not here. A constraint rather than a dependency: the project
+# never imports cryptography, it only arrives under mlflow-skinny via
+# databricks-sdk, so this bounds a transitive package without claiming to use it.
+constraint-dependencies = ["cryptography<=46.0.3"]
 
 [tool.ruff]
 line-length = 100
