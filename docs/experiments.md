@@ -683,3 +683,88 @@ explanation that would otherwise stay plausible forever.
 no feature. The shipped model is already chosen by then. It changes how the
 Phase 09 decay chart is *read*, and it is a caveat on the Phase 05 headline
 rather than a correction to it.
+
+---
+
+## E6 — How large does a difference have to be before it is a difference?
+
+**Status:** registered, spread not yet measured. Phase 05.
+
+**Question.** Two LightGBM configurations score differently on `VAL-FIT`. How much
+of that gap can be produced by nothing at all?
+
+**Why it needs registering in advance.** This is E4's problem one level up. There
+the trap was adding features until the metric moved; here it is accepting
+hyperparameters until the metric moves. The defence is the same, and it only
+works if the bar exists before the search does — a tuning run picks the best of
+many trials, and the maximum of noise is biased upward whether or not anyone
+intends it.
+
+**What prompted it.** Three seeds, identical in every other respect:
+
+| configuration | `VAL-FIT` average precision | best iteration |
+|---|---|---|
+| defaults, seed 0 | 0.51557624 | 133 |
+| defaults, seed 1 | 0.51557624 | 133 |
+| defaults, seed 2 | 0.51557624 | 133 |
+| `feature_fraction` 0.8, `bagging` 0.8, seed 0 | 0.53496591 | 400 |
+| same, seed 1 | 0.51963314 | 346 |
+| same, seed 2 | 0.52497724 | 463 |
+
+**The untuned reference has no seed sensitivity at all**, because LightGBM's
+defaults sample neither rows nor columns. Every digit is identical. That is worth
+recording on its own: it means the reference is exactly reproducible, and it
+means a seed-spread measured *there* would be zero and would describe nothing
+about the search.
+
+Turn subsampling on and the same configuration spans 0.0153 across three seeds,
+with the best iteration moving by over a hundred trees. The seed changes the
+subsample, which changes the validation curve, which changes where early stopping
+lands, which changes the model. The variance compounds.
+
+The gap between the best of those three seeds and the untuned reference is
++0.019. The gap between the worst and the reference is +0.004. Reporting the
+first as what subsampling bought would be a claim resting entirely on a lucky
+draw.
+
+### Method
+
+**Characterising the spread.** `k` seeds at each of a small number of points in
+the search space, plus the untuned reference. Only the seed varies within a
+point. Reported as mean and standard deviation of `VAL-FIT` PR-AUC, and as the
+spread in best iteration, since that is where the mechanism lives.
+
+**The acceptance rule, fixed here.** During the search every trial uses one fixed
+seed, so trials are comparable to each other. The winner is not accepted on that
+number. Instead the winning configuration **and the untuned reference** are each
+re-run under `k` seeds, and the winner is accepted only if
+
+```
+mean(candidate) − mean(reference)  >  σ(candidate) + σ(reference)
+```
+
+**This is deliberately stricter than a significance test.** The standard error of
+a difference of means shrinks with `k`; the sum of the standard deviations does
+not. The stricter bar is the price of having selected the candidate as the
+maximum over many trials, which no single-comparison test accounts for.
+
+**Two constraints:**
+
+1. **`VAL-FIT` only.** Tuning already spends that slice; `VAL-CAL` is Phase 06's
+   and is not read here.
+2. **Distributions, not points.** A comparison of two single runs is not
+   evidence, and this entry exists to say so before any single run is available
+   to be flattering.
+
+**What gets reported.** The measured spread, and for the final candidate both
+means, both standard deviations, and whether the rule accepted it.
+
+**Both outcomes ship.** If the tuned model does not clear the bar, the untuned
+reference is what Phase 06 calibrates and Phase 08 serves, and Phase 05 reports
+that tuning bought nothing measurable. That is a publishable result, and a more
+interesting one than a tuned model that beat its own noise by half a standard
+deviation.
+
+**What the result does not do.** It does not choose hyperparameters — the search
+does. It decides whether the search's answer is distinguishable from its
+starting point.
