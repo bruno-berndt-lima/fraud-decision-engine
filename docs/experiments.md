@@ -756,6 +756,31 @@ maximum over many trials, which no single-comparison test accounts for.
    evidence, and this entry exists to say so before any single run is available
    to be flattering.
 
+### What this bar does not cover
+
+**Seed noise and early-stopping optimism are different things, and only the
+first is measured here.** Early stopping picks the best round from the
+`VAL-FIT` curve, so a configuration that trains for many rounds has more
+opportunities to land on a lucky peak than one that stops early. The measured
+points differ by an order of magnitude in exactly that respect — the untuned
+reference chooses among a hundred-odd rounds, the aggressive point among nearly
+two thousand — so comparing them on `VAL-FIT` is not entirely fair to the
+shorter one.
+
+The effect is smaller than the round counts suggest, because a boosting curve is
+smooth rather than a sequence of independent draws, and the number of effectively
+independent chances is far below the number of rounds. But the direction is real
+and it favours the longer run. It is recorded here rather than corrected: the
+correction would need a slice neither this experiment nor Phase 05 is allowed to
+spend, and `VAL-CAL` in Phase 06 is where the shipped model meets data that
+neither tuning nor early stopping has touched.
+
+**A run that exhausts its round budget is not evidence at all.** If
+`num_boost_round` binds before the patience window closes, the reported best
+iteration is where the budget ended, not where the metric peaked — and LightGBM
+reports it identically either way. `fit` raises on that condition rather than
+letting such a run into a comparison.
+
 **What gets reported.** The measured spread, and for the final candidate both
 means, both standard deviations, and whether the rule accepted it.
 

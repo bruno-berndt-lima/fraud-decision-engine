@@ -18,6 +18,7 @@ from fraud_engine.models.train import (
     CONTRACT_PARAMS,
     apply_categories,
     feature_columns,
+    fit,
     fit_categories,
     resolve_params,
     score,
@@ -217,3 +218,30 @@ def test_the_parent_directory_is_created(tmp_path: Path, matrices: dict[str, pd.
 
 def test_the_features_are_what_the_booster_was_given(matrices: dict[str, pd.DataFrame]):
     assert feature_columns(matrices["train"]) == FEATURES
+
+
+# ------------------------------------------------------------------------------
+# fit — the ceiling
+# ------------------------------------------------------------------------------
+
+
+def datasets(matrices: dict[str, pd.DataFrame]) -> tuple[lgb.Dataset, lgb.Dataset]:
+    train = to_dataset(matrices["train"], FEATURES)
+    return train, to_dataset(matrices["val_fit"], FEATURES, reference=train)
+
+
+def test_a_run_that_exhausts_its_round_budget_is_refused(matrices: dict[str, pd.DataFrame]):
+    train, val_fit = datasets(matrices)
+    cfg = {**MODEL_CFG, "num_boost_round": 5, "early_stopping_rounds": 50}
+
+    with pytest.raises(ValueError, match="bound before early stopping"):
+        fit(train, val_fit, cfg)
+
+
+def test_a_run_with_room_to_stop_is_returned(matrices: dict[str, pd.DataFrame]):
+    train, val_fit = datasets(matrices)
+    cfg = {**MODEL_CFG, "num_boost_round": 500, "early_stopping_rounds": 10}
+
+    booster = fit(train, val_fit, cfg)
+
+    assert booster.best_iteration + cfg["early_stopping_rounds"] <= cfg["num_boost_round"]

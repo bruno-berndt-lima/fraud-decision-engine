@@ -364,6 +364,12 @@ def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booste
     repeatable result given the same data, parameters *and thread count*, so this
     reproduces on the machine that ran it. Nothing here claims more than that.
 
+    **The ceiling has to not bind.** ``num_boost_round`` is a stop, not a
+    choice: if training runs out of rounds before the patience window closes,
+    ``best_iteration`` is simply the last round, and the model is where the
+    budget ended rather than where the metric peaked. LightGBM reports that the
+    same way it reports a real peak, so it is checked rather than trusted.
+
     Args:
         train: The training dataset.
         val_fit: The early-stopping dataset, referencing ``train``'s bins.
@@ -373,19 +379,29 @@ def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booste
         A booster truncated to its best iteration.
 
     Raises:
-        ValueError: If config sets a contract parameter.
+        ValueError: If config sets a contract parameter, or if the round ceiling
+            bound before early stopping could confirm a peak.
     """
-    return lgb.train(
+    patience, ceiling = model_cfg["early_stopping_rounds"], model_cfg["num_boost_round"]
+
+    booster = lgb.train(
         resolve_params(model_cfg),
         train,
-        num_boost_round=model_cfg["num_boost_round"],
+        num_boost_round=ceiling,
         valid_sets=[val_fit],
         valid_names=["val_fit"],
-        callbacks=[
-            lgb.early_stopping(model_cfg["early_stopping_rounds"]),
-            lgb.log_evaluation(period=100),
-        ],
+        callbacks=[lgb.early_stopping(patience), lgb.log_evaluation(period=100)],
     )
+
+    if booster.best_iteration + patience > ceiling:
+        raise ValueError(
+            f"num_boost_round={ceiling} bound before early stopping could confirm a peak: "
+            f"best_iteration={booster.best_iteration} leaves no room for {patience} rounds "
+            "of patience. Raise the ceiling; the reported best iteration is the budget, "
+            "not a measured optimum."
+        )
+
+    return booster
 
 
 def score(
