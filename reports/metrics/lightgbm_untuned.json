@@ -1,0 +1,90 @@
+{
+  "name": "lightgbm_untuned",
+  "created": "2026-09-02T18:20:44+00:00",
+  "git_revision": "e6a76d71ab205b80689f8c9e394f33c8dcf4ef55-dirty",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.5155762429915699,
+      "roc_auc": 0.8985122415988078,
+      "recall_at_capacity": [
+        {
+          "recall": 0.1221105527638191,
+          "reviewed": 279,
+          "caught": 243,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 1,
+          "recall_ceiling": 0.14020100502512564,
+          "share_of_ceiling": 0.8709677419354839
+        },
+        {
+          "recall": 0.22613065326633167,
+          "reviewed": 567,
+          "caught": 450,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 1,
+          "recall_ceiling": 0.28492462311557787,
+          "share_of_ceiling": 0.7936507936507937
+        },
+        {
+          "recall": 0.3793969849246231,
+          "reviewed": 1140,
+          "caught": 755,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.5728643216080402,
+          "share_of_ceiling": 0.6622807017543859
+        }
+      ]
+    },
+    "val_cal": {
+      "n": 56949,
+      "positives": 1796,
+      "base_rate": 0.031536989235983075,
+      "pr_auc": 0.4601048167107953,
+      "roc_auc": 0.8801955994292775,
+      "recall_at_capacity": [
+        {
+          "recall": 0.14365256124721604,
+          "reviewed": 275,
+          "caught": 258,
+          "positives": 1796,
+          "capacity": 0.005,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.15311804008908686,
+          "share_of_ceiling": 0.9381818181818182
+        },
+        {
+          "recall": 0.24832962138084633,
+          "reviewed": 559,
+          "caught": 446,
+          "positives": 1796,
+          "capacity": 0.01,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.31124721603563477,
+          "share_of_ceiling": 0.7978533094812164
+        },
+        {
+          "recall": 0.36469933184855235,
+          "reviewed": 1130,
+          "caught": 655,
+          "positives": 1796,
+          "capacity": 0.02,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.6291759465478842,
+          "share_of_ceiling": 0.5796460176991151
+        }
+      ]
+    }
+  }
+}
