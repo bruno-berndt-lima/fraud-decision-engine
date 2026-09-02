@@ -23,6 +23,7 @@ PATH_PAIRS = [
     ("COST_MATRIX", "paths.cost_matrix"),
     ("FEATURES_DIR", "paths.features_dir"),
     ("PREDICTIONS_DIR", "paths.predictions_dir"),
+    ("MODEL", "paths.model"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment
@@ -33,7 +34,7 @@ PATH_PAIRS = [
 # still hashes to docs/raw_checksums.txt. No Python reads it. It is listed here
 # rather than left to the suffix filter below, which skips it by accident —
 # Path(".verified").suffix is "" — so the exemption is stated, not incidental.
-SENTINEL_ONLY = {"FEATURES", "MODEL", "VERIFIED"}
+SENTINEL_ONLY = {"FEATURES", "VERIFIED"}
 
 
 @pytest.fixture(scope="module")

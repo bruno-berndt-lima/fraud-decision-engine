@@ -12,12 +12,22 @@ lets it memorise three transactions — which is why the vocabulary has a floor.
 
 from __future__ import annotations
 
+import json
+import logging
 from pathlib import Path
 
 import lightgbm as lgb
+import mlflow
 import pandas as pd
 
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
+from fraud_engine.evaluation.report import load_capacities, write_run
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    flatten_metrics,
+    tracked_run,
+)
 from fraud_engine.features.encoders import MISSING
 
 # Levels the training window never saw, and levels it saw too rarely to learn
@@ -42,6 +52,10 @@ CONTRACT_PARAMS = {
     "force_row_wise": True,
     "verbosity": -1,
 }
+
+log = logging.getLogger(__name__)
+
+RUN_NAME = "lightgbm_untuned"
 
 LABEL = "isFraud"
 
@@ -296,6 +310,33 @@ def to_dataset(
     )
 
 
+def resolve_params(model_cfg: dict) -> dict:
+    """What actually reaches LightGBM: the contract, the tuned knobs, the seed.
+
+    One function because two callers need the same answer — ``fit`` to train with
+    them and ``main`` to record them — and a run whose logged parameters were
+    computed separately from the ones it trained on is a run that cannot be
+    reproduced from its own record.
+
+    Args:
+        model_cfg: The ``model:`` config block.
+
+    Returns:
+        The merged parameter mapping.
+
+    Raises:
+        ValueError: If config sets a contract parameter.
+    """
+    overridden = set(model_cfg["tuned"]) & set(CONTRACT_PARAMS)
+    if overridden:
+        raise ValueError(
+            f"contract parameters cannot be set from config: {sorted(overridden)}; "
+            "changing them changes what every earlier run's number meant"
+        )
+
+    return {**CONTRACT_PARAMS, **model_cfg["tuned"], "seed": model_cfg["seed"]}
+
+
 def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booster:
     """Train until ``VAL-FIT`` stops improving, and keep the best round.
 
@@ -334,17 +375,8 @@ def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booste
     Raises:
         ValueError: If config sets a contract parameter.
     """
-    overridden = set(model_cfg["tuned"]) & set(CONTRACT_PARAMS)
-    if overridden:
-        raise ValueError(
-            f"contract parameters cannot be set from config: {sorted(overridden)}; "
-            "changing them changes what every earlier run's number meant"
-        )
-
-    params = {**CONTRACT_PARAMS, **model_cfg["tuned"], "seed": model_cfg["seed"]}
-
     return lgb.train(
-        params,
+        resolve_params(model_cfg),
         train,
         num_boost_round=model_cfg["num_boost_round"],
         valid_sets=[val_fit],
@@ -354,3 +386,93 @@ def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booste
             lgb.log_evaluation(period=100),
         ],
     )
+
+
+def score(
+    booster: lgb.Booster, matrices: dict[str, pd.DataFrame], columns: list[str]
+) -> pd.DataFrame:
+    """Every row the booster was given a chance to score, as the harness expects.
+
+    ``split`` is restored from the key rather than read from a column, for the
+    same reason ``partition`` dropped it: the filename and the label were never
+    two facts that could check each other.
+
+    **The best iteration is named, not assumed.** ``predict`` falls back to it
+    when early stopping set one, but the fallback is a library default and the
+    truncation is a decision this run made — the trees after the peak were
+    measured to be worse, and saying so costs one argument.
+
+    Scoring more splits than get recorded is deliberate. ``write_run`` filters
+    both of its artifacts to the splits it is asked for, so the gate that keeps
+    test out lives there, structurally, instead of being repeated by every caller
+    that assembles a frame.
+
+    Args:
+        booster: A fitted booster.
+        matrices: ``{split: prepared matrix}``.
+        columns: Feature names, in the order the booster was fitted on.
+
+    Returns:
+        One row per scored transaction, carrying what the harness requires.
+    """
+    parts = []
+
+    for split, frame in matrices.items():
+        part = frame[["TransactionID", LABEL, "day"]].copy()
+        part["score"] = booster.predict(frame[columns], num_iteration=booster.best_iteration)
+        part["split"] = pd.Categorical([split] * len(frame), categories=SPLIT_NAMES)
+        parts.append(part)
+
+    return pd.concat(parts, ignore_index=True)
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Fit the untuned reference, score validation, record the run.
+
+    Wiring only. Invoked by ``make train`` as
+    ``python -m fraud_engine.models.train``.
+
+    TEST is never loaded — ``load_split_matrices`` defaults to the three splits a
+    training run needs, and ``write_run`` would filter it out even if it were.
+
+    Args:
+        config_path: Path to ``config.yaml``.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, model_cfg = config["paths"], config["model"]
+
+    configure_tracking(config["tracking"])
+
+    matrices = load_split_matrices(paths["features_dir"])
+    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
+    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
+
+    columns = feature_columns(matrices["train"])
+    train = to_dataset(matrices["train"], columns)
+    val_fit = to_dataset(matrices["val_fit"], columns, reference=train)
+
+    capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
+    params = resolve_params(model_cfg)
+
+    with tracked_run(RUN_NAME, {**params, "n_features": len(columns)}, config_path):
+        booster = fit(train, val_fit, model_cfg)
+
+        scored = score(booster, matrices, columns)
+        metrics_path, _ = write_run(
+            RUN_NAME, scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
+        )
+
+        report = json.loads(Path(metrics_path).read_text())
+        mlflow.log_metrics({**flatten_metrics(report), "best_iteration": booster.best_iteration})
+
+        booster.save_model(paths["model"], num_iteration=booster.best_iteration)
+        write_categories(vocabulary, paths["categories"])
+        mlflow.log_artifact(paths["model"])
+
+    log.info("%s — %d trees -> %s", RUN_NAME, booster.num_trees(), metrics_path)
+
+
+if __name__ == "__main__":
+    main()

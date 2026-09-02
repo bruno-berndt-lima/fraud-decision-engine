@@ -48,7 +48,7 @@ VERIFIED  := $(RAW_DIR)/.verified
 INTERIM   := $(INTERIM_DIR)/transactions.parquet
 SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
-MODEL     := $(MODEL_DIR)/model.pkl
+MODEL     := $(MODEL_DIR)/model.txt
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json

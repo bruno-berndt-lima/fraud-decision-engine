@@ -39,6 +39,13 @@ paths:
   amount_stats: models/amount_stats.parquet
   # Which V columns survived the reduction, and the medians they are filled with.
   vblock: models/vblock.parquet
+  # The trained booster, in LightGBM's own text format rather than a pickle:
+  # unpickling executes code, and Phase 08 loads this file inside a served API.
+  model: models/model.txt
+  # The category vocabulary. Same rationale as encoders above — the booster
+  # records which features are categorical and the codes its splits test, never
+  # what those codes mean.
+  categories: models/categories.parquet
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -280,11 +287,6 @@ tracking:
 # Phase 05 — LightGBM
 # ------------------------------------------------------------------------------
 model:
-  # The fitted category vocabulary. Gitignored with the rest of models/, but
-  # written rather than held in memory: a booster records which features are
-  # categorical and the codes its splits test, never what those codes mean.
-  categories: models/categories.parquet
-
   # Occurrences in train below which a category level is not learned separately.
   # A tree splitting on a level backed by three transactions has memorised three
   # transactions. 50 matches the logistic probe's OneHotEncoder min_frequency
