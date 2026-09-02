@@ -28,6 +28,21 @@ OTHER = "__other__"
 # Keys, the label, and the split axis. `day` and `TransactionDT` are the same
 # exclusion twice at different resolutions: a model handed either learns the
 # timeline instead of fraud, and on a temporal split that reads as skill.
+# Fixed, and not open to tuning. `metric` is the load-bearing one: LightGBM's
+# default for a binary objective is log-loss, and stopping early on log-loss at
+# this base rate stops in the wrong place — the project names PR-AUC as primary,
+# so early stopping has to agree with it.
+#
+# `deterministic` needs one of the force_*_wise flags set to have any effect,
+# which is why both are here.
+CONTRACT_PARAMS = {
+    "objective": "binary",
+    "metric": "average_precision",
+    "deterministic": True,
+    "force_row_wise": True,
+    "verbosity": -1,
+}
+
 LABEL = "isFraud"
 
 EXCLUDED_COLUMNS = ("TransactionID", "TransactionDT", LABEL, "day")
@@ -278,4 +293,64 @@ def to_dataset(
         label=frame[LABEL],
         categorical_feature=categorical,
         reference=reference,
+    )
+
+
+def fit(train: lgb.Dataset, val_fit: lgb.Dataset, model_cfg: dict) -> lgb.Booster:
+    """Train until ``VAL-FIT`` stops improving, and keep the best round.
+
+    Boosting drives training loss down for as long as it is allowed to, so the
+    number of trees cannot be read off the training curve. Early stopping reads
+    it off a set the model is not fitting: while ``VAL-FIT`` improves it keeps
+    going, and after ``early_stopping_rounds`` without improvement it stops and
+    returns the best iteration rather than the last.
+
+    **``VAL-FIT`` and not ``VAL-CAL``.** Early stopping looks at that set once per
+    round and picks a model from it, which spends it — the metric there is
+    optimistic afterwards, because it was the stopping criterion. ``VAL-CAL``
+    stays untouched for Phase 06's calibrator and threshold.
+
+    **Contract parameters are not config.** ``CONTRACT_PARAMS`` are fixed in code
+    and refused from config, because a search space that reached ``metric`` or
+    ``objective`` would silently change what "better" means between runs and the
+    comparison view would be quietly comparing nothing.
+
+    ``model_cfg["tuned"]`` is empty for the untuned reference, and it is empty
+    deliberately: the reference has to be the model anyone would get without
+    thinking, or Phase 05 cannot say what tuning bought.
+
+    **Determinism holds for one machine.** ``deterministic`` guarantees a
+    repeatable result given the same data, parameters *and thread count*, so this
+    reproduces on the machine that ran it. Nothing here claims more than that.
+
+    Args:
+        train: The training dataset.
+        val_fit: The early-stopping dataset, referencing ``train``'s bins.
+        model_cfg: The ``model:`` config block.
+
+    Returns:
+        A booster truncated to its best iteration.
+
+    Raises:
+        ValueError: If config sets a contract parameter.
+    """
+    overridden = set(model_cfg["tuned"]) & set(CONTRACT_PARAMS)
+    if overridden:
+        raise ValueError(
+            f"contract parameters cannot be set from config: {sorted(overridden)}; "
+            "changing them changes what every earlier run's number meant"
+        )
+
+    params = {**CONTRACT_PARAMS, **model_cfg["tuned"], "seed": model_cfg["seed"]}
+
+    return lgb.train(
+        params,
+        train,
+        num_boost_round=model_cfg["num_boost_round"],
+        valid_sets=[val_fit],
+        valid_names=["val_fit"],
+        callbacks=[
+            lgb.early_stopping(model_cfg["early_stopping_rounds"]),
+            lgb.log_evaluation(period=100),
+        ],
     )

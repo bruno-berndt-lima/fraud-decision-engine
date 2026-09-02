@@ -291,3 +291,20 @@ model:
   # and the V-block's min_observed_rows, so "too rare to fit" means one thing
   # across the project.
   min_category_rows: 50
+
+  # A ceiling, not a target: early stopping decides how many trees there are.
+  num_boost_round: 2000
+
+  # Rounds without improvement on VAL-FIT before stopping. Patience, not a
+  # trigger — the metric curve is noisy and one worse round means nothing.
+  early_stopping_rounds: 100
+
+  # Fixed so a rerun reproduces. Step 4 varies it deliberately, to measure how
+  # much of a difference between two configs is just the seed; nothing else may.
+  seed: 0
+
+  # The knobs tuning is allowed to move, merged over the contract parameters
+  # fixed in train.py. Empty on purpose: this is the untuned reference, and it
+  # has to be the model anyone would get without thinking, or the tuning phase
+  # cannot say what it bought. Step 6 fills it with what it found.
+  tuned: {}
