@@ -49,6 +49,7 @@ INTERIM   := $(INTERIM_DIR)/transactions.parquet
 SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
 MODEL     := $(MODEL_DIR)/model.txt
+SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
@@ -196,6 +197,14 @@ $(FAMILIES): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 $(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py | $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.models.train
 
+# A bar rather than a result, so it is measured when the data or the pipeline
+# changes and not once per tuning trial. Same reasoning as $(FAMILY_FLOOR).
+$(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+                src/fraud_engine/models/seeds.py \
+                src/fraud_engine/models/train.py \
+                src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.models.seeds
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -204,7 +213,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train
+.PHONY: data splits baselines figures features families floor train spread
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -213,6 +222,7 @@ features:  $(FEATURES)  ## Build train/val/test feature matrices
 families:  $(FAMILIES)  ## Score each feature family on VAL-FIT
 floor:     $(FAMILY_FLOOR) ## Re-measure how far chance alone moves the metric
 train:     $(MODEL)     ## Train the model
+spread:    $(SEED_SPREAD) ## Measure how far one configuration moves on seed alone
 
 # ==============================================================================
 # Housekeeping

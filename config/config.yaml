@@ -39,6 +39,10 @@ paths:
   amount_stats: models/amount_stats.parquet
   # Which V columns survived the reduction, and the medians they are filled with.
   vblock: models/vblock.parquet
+  # How far one configuration moves when only the seed changes — the bar E6
+  # judges a tuned candidate against. Tracked: a decision input, not derived
+  # data, exactly like noise_floor.csv.
+  seed_spread: reports/metrics/seed_spread.csv
   # The trained booster, in LightGBM's own text format rather than a pickle:
   # unpickling executes code, and Phase 08 loads this file inside a served API.
   model: models/model.txt
@@ -304,6 +308,33 @@ model:
   # Fixed so a rerun reproduces. Step 4 varies it deliberately, to measure how
   # much of a difference between two configs is just the seed; nothing else may.
   seed: 0
+
+  # Where the seed spread is measured. Points, not one point: the untuned
+  # reference has no seed sensitivity at all, because LightGBM's defaults sample
+  # neither rows nor columns, so a bar taken there would be zero and would
+  # describe nothing about the space the search explores.
+  spread:
+    seeds: 10
+    points:
+      # The reference itself. Expected to be identical across seeds — recorded
+      # rather than assumed, since it is what makes the shipped run reproducible.
+      untuned: {}
+
+      # The conventional starting point for tuning a boosted model, and where
+      # stochasticity enters at all.
+      subsampled:
+        feature_fraction: 0.8
+        bagging_fraction: 0.8
+        bagging_freq: 1
+
+      # Deeper trees and heavier subsampling — the far corner of the space, where
+      # the spread should be widest if it widens with either.
+      aggressive:
+        num_leaves: 127
+        min_child_samples: 20
+        feature_fraction: 0.6
+        bagging_fraction: 0.6
+        bagging_freq: 1
 
   # The knobs tuning is allowed to move, merged over the contract parameters
   # fixed in train.py. Empty on purpose: this is the untuned reference, and it
