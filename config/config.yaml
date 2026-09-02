@@ -280,6 +280,11 @@ tracking:
 # Phase 05 — LightGBM
 # ------------------------------------------------------------------------------
 model:
+  # The fitted category vocabulary. Gitignored with the rest of models/, but
+  # written rather than held in memory: a booster records which features are
+  # categorical and the codes its splits test, never what those codes mean.
+  categories: models/categories.parquet
+
   # Occurrences in train below which a category level is not learned separately.
   # A tree splitting on a level backed by three transactions has memorised three
   # transactions. 50 matches the logistic probe's OneHotEncoder min_frequency

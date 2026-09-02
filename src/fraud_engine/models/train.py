@@ -198,3 +198,37 @@ def load_split_matrices(
     features_dir = Path(features_dir)
 
     return {name: pd.read_parquet(features_dir / f"{name}.parquet") for name in splits}
+
+
+def write_categories(vocabulary: dict[str, pd.Index], path: Path | str) -> None:
+    """Persist the vocabulary — the model cannot be served without it.
+
+    A trained booster stores which features are categorical and the sets of
+    codes its splits test, but not what those codes *mean*. That mapping lives
+    here, and a serving process without it would hand LightGBM integers derived
+    from whatever levels happened to be in the request batch.
+
+    This is the tier-2 artifact ``features.md`` promised for the category
+    vocabulary, in the same long form as the frequency tables and the V-block
+    reduction, so the file describes itself.
+
+    The code is written out rather than left implicit in the row order. Row order
+    survives a parquet round trip, but the codes *are* the contract with the
+    model — a mapping that a re-sorted read could silently change is not a
+    contract.
+
+    Args:
+        vocabulary: ``{column: levels}`` from ``fit_categories``.
+        path: Destination. Parent directories are created.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    rows = pd.DataFrame(
+        [
+            {"column": column, "code": code, "level": level}
+            for column, levels in vocabulary.items()
+            for code, level in enumerate(levels)
+        ]
+    )
+    rows.to_parquet(path, index=False)
