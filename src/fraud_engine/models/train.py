@@ -12,14 +12,28 @@ lets it memorise three transactions — which is why the vocabulary has a floor.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
+from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.features.encoders import MISSING
 
 # Levels the training window never saw, and levels it saw too rarely to learn
 # anything from, share one bucket. Separate from MISSING, which is a different
 # fact about a row: the field did not arrive, rather than arrived unrecognised.
 OTHER = "__other__"
+
+# Keys, the label, and the split axis. `day` and `TransactionDT` are the same
+# exclusion twice at different resolutions: a model handed either learns the
+# timeline instead of fraud, and on a temporal split that reads as skill.
+EXCLUDED_COLUMNS = ("TransactionID", "TransactionDT", "isFraud", "day")
+
+# What a training run reads. TEST is absent and has to be typed to be loaded,
+# the same shape as report.DEFAULT_SPLITS: the invariant says test is touched
+# once at the very end, and a default that reads it makes that a matter of
+# remembering rather than of asking.
+TRAINING_SPLITS = ("train", "val_fit", "val_cal")
 
 SENTINELS = (OTHER, MISSING)
 
@@ -115,3 +129,72 @@ def apply_categories(frame: pd.DataFrame, vocabulary: dict[str, pd.Index]) -> pd
         )
 
     return prepared
+
+
+def feature_columns(frame: pd.DataFrame) -> list[str]:
+    """Everything the model may see: the matrix, less the columns it may not.
+
+    ``logistic.py`` names its features positively, and gives the reason: trusting
+    a drop rule puts the label one edit away from becoming a feature. That reason
+    is right and the mechanism does not survive three hundred columns — a stale
+    allow-list drops new features silently, which is the worse failure, since a
+    model quietly trained on less than it was given looks fine.
+
+    The guard is what makes the inversion honest: every excluded name must be
+    present. A deny-list describing a table that no longer exists is one rename
+    away from letting the label through, and this is what turns that into an
+    error instead of a very good score.
+
+    Args:
+        frame: A split matrix.
+
+    Returns:
+        Feature names, in matrix order.
+
+    Raises:
+        ValueError: If any excluded column is missing — the deny-list and the
+            matrix have drifted apart.
+    """
+    missing = [column for column in EXCLUDED_COLUMNS if column not in frame.columns]
+    if missing:
+        raise ValueError(
+            f"excluded columns absent from the matrix: {missing}; "
+            "the deny-list no longer describes this table"
+        )
+
+    return [column for column in frame.columns if column not in EXCLUDED_COLUMNS]
+
+
+def load_split_matrices(
+    features_dir: Path | str, splits: tuple[str, ...] = TRAINING_SPLITS
+) -> dict[str, pd.DataFrame]:
+    """Each split's matrix, read whole and kept apart.
+
+    Apart, because LightGBM early-stops against a validation set and needs it as
+    its own object. ``evaluate.load_matrices`` returns one concatenated frame for
+    the probe, which fits on a mask; concatenating here only to split again would
+    also point ``models`` at a module that already imports ``models``.
+
+    Read whole rather than by column list: the matrices are self-contained by
+    design, and naming columns here would be a second place for the feature set
+    to be decided.
+
+    Args:
+        features_dir: Directory holding ``{split}.parquet``.
+        splits: Which to read. Defaults to the three a training run needs —
+            naming ``test`` is possible, and has to be deliberate.
+
+    Returns:
+        ``{split: matrix}`` in the order given.
+
+    Raises:
+        ValueError: If a name is not a split.
+        FileNotFoundError: If a split's matrix is absent.
+    """
+    unknown = set(splits) - set(SPLIT_NAMES)
+    if unknown:
+        raise ValueError(f"not splits: {sorted(unknown)}")
+
+    features_dir = Path(features_dir)
+
+    return {name: pd.read_parquet(features_dir / f"{name}.parquet") for name in splits}
