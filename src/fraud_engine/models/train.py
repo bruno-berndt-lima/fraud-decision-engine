@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import lightgbm as lgb
 import pandas as pd
 
 from fraud_engine.data.splits import SPLIT_NAMES
@@ -27,7 +28,9 @@ OTHER = "__other__"
 # Keys, the label, and the split axis. `day` and `TransactionDT` are the same
 # exclusion twice at different resolutions: a model handed either learns the
 # timeline instead of fraud, and on a temporal split that reads as skill.
-EXCLUDED_COLUMNS = ("TransactionID", "TransactionDT", "isFraud", "day")
+LABEL = "isFraud"
+
+EXCLUDED_COLUMNS = ("TransactionID", "TransactionDT", LABEL, "day")
 
 # What a training run reads. TEST is absent and has to be typed to be loaded,
 # the same shape as report.DEFAULT_SPLITS: the invariant says test is touched
@@ -232,3 +235,47 @@ def write_categories(vocabulary: dict[str, pd.Index], path: Path | str) -> None:
         ]
     )
     rows.to_parquet(path, index=False)
+
+
+def to_dataset(
+    frame: pd.DataFrame, columns: list[str], reference: lgb.Dataset | None = None
+) -> lgb.Dataset:
+    """The frame as LightGBM's own structure, binned and with categoricals named.
+
+    **``reference`` is what makes a threshold portable.** LightGBM does not split
+    on raw values; it buckets each continuous feature into histogram bins first,
+    and a learned split is a bin boundary. Bins are computed from whatever data
+    builds the dataset, so a validation set left to bin itself would place its
+    own boundaries — and every threshold the model learned would land somewhere
+    slightly different from where it was fitted. Passing the training dataset
+    makes validation reuse its bin edges, which is the only way the two can be
+    compared at all.
+
+    Categoricals are named rather than left to detection. LightGBM will infer
+    them from the pandas dtype, but the set of categorical features is a decision
+    this project makes explicitly — and an inference is a decision that changes
+    when someone else's code changes a dtype.
+
+    The label is read from the frame directly. It is not in ``columns`` —
+    ``feature_columns`` excluded it — so the two cannot be confused.
+
+    Args:
+        frame: A prepared matrix, already through ``apply_categories``. Passing
+            one that has not been leaves each split's codes meaning whatever its
+            own dtype said.
+        columns: Feature names, from ``feature_columns``.
+        reference: The training dataset, for every set that is not it.
+
+    Returns:
+        An unconstructed dataset — LightGBM builds it lazily, at ``train``.
+    """
+    categorical = [
+        column for column in columns if isinstance(frame[column].dtype, pd.CategoricalDtype)
+    ]
+
+    return lgb.Dataset(
+        frame[columns],
+        label=frame[LABEL],
+        categorical_feature=categorical,
+        reference=reference,
+    )
