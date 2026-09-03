@@ -43,6 +43,9 @@ paths:
   # judges a tuned candidate against. Tracked: a decision input, not derived
   # data, exactly like noise_floor.csv.
   seed_spread: reports/metrics/seed_spread.csv
+  # E2's LightGBM arms, side by side. Tracked: the comparison is the deliverable,
+  # and the point of the experiment is that the losing arms are reported too.
+  imbalance: reports/metrics/imbalance.csv
   # The trained booster, in LightGBM's own text format rather than a pickle:
   # unpickling executes code, and Phase 08 loads this file inside a served API.
   model: models/model.txt

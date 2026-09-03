@@ -25,6 +25,7 @@ PATH_PAIRS = [
     ("PREDICTIONS_DIR", "paths.predictions_dir"),
     ("MODEL", "paths.model"),
     ("SEED_SPREAD", "paths.seed_spread"),
+    ("IMBALANCE", "paths.imbalance"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment

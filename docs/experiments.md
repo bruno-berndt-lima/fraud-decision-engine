@@ -124,6 +124,67 @@ be used to skip it. A linear model's coefficients move under reweighting; a tree
 ensemble's split ordering is far less sensitive, so "no meaningful difference"
 remains the expected outcome there. Two model families, two runs, two results.
 
+### The LightGBM arms, named before running — Phase 05
+
+Five, on the untuned reference configuration:
+
+| arm | what it does |
+|---|---|
+| `none` | the untuned reference, unchanged |
+| `scale_pos_weight` | multiplies the positive class's gradient by `neg/pos` |
+| `is_unbalance` | LightGBM derives the same ratio internally |
+| `imputed` | medians in place of nulls, no resampling — the SMOTE arm's control |
+| `smote` | medians, then synthesised positive rows interpolated between neighbours |
+
+**`is_unbalance` is close to redundant** — it sets the same weight the arm above
+sets by hand. It is run anyway because the roadmap names both, and because
+"these are the same thing" is worth demonstrating once rather than asserting.
+
+**No seed averaging is needed here.** The untuned configuration samples neither
+rows nor columns, so every arm is deterministic and each is one number rather
+than a distribution. E6's bar does not apply and is not borrowed: it measures
+seed spread, and there is none to measure. That will not be true of the tuned
+comparison, and the difference is why these two are separate experiments.
+
+**Why `imputed` exists.** SMOTE is nearest-neighbour interpolation and cannot
+compute a distance across a null, and a large minority of the numeric columns
+here carry them — one is null in ninety-nine percent of training rows. So the
+SMOTE arm has to impute, and the other arms do not: LightGBM takes nulls
+natively, and Phase 04 established that missingness in this dataset is signal
+rather than damage.
+
+Without a control, the SMOTE arm would differ from the reference in two ways at
+once and a loss would be unattributable. `imputed` is the same imputation
+without the resampling, so the chain reads `none → imputed → smote` and each
+step costs one fit. Medians are fitted on train and applied to validation too:
+scoring a model on data shaped differently from what it trained on would trade
+one confound for another.
+
+**Three further objections to the SMOTE arm, recorded before it runs** rather
+than discovered in its defence afterwards:
+
+1. **Thirty-one categorical columns.** SMOTE interpolates in feature space, and
+   there is no midpoint between `visa` and `amex`. `SMOTENC` takes the majority
+   category among neighbours instead, which for a seventy-level `DeviceInfo`
+   still pairs a fabricated device string with interpolated numerics.
+2. **The split is temporal.** A synthetic row has synthetic history: its velocity
+   counts and entity aggregates are interpolations of events that did not
+   happen in that order, or at all.
+3. **The features are mostly Vesta's.** The V block dominates the signal, and
+   what an interpolated `vb_V258` means is unanswerable, because what `V258`
+   means is unanswerable.
+
+None of these is a reason to skip the arm. They are the reason the result is
+worth having: this project's stated position is that SMOTE is not applied
+because a problem is imbalanced, and the way to hold that position honestly is
+to run it and report what happened. If it loses, these three objections are the
+explanation rather than an excuse invented afterwards.
+
+**Reported through the same harness as everything else.** `scale_pos_weight`
+changes the training objective's gradients, not the metric — and PR-AUC here is
+computed by `evaluation/metrics.py` on raw scores regardless, so no arm can be
+flattered by being measured on its own terms.
+
 ---
 
 ## E3 — Servable features versus entity history

@@ -50,6 +50,7 @@ SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
 MODEL     := $(MODEL_DIR)/model.txt
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
+IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
@@ -205,6 +206,14 @@ $(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
                 src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.seeds
 
+# E2's second run. Separate from $(MODEL) because the shipped model is one arm
+# of it, and retraining should not re-answer a question that has not changed.
+$(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+              src/fraud_engine/models/imbalance.py \
+              src/fraud_engine/models/train.py \
+              src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+	$(RUN) python -m fraud_engine.models.imbalance
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -213,7 +222,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread
+.PHONY: data splits baselines figures features families floor train spread imbalance
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -223,6 +232,7 @@ families:  $(FAMILIES)  ## Score each feature family on VAL-FIT
 floor:     $(FAMILY_FLOOR) ## Re-measure how far chance alone moves the metric
 train:     $(MODEL)     ## Train the model
 spread:    $(SEED_SPREAD) ## Measure how far one configuration moves on seed alone
+imbalance: $(IMBALANCE)   ## E2: none vs class weighting vs SMOTE, on LightGBM
 
 # ==============================================================================
 # Housekeeping
