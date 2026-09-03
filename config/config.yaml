@@ -339,6 +339,40 @@ model:
         bagging_fraction: 0.6
         bagging_freq: 1
 
+  # ----------------------------------------------------------------------------
+  # Hyperparameter search
+  # ----------------------------------------------------------------------------
+  tune:
+    # A compute budget, not an overfitting control. The winner's VAL-FIT score is
+    # inflated by roughly the expected maximum of the seed spread over this many
+    # draws, and that grows with the square root of the log of the count — thirty
+    # trials to two hundred barely moves it. What removes the bias is E6's re-run.
+    trials: 60
+
+    # Above the shipped model's ceiling, because a tuned configuration runs far
+    # longer than the default one and the ceiling now raises rather than
+    # truncating quietly. Headroom, not a target.
+    num_boost_round: 5000
+
+    # Inclusive bounds. Which knobs are integers and which are log-scaled is a
+    # property of the parameter and lives in tune.py; only the ranges are choices.
+    space:
+      num_leaves: [15, 255]
+      min_child_samples: [20, 500]
+
+      # Floored at 0.03, and the floor is set by early_stopping_rounds rather
+      # than by compute. Measured: a smaller step flattens the validation curve,
+      # and a fixed patience closes on a flat curve *sooner* — the opposite of
+      # the usual assumption that low rates need more rounds. Below this the
+      # patience would be stopping trials that were still improving, and nothing
+      # here could tell that apart from convergence.
+      learning_rate: [0.03, 0.15]
+
+      feature_fraction: [0.4, 1.0]
+      bagging_fraction: [0.4, 1.0]
+      min_data_per_group: [50, 500]
+      cat_smooth: [1.0, 100.0]
+
   # The knobs tuning is allowed to move, merged over the contract parameters
   # fixed in train.py. Empty on purpose: this is the untuned reference, and it
   # has to be the model anyone would get without thinking, or the tuning phase
