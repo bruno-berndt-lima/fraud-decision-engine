@@ -15,7 +15,34 @@ and would feed the sampler a biased view of the space on top of that.
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
+import lightgbm as lgb
+import mlflow
 import optuna
+import pandas as pd
+
+from fraud_engine.evaluation.report import evaluate_splits
+from fraud_engine.models.train import fit, score
+
+
+class Variant(NamedTuple):
+    """One version of the data, built once and reused by every trial that picks it.
+
+    Two exist: nulls as they arrive, and nulls filled. E2 measured that filling
+    them helps and deliberately left the choice open, because the mechanism
+    proposed for *why* it helps — near-constant columns becoming inert — is
+    regularisation, and the search moves two other regularisers. Whether the
+    benefit survives them is exactly what a search dimension is for.
+
+    Datasets are constructed once. Rebuilding them per trial would re-bin three
+    hundred thousand rows sixty times for no change, and reuse across differing
+    ``min_child_samples`` was measured safe on these matrices rather than assumed.
+    """
+
+    train: lgb.Dataset
+    val_fit: lgb.Dataset
+    matrices: dict[str, pd.DataFrame]
 
 
 def search_space(trial: optuna.Trial, space: dict) -> tuple[dict, bool]:
@@ -79,3 +106,57 @@ def search_space(trial: optuna.Trial, space: dict) -> tuple[dict, bool]:
     }
 
     return params, trial.suggest_categorical("impute", [False, True])
+
+
+def objective(
+    trial: optuna.Trial,
+    variants: dict[bool, Variant],
+    columns: list[str],
+    model_cfg: dict,
+    capacities: list[float],
+) -> float:
+    """One trial: fit a configuration and report what it scores on ``VAL-FIT``.
+
+    **The seed is fixed across trials**, per E6. Letting it vary would mean two
+    trials could differ by nothing at all and the sampler would learn from the
+    difference — it would be modelling the random number generator alongside the
+    hyperparameters. The winner is re-measured across seeds afterwards, which is
+    where seed variation belongs.
+
+    **Scored through the harness**, not read off LightGBM's own metric, so a
+    trial's number is the same quantity as the reference's and as every other run
+    in ``reports/metrics/``.
+
+    **A trial that exhausts the round budget is not caught.** ``fit`` raises, and
+    the study stops. Swallowing it would silently drop the slowest
+    configurations, which is the bias this module rejected pruning to avoid — and
+    an aborted study says the ceiling needs raising, which is worth knowing.
+
+    Args:
+        trial: The trial being evaluated.
+        variants: Both data versions, keyed by whether nulls are filled.
+        columns: Feature names.
+        model_cfg: The ``model:`` config block.
+        capacities: Review capacities, so ``evaluate`` has its full input.
+
+    Returns:
+        ``VAL-FIT`` PR-AUC, which is what the study maximises.
+    """
+    params, impute = search_space(trial, model_cfg["tune"]["space"])
+    variant = variants[impute]
+
+    with mlflow.start_run(run_name=f"trial-{trial.number:03d}", nested=True):
+        mlflow.log_params({**params, "impute": impute})
+
+        booster = fit(
+            variant.train,
+            variant.val_fit,
+            {**model_cfg, "tuned": params, "num_boost_round": model_cfg["tune"]["num_boost_round"]},
+        )
+
+        scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
+        pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+
+        mlflow.log_metrics({"val_fit.pr_auc": pr_auc, "best_iteration": booster.best_iteration})
+
+    return pr_auc
