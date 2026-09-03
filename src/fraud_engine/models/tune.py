@@ -15,6 +15,8 @@ and would feed the sampler a biased view of the space on top of that.
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Sequence
 from typing import NamedTuple
 
 import lightgbm as lgb
@@ -24,6 +26,8 @@ import pandas as pd
 
 from fraud_engine.evaluation.report import evaluate_splits
 from fraud_engine.models.train import fit, score
+
+log = logging.getLogger(__name__)
 
 
 class Variant(NamedTuple):
@@ -145,6 +149,14 @@ def objective(
     params, impute = search_space(trial, model_cfg["tune"]["space"])
     variant = variants[impute]
 
+    # What the trial actually trained on, stored rather than reconstructed.
+    # `study.best_params` carries only the *suggested* values, and bagging_freq
+    # is set rather than suggested — rebuilding the winner from best_params
+    # would drop it, and the confirmation run would not be the winning
+    # configuration.
+    trial.set_user_attr("params", params)
+    trial.set_user_attr("impute", impute)
+
     with mlflow.start_run(run_name=f"trial-{trial.number:03d}", nested=True):
         mlflow.log_params({**params, "impute": impute})
 
@@ -160,3 +172,120 @@ def objective(
         mlflow.log_metrics({"val_fit.pr_auc": pr_auc, "best_iteration": booster.best_iteration})
 
     return pr_auc
+
+
+def confirm(
+    candidate: tuple[dict, bool],
+    variants: dict[bool, Variant],
+    columns: list[str],
+    model_cfg: dict,
+    capacities: list[float],
+    seeds: Sequence[int],
+) -> pd.DataFrame:
+    """Re-run the winner and the untuned reference across seeds, per E6.
+
+    The search maximised over sixty trials, so the winner's own number is the
+    maximum of a noisy sample and is biased upward by construction. These fits
+    select nothing: the configuration is already fixed, and every seed's result
+    counts. That is what makes the mean unbiased where the search's number was
+    not.
+
+    **The reference is re-run too, not assumed.** It samples neither rows nor
+    columns, so its seeds should return one number repeated — and running them
+    is what turns that from an expectation into a check. Ten identical fits are
+    cheap; a reference that turned out not to be deterministic would invalidate
+    every comparison in this phase, and finding that out here is the point.
+
+    Both configurations get the search's round ceiling, so the only difference
+    between them is the parameters. Neither binds it.
+
+    Args:
+        candidate: The winning ``(params, impute)``, from the trial's own record.
+        variants: Both data versions.
+        columns: Feature names.
+        model_cfg: The ``model:`` config block.
+        capacities: Review capacities.
+        seeds: One fit per seed, per configuration.
+
+    Returns:
+        One row per configuration and seed: ``config``, ``seed``, ``pr_auc``,
+        ``best_iteration``.
+    """
+    winner_params, winner_impute = candidate
+
+    # The reference is the shipped untuned model: no tuned knobs, nulls as they
+    # arrive. It is what Phase 06 calibrates if the candidate does not clear E6.
+    configurations = {
+        "candidate": (winner_params, winner_impute),
+        "reference": ({}, False),
+    }
+
+    measured = []
+
+    for name, (params, impute) in configurations.items():
+        variant = variants[impute]
+        for seed in seeds:
+            booster = fit(
+                variant.train,
+                variant.val_fit,
+                {
+                    **model_cfg,
+                    "tuned": params,
+                    "seed": seed,
+                    "num_boost_round": model_cfg["tune"]["num_boost_round"],
+                },
+            )
+            scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
+            pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+
+            measured.append(
+                {
+                    "config": name,
+                    "seed": seed,
+                    "pr_auc": pr_auc,
+                    "best_iteration": booster.best_iteration,
+                }
+            )
+            log.info(
+                "%-10s seed=%-3d val_fit pr_auc=%.5f  best_iteration=%d",
+                name,
+                seed,
+                pr_auc,
+                booster.best_iteration,
+            )
+
+    return pd.DataFrame(measured)
+
+
+def verdict(runs: pd.DataFrame) -> dict:
+    """E6's rule, applied. Pure, so it is testable without fitting anything.
+
+    ``mean(candidate) - mean(reference) > std(candidate) + std(reference)``
+
+    The sum of the standard deviations, not the standard error of their
+    difference. The standard error shrinks with the number of seeds and would
+    let a larger seed budget buy significance; the sum does not move. That
+    strictness is the price of the candidate having been selected as the maximum
+    over many trials, which no single-comparison test accounts for.
+
+    Args:
+        runs: As ``confirm`` returned them.
+
+    Returns:
+        Both means, both spreads, the gap, the bar it had to clear, and whether
+        it did.
+    """
+    stats = runs.groupby("config")["pr_auc"].agg(["mean", "std"])
+
+    gap = stats.loc["candidate", "mean"] - stats.loc["reference", "mean"]
+    bar = stats.loc["candidate", "std"] + stats.loc["reference", "std"]
+
+    return {
+        "candidate_mean": stats.loc["candidate", "mean"],
+        "candidate_std": stats.loc["candidate", "std"],
+        "reference_mean": stats.loc["reference", "mean"],
+        "reference_std": stats.loc["reference", "std"],
+        "gap": gap,
+        "bar": bar,
+        "accepted": bool(gap > bar),
+    }
