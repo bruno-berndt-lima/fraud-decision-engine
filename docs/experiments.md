@@ -75,8 +75,7 @@ ablation would measure a smaller training set rather than an unpurged one.
 
 ## E2 — Class weighting versus doing nothing
 
-**Status:** first run complete — logistic regression, Phase 03. LightGBM run
-still to come in Phase 05.
+**Status:** complete. Logistic regression in Phase 03, LightGBM in Phase 05.
 
 Split in two because the answer is not expected to be the same. A tree ensemble
 optimising a ranking metric is fairly indifferent to class weights; a linear
@@ -184,6 +183,65 @@ explanation rather than an excuse invented afterwards.
 changes the training objective's gradients, not the metric — and PR-AUC here is
 computed by `evaluation/metrics.py` on raw scores regardless, so no arm can be
 flattered by being measured on its own terms.
+
+### Result — LightGBM, Phase 05
+
+| arm | `VAL-FIT` PR-AUC | `VAL-CAL` PR-AUC | `VAL-CAL` recall @ 1% | best iteration |
+|---|---:|---:|---:|---:|
+| `none` | 0.51558 | 0.46010 | 24.83% | 133 |
+| `scale_pos_weight` | 0.49569 | 0.45359 | 25.06% | 312 |
+| `is_unbalance` | 0.49569 | 0.45359 | 25.06% | 312 |
+| `imputed` | 0.52820 | **0.47850** | **25.39%** | 561 |
+| `smote` | **0.54507** | 0.47375 | 25.17% | 897 |
+
+**`is_unbalance` and `scale_pos_weight` are the same thing**, to every digit, as
+expected. Demonstrated once so it never has to be argued again.
+
+**Class weighting loses, and the registered expectation held in magnitude.** E2
+predicted a tree ensemble would be far less sensitive to reweighting than a
+linear model. It is: logistic regression lost 0.0335 of `VAL-CAL` PR-AUC,
+LightGBM loses 0.0065 — five times less. The direction is still negative, so
+"no meaningful difference" was the wrong word for it, but the reasoning behind
+the prediction was sound. Recall at capacity is a wash, marginally better in
+some cells and worse in others; PR-AUC decides it.
+
+**SMOTE wins the spent slice and loses the clean one.** It is first on `VAL-FIT`
+by a wide margin, second on `VAL-CAL`, and its drop between the two is the
+largest of any arm. That is the shape E6 registered in advance under *what this
+bar does not cover*: early stopping picks a round from the `VAL-FIT` curve, and
+an arm that trains for nine hundred rounds has far more opportunities to land on
+a lucky peak than one that stops at a hundred and thirty. The note was written
+before this run existed, and this is what it predicted.
+
+**The control won.** `imputed` was added only to make the SMOTE arm
+interpretable, and it is the best arm on the untouched slice on both metric
+families. That was not an expected outcome and it sits awkwardly beside Phase
+04's finding that missingness in this dataset is signal.
+
+An untested mechanism, offered as a hypothesis and not a conclusion: a column
+that is null in ninety-nine percent of training rows gives LightGBM a free split
+over almost nothing, and it decides which way to send the missing on the basis
+of very few present rows. Filling those columns makes them near-constant and
+effectively inert, which is regularisation arriving by accident. Nothing here
+tests that.
+
+### What this result does and does not decide
+
+**It decides E2.** Neither class weighting nor synthetic minority oversampling
+earns a place in the shipped model. The project's stated position — that SMOTE
+is not applied because a problem is imbalanced — survives contact with the
+measurement, and it survives it having been genuinely tested rather than
+assumed.
+
+**It does not decide whether the shipped model imputes.** That is a modelling
+choice, it belongs to the tuning step, and it has to be made on `VAL-FIT` under
+E6's rule. The `VAL-CAL` column above is reported, as every run in this project
+reports it, but it must not select — reading it to rank arms would spend the
+slice Phase 06 calibrates on.
+
+This distinction is easy to lose precisely because the `VAL-CAL` numbers are the
+more informative ones here. Naming it is the safeguard: E2 is a reporting
+experiment. It says what each arm did. It does not choose.
 
 ---
 
