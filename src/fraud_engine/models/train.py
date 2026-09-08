@@ -47,6 +47,10 @@ OTHER = "__other__"
 # which is why both are here.
 CONTRACT_PARAMS = {
     "objective": "binary",
+    # Matches what to_dataset builds with. LightGBM compares the two and refuses
+    # to train if they disagree, so this is not a duplicate of that setting —
+    # it is the other half of it.
+    "feature_pre_filter": False,
     "metric": "average_precision",
     "deterministic": True,
     "force_row_wise": True,
@@ -288,6 +292,17 @@ def to_dataset(
     The label is read from the frame directly. It is not in ``columns`` —
     ``feature_columns`` excluded it — so the two cannot be confused.
 
+    **``feature_pre_filter`` is off, and it has to be here rather than in the
+    tuning stage alone.** LightGBM otherwise drops, at construction time, the
+    features that cannot be split under the current ``min_data_in_leaf`` — and
+    then refuses to train the same dataset with a *smaller* one, because those
+    features would stay wrongly dropped. A search that moves that knob downward
+    hits it. Setting the flag only where the search runs would bin the tuned
+    candidate differently from the reference it is judged against, which is the
+    one thing E6's comparison cannot survive. It costs memory and nothing else:
+    a pre-filtered feature is one that could not have been split anyway, and the
+    untuned reference returns the same score to eight decimal places either way.
+
     Args:
         frame: A prepared matrix, already through ``apply_categories``. Passing
             one that has not been leaves each split's codes meaning whatever its
@@ -307,6 +322,7 @@ def to_dataset(
         label=frame[LABEL],
         categorical_feature=categorical,
         reference=reference,
+        params={"feature_pre_filter": False},
     )
 
 
