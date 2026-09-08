@@ -15,8 +15,11 @@ and would feed the sampler a biased view of the space on top of that.
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import NamedTuple
 
 import lightgbm as lgb
@@ -24,8 +27,19 @@ import mlflow
 import optuna
 import pandas as pd
 
-from fraud_engine.evaluation.report import evaluate_splits
-from fraud_engine.models.train import fit, score
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
+from fraud_engine.evaluation.report import evaluate_splits, git_revision, load_capacities
+from fraud_engine.evaluation.tracking import configure_tracking, tracked_run
+from fraud_engine.models.imbalance import apply_medians, fit_medians
+from fraud_engine.models.train import (
+    apply_categories,
+    feature_columns,
+    fit,
+    fit_categories,
+    load_split_matrices,
+    score,
+    to_dataset,
+)
 
 log = logging.getLogger(__name__)
 
@@ -40,8 +54,11 @@ class Variant(NamedTuple):
     benefit survives them is exactly what a search dimension is for.
 
     Datasets are constructed once. Rebuilding them per trial would re-bin three
-    hundred thousand rows sixty times for no change, and reuse across differing
-    ``min_child_samples`` was measured safe on these matrices rather than assumed.
+    hundred thousand rows sixty times for no change. What makes reuse legal at
+    all is ``to_dataset`` disabling ``feature_pre_filter`` — without it LightGBM
+    refuses to train a constructed dataset with a *smaller* ``min_data_in_leaf``
+    than it was built under, and a search that moves that knob downward does
+    exactly that.
     """
 
     train: lgb.Dataset
@@ -289,3 +306,117 @@ def verdict(runs: pd.DataFrame) -> dict:
         "bar": bar,
         "accepted": bool(gap > bar),
     }
+
+
+def build_variants(matrices: dict[str, pd.DataFrame], columns: list[str]) -> dict[bool, Variant]:
+    """Both data versions, binned once.
+
+    The medians come from train and reach validation too, exactly as E2's
+    ``imputed`` arm did — a model fitted on filled data and scored on data still
+    carrying nulls would be measured on a distribution it never saw.
+    """
+    medians = fit_medians(matrices["train"], columns)
+    filled = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+
+    variants = {}
+    for impute, frames in ((False, matrices), (True, filled)):
+        train = to_dataset(frames["train"], columns)
+        variants[impute] = Variant(
+            train, to_dataset(frames["val_fit"], columns, reference=train), frames
+        )
+    return variants
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Run the study, apply E6's rule, and write the verdict.
+
+    Wiring only. Invoked by ``make tune`` as ``python -m fraud_engine.models.tune``.
+
+    **Nothing here changes the shipped model.** The winning parameters are
+    written to a record and printed as the config block that would adopt them.
+    Adopting is a separate, committed edit to ``config.yaml``, so the history
+    shows when tuning changed the model and `make train` remains the one stage
+    that writes it.
+
+    Args:
+        config_path: Path to ``config.yaml``.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, model_cfg = config["paths"], config["model"]
+    tune_cfg = model_cfg["tune"]
+
+    configure_tracking(config["tracking"])
+
+    matrices = load_split_matrices(paths["features_dir"], ("train", "val_fit"))
+    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
+    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
+
+    columns = feature_columns(matrices["train"])
+    variants = build_variants(matrices, columns)
+    capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
+
+    study = optuna.create_study(
+        direction="maximize",
+        # Seeded, so the study is a rerunnable stage rather than a one-off. The
+        # sampler's own randomness is not the seed E6 measures — that one is
+        # fixed inside every trial.
+        sampler=optuna.samplers.TPESampler(seed=model_cfg["seed"]),
+    )
+
+    with tracked_run("tuning", {"trials": tune_cfg["trials"]}, config_path):
+        study.optimize(
+            lambda trial: objective(trial, variants, columns, model_cfg, capacities),
+            n_trials=tune_cfg["trials"],
+        )
+
+        best = study.best_trial
+        candidate = (best.user_attrs["params"], best.user_attrs["impute"])
+        log.info("\nbest trial #%d: %.5f", best.number, best.value)
+
+        runs = confirm(
+            candidate, variants, columns, model_cfg, capacities, range(model_cfg["spread"]["seeds"])
+        )
+        decision = verdict(runs)
+
+        mlflow.log_metrics({key: value for key, value in decision.items() if key != "accepted"})
+        mlflow.log_param("accepted", decision["accepted"])
+
+    record = {
+        "name": "tuning",
+        "created": datetime.now(UTC).isoformat(timespec="seconds"),
+        "git_revision": git_revision(),
+        "trials": tune_cfg["trials"],
+        "winner": {"params": candidate[0], "impute": candidate[1], "search_pr_auc": best.value},
+        "verdict": decision,
+        "confirmation": runs.to_dict(orient="records"),
+        "history": [
+            {"number": trial.number, "pr_auc": trial.value, **trial.params}
+            for trial in study.trials
+        ],
+    }
+
+    path = Path(paths["tuning"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2, default=float) + "\n")
+
+    log.info(
+        "\ncandidate %.5f +- %.5f   reference %.5f +- %.5f\ngap %.5f against a bar of %.5f -> %s",
+        decision["candidate_mean"],
+        decision["candidate_std"],
+        decision["reference_mean"],
+        decision["reference_std"],
+        decision["gap"],
+        decision["bar"],
+        "ACCEPTED" if decision["accepted"] else "REJECTED, the untuned reference ships",
+    )
+    if decision["accepted"]:
+        log.info(
+            "\nto adopt, set model.tuned in config.yaml:\n%s", json.dumps(candidate[0], indent=2)
+        )
+    log.info("wrote %s", path)
+
+
+if __name__ == "__main__":
+    main()

@@ -46,6 +46,11 @@ paths:
   # E2's LightGBM arms, side by side. Tracked: the comparison is the deliverable,
   # and the point of the experiment is that the losing arms are reported too.
   imbalance: reports/metrics/imbalance.csv
+  # The study, the winner, the confirmation runs and E6's verdict, in one
+  # record. Tracked, and one file rather than three: a verdict separated from
+  # the runs behind it is a claim without its evidence. mlruns/ is gitignored,
+  # so the trial history would not survive a clone if it lived only there.
+  tuning: reports/metrics/tuning.json
   # The trained booster, in LightGBM's own text format rather than a pickle:
   # unpickling executes code, and Phase 08 loads this file inside a served API.
   model: models/model.txt
