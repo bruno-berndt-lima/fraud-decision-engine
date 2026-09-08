@@ -912,3 +912,54 @@ deviation.
 **What the result does not do.** It does not choose hyperparameters — the search
 does. It decides whether the search's answer is distinguishable from its
 starting point.
+
+### Result — Phase 05
+
+Sixty trials, then ten seeds each for the winner and the untuned reference.
+
+| | mean | spread |
+|---|---:|---:|
+| candidate | 0.58478 | 0.00832 |
+| untuned reference | 0.51558 | 0.00000 |
+
+Gap 0.06920 against a bar of 0.00832. **Accepted**, by a factor of eight.
+
+**The reference's spread is exactly zero**, over ten seeds. Re-running it was
+the part of the method that looked wasteful, and it is the part that turned an
+expectation into a check.
+
+**The selection inflation was far smaller than predicted.** The search reported
+0.58878; re-measured across seeds the same configuration averages 0.58478. So
+0.00400 of the search's number was the maximum of a noisy sample — against an
+estimate, made before the run, of roughly 0.019.
+
+That estimate was wrong in an instructive way. It modelled sixty trials as sixty
+independent draws from one distribution — a lottery — when a search spends most
+of its trials somewhere genuinely better than where it started. The inflation
+applies only to the noise riding on top of a real difference, and here the real
+difference dominated. **The estimate was an upper bound on a worst case that did
+not arrive**, and it is recorded as such rather than quietly dropped.
+
+### The range bound the answer
+
+Two of seven knobs finished against their limits, both pointing the same way:
+
+| knob | range | winner | |
+|---|---|---:|---|
+| `min_child_samples` | 20–500 | 20 | at the floor |
+| `num_leaves` | 15–255 | 251 | four from the ceiling |
+
+The top ten trials carry between 172 and 254 leaves. The search wanted a larger,
+less constrained model than the space allowed, and **what it found is therefore a
+corner of the space rather than an interior optimum**. Whether four hundred
+leaves would do better is unknown and stays unknown.
+
+**The range is not widened.** Choosing a search space after seeing where the
+search pressed is a second layer of selection, and E6's bar does not cover it —
+it judges a candidate against a reference, not one space against another. A
+wider study run now would produce a number whose provenance nobody could state.
+
+If the range is ever revisited, the honest form is to declare the new bounds
+before running and report both studies. That is not done here: the accepted gain
+is large and unambiguous, and a limitation stated plainly is worth more to this
+project than a marginally better number with a worse story behind it.
