@@ -30,12 +30,13 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, git_revision, load_capacities
 from fraud_engine.evaluation.tracking import configure_tracking, tracked_run
-from fraud_engine.models.imbalance import apply_medians, fit_medians
 from fraud_engine.models.train import (
     apply_categories,
+    apply_medians,
     feature_columns,
     fit,
     fit_categories,
+    fit_medians,
     load_split_matrices,
     score,
     to_dataset,
@@ -180,7 +181,7 @@ def objective(
         booster = fit(
             variant.train,
             variant.val_fit,
-            {**model_cfg, "tuned": params, "num_boost_round": model_cfg["tune"]["num_boost_round"]},
+            {**model_cfg, "tuned": params},
         )
 
         scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
@@ -213,8 +214,9 @@ def confirm(
     cheap; a reference that turned out not to be deterministic would invalidate
     every comparison in this phase, and finding that out here is the point.
 
-    Both configurations get the search's round ceiling, so the only difference
-    between them is the parameters. Neither binds it.
+    Both configurations get the same round ceiling — the one the shipped model
+    trains under — so the only difference between them is the parameters, and
+    what is confirmed here is what `make train` produces.
 
     Args:
         candidate: The winning ``(params, impute)``, from the trial's own record.
@@ -245,12 +247,7 @@ def confirm(
             booster = fit(
                 variant.train,
                 variant.val_fit,
-                {
-                    **model_cfg,
-                    "tuned": params,
-                    "seed": seed,
-                    "num_boost_round": model_cfg["tune"]["num_boost_round"],
-                },
+                {**model_cfg, "tuned": params, "seed": seed},
             )
             scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
             pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]

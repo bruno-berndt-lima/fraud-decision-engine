@@ -24,6 +24,7 @@ PATH_PAIRS = [
     ("FEATURES_DIR", "paths.features_dir"),
     ("PREDICTIONS_DIR", "paths.predictions_dir"),
     ("MODEL", "paths.model"),
+    ("MEDIANS", "paths.medians"),
     ("SEED_SPREAD", "paths.seed_spread"),
     ("IMBALANCE", "paths.imbalance"),
     ("TUNING", "paths.tuning"),

@@ -27,9 +27,11 @@ from fraud_engine.evaluation.report import load_capacities, write_run
 from fraud_engine.models.train import (
     LABEL,
     apply_categories,
+    apply_medians,
     feature_columns,
     fit,
     fit_categories,
+    fit_medians,
     load_split_matrices,
     score,
     to_dataset,
@@ -45,29 +47,6 @@ WEIGHT_ARMS = ("none", "scale_pos_weight", "is_unbalance")
 # Arms that change the training data instead. Both impute, so `imputed` is what
 # isolates the resampling from the imputation it requires.
 IMPUTED_ARMS = ("imputed", "smote")
-
-
-def fit_medians(train: pd.DataFrame, columns: list[str]) -> pd.Series:
-    """Per-column medians from the training window.
-
-    Only the numeric columns need them: the categoricals arrived null-free from
-    ``apply_categories``, where missing became a level rather than a gap.
-    """
-    numeric = train[columns].select_dtypes("number")
-    return numeric.median()
-
-
-def apply_medians(frame: pd.DataFrame, medians: pd.Series) -> pd.DataFrame:
-    """Fill numeric nulls with the fitted medians.
-
-    Applied to validation as well as train. A model fitted on filled data and
-    scored on data still carrying nulls would be measured on a distribution it
-    never saw, which trades the confound this exists to remove for a different
-    one.
-    """
-    filled = frame.copy()
-    filled[medians.index] = filled[medians.index].fillna(medians)
-    return filled
 
 
 def resample(train: pd.DataFrame, columns: list[str], seed: int) -> pd.DataFrame:

@@ -49,6 +49,7 @@ INTERIM   := $(INTERIM_DIR)/transactions.parquet
 SPLITS    := $(SPLITS_DIR)/splits.parquet
 FEATURES  := $(FEATURES_DIR)/train.parquet
 MODEL     := $(MODEL_DIR)/model.txt
+MEDIANS   := $(MODEL_DIR)/medians.parquet
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 TUNING      := $(REPORTS_DIR)/metrics/tuning.json

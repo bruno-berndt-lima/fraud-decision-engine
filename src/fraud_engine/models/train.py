@@ -59,7 +59,18 @@ CONTRACT_PARAMS = {
 
 log = logging.getLogger(__name__)
 
-RUN_NAME = "lightgbm_untuned"
+
+def run_name(model_cfg: dict) -> str:
+    """What this run is, derived rather than typed.
+
+    A constant would keep saying "untuned" the moment config stopped being, and
+    it names the record in ``reports/metrics/``. Deriving it also means the
+    untuned reference's record survives adoption instead of being overwritten —
+    Phase 06 compares the shipped model against it, and both being on disk is
+    the difference between a comparison and an excavation of the git history.
+    """
+    return "lightgbm_tuned" if model_cfg["tuned"] else "lightgbm_untuned"
+
 
 LABEL = "isFraud"
 
@@ -167,6 +178,29 @@ def apply_categories(frame: pd.DataFrame, vocabulary: dict[str, pd.Index]) -> pd
     return prepared
 
 
+def fit_medians(train: pd.DataFrame, columns: list[str]) -> pd.Series:
+    """Per-column medians from the training window.
+
+    Only the numeric columns need them: the categoricals arrived null-free from
+    ``apply_categories``, where missing became a level rather than a gap.
+    """
+    numeric = train[columns].select_dtypes("number")
+    return numeric.median()
+
+
+def apply_medians(frame: pd.DataFrame, medians: pd.Series) -> pd.DataFrame:
+    """Fill numeric nulls with the fitted medians.
+
+    Applied to validation as well as train. A model fitted on filled data and
+    scored on data still carrying nulls would be measured on a distribution it
+    never saw, which trades the confound this exists to remove for a different
+    one.
+    """
+    filled = frame.copy()
+    filled[medians.index] = filled[medians.index].fillna(medians)
+    return filled
+
+
 def feature_columns(frame: pd.DataFrame) -> list[str]:
     """Everything the model may see: the matrix, less the columns it may not.
 
@@ -268,6 +302,25 @@ def write_categories(vocabulary: dict[str, pd.Index], path: Path | str) -> None:
         ]
     )
     rows.to_parquet(path, index=False)
+
+
+def write_medians(medians: pd.Series, path: Path | str) -> None:
+    """Persist the fill values — a served model trained on them needs them.
+
+    Imputation moves the data before the model sees it, so a serving process
+    without this file feeds the booster a distribution it was never fitted on:
+    the columns it filled would arrive null instead. That makes this a tier-2
+    artifact in ``features.md``, alongside the category vocabulary and the
+    frequency tables, and it ships whenever ``model.impute`` is on.
+
+    Args:
+        medians: From ``fit_medians``.
+        path: Destination. Parent directories are created.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    medians.rename("median").rename_axis("column").reset_index().to_parquet(path, index=False)
 
 
 def to_dataset(
@@ -482,18 +535,29 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
 
     columns = feature_columns(matrices["train"])
+
+    # Fitted on train and applied to every split, including the ones only
+    # scored: a model fitted on filled data and scored on data still carrying
+    # nulls would be measured on a distribution it never saw.
+    medians = fit_medians(matrices["train"], columns) if model_cfg["impute"] else None
+    if medians is not None:
+        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+
     train = to_dataset(matrices["train"], columns)
     val_fit = to_dataset(matrices["val_fit"], columns, reference=train)
 
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
     params = resolve_params(model_cfg)
+    name = run_name(model_cfg)
 
-    with tracked_run(RUN_NAME, {**params, "n_features": len(columns)}, config_path):
+    with tracked_run(
+        name, {**params, "impute": model_cfg["impute"], "n_features": len(columns)}, config_path
+    ):
         booster = fit(train, val_fit, model_cfg)
 
         scored = score(booster, matrices, columns)
         metrics_path, _ = write_run(
-            RUN_NAME, scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
+            name, scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
         )
 
         report = json.loads(Path(metrics_path).read_text())
@@ -501,9 +565,11 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
 
         booster.save_model(paths["model"], num_iteration=booster.best_iteration)
         write_categories(vocabulary, paths["categories"])
+        if medians is not None:
+            write_medians(medians, paths["medians"])
         mlflow.log_artifact(paths["model"])
 
-    log.info("%s — %d trees -> %s", RUN_NAME, booster.num_trees(), metrics_path)
+    log.info("%s — %d trees -> %s", name, booster.num_trees(), metrics_path)
 
 
 if __name__ == "__main__":

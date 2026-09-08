@@ -58,6 +58,9 @@ paths:
   # records which features are categorical and the codes its splits test, never
   # what those codes mean.
   categories: models/categories.parquet
+  # The fill values, written only when model.impute is on. Same tier-2 role as
+  # the vocabulary: a model trained on filled data is served wrong without them.
+  medians: models/medians.parquet
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -306,8 +309,24 @@ model:
   # across the project.
   min_category_rows: 50
 
+  # Fill numeric nulls with the training medians before fitting. Not a LightGBM
+  # parameter, so not under `tuned` — it would be passed to a library that
+  # discards unknown keys with a warning, and every run would train on raw data
+  # while the config said otherwise.
+  #
+  # On because the configuration E6 accepted was measured with it on. E2 found
+  # imputation helps and deliberately left the choice to the search rather than
+  # settling it early, since the mechanism proposed for why it helps is
+  # regularisation and the search moves two other regularisers.
+  impute: true
+
   # A ceiling, not a target: early stopping decides how many trees there are.
-  num_boost_round: 2000
+  # One key, used by training and by the search alike. Two would have to agree,
+  # and when they did not the confirmed candidate and the shipped model trained
+  # under different budgets — measured at 606 to 2990 trees across seeds, which
+  # a lower ceiling would have truncated into a different model wearing the same
+  # parameters.
+  num_boost_round: 5000
 
   # Rounds without improvement on VAL-FIT before stopping. Patience, not a
   # trigger — the metric curve is noisy and one worse round means nothing.
@@ -354,11 +373,6 @@ model:
     # trials to two hundred barely moves it. What removes the bias is E6's re-run.
     trials: 60
 
-    # Above the shipped model's ceiling, because a tuned configuration runs far
-    # longer than the default one and the ceiling now raises rather than
-    # truncating quietly. Headroom, not a target.
-    num_boost_round: 5000
-
     # Inclusive bounds. Which knobs are integers and which are log-scaled is a
     # property of the parameter and lives in tune.py; only the ranges are choices.
     space:
@@ -379,7 +393,20 @@ model:
       cat_smooth: [1.0, 100.0]
 
   # The knobs tuning is allowed to move, merged over the contract parameters
-  # fixed in train.py. Empty on purpose: this is the untuned reference, and it
-  # has to be the model anyone would get without thinking, or the tuning phase
-  # cannot say what it bought. Step 6 fills it with what it found.
-  tuned: {}
+  # fixed in train.py. These are what the study found and E6 accepted by a
+  # factor of eight; reports/metrics/tuning.json carries the study behind them.
+  #
+  # min_child_samples sits on the floor of its search range and num_leaves four
+  # from the ceiling: the search wanted a larger, less constrained model than
+  # the space allowed, so this is a corner of that space rather than an interior
+  # optimum. Recorded in E6 and deliberately not chased — picking a wider range
+  # after seeing where the search pressed is a second selection.
+  tuned:
+    num_leaves: 251
+    min_child_samples: 20
+    learning_rate: 0.04265909034706551
+    feature_fraction: 0.8797919539043785
+    bagging_fraction: 0.823993133977403
+    bagging_freq: 1
+    min_data_per_group: 68
+    cat_smooth: 52.55527169883299

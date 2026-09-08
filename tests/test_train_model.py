@@ -17,13 +17,17 @@ from fraud_engine.evaluation.report import PREDICTION_COLUMNS, REQUIRED_COLUMNS
 from fraud_engine.models.train import (
     CONTRACT_PARAMS,
     apply_categories,
+    apply_medians,
     feature_columns,
     fit,
     fit_categories,
+    fit_medians,
     resolve_params,
+    run_name,
     score,
     to_dataset,
     write_categories,
+    write_medians,
 )
 
 MODEL_CFG = {"tuned": {}, "seed": 7}
@@ -245,3 +249,71 @@ def test_a_run_with_room_to_stop_is_returned(matrices: dict[str, pd.DataFrame]):
     booster = fit(train, val_fit, cfg)
 
     assert booster.best_iteration + cfg["early_stopping_rounds"] <= cfg["num_boost_round"]
+
+
+# ------------------------------------------------------------------------------
+# imputation, and the artifact it has to ship with
+# ------------------------------------------------------------------------------
+
+
+def with_gaps() -> pd.DataFrame:
+    """A matrix whose numeric columns carry nulls, including one all-null column."""
+    frame = make_matrix(rows=6)
+    frame.loc[[0, 1], "signal"] = np.nan
+    frame["dead"] = np.nan
+    return frame
+
+
+def test_medians_come_from_the_training_window_only():
+    train = with_gaps()
+    medians = fit_medians(train, ["signal", "noise", "dead"])
+
+    assert medians["signal"] == train["signal"].median()
+
+
+def test_only_numeric_columns_get_a_median():
+    medians = fit_medians(with_gaps(), ["signal", "brand", "device"])
+
+    assert set(medians.index) == {"signal"}
+
+
+def test_applying_medians_leaves_no_numeric_nulls():
+    train = with_gaps()
+    medians = fit_medians(train, ["signal", "noise"])
+
+    assert not apply_medians(train, medians)["signal"].isna().any()
+
+
+def test_a_column_with_no_training_values_keeps_its_nulls():
+    train = with_gaps()
+    filled = apply_medians(train, fit_medians(train, ["signal", "dead"]))
+
+    assert filled["dead"].isna().all()
+
+
+def test_applying_medians_does_not_modify_the_input():
+    train = with_gaps()
+    apply_medians(train, fit_medians(train, ["signal"]))
+
+    assert train["signal"].isna().any()
+
+
+def test_the_fill_values_round_trip(tmp_path: Path):
+    medians = fit_medians(with_gaps(), ["signal", "noise"])
+    write_medians(medians, tmp_path / "medians.parquet")
+
+    back = pd.read_parquet(tmp_path / "medians.parquet").set_index("column")["median"]
+    assert back.to_dict() == medians.to_dict()
+
+
+# ------------------------------------------------------------------------------
+# run_name
+# ------------------------------------------------------------------------------
+
+
+def test_an_empty_tuned_block_names_the_untuned_reference():
+    assert run_name({"tuned": {}}) == "lightgbm_untuned"
+
+
+def test_tuned_parameters_name_a_tuned_run():
+    assert run_name({"tuned": {"num_leaves": 251}}) == "lightgbm_tuned"

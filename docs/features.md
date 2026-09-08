@@ -73,8 +73,17 @@ there for exactly this reason.
 | `amt_mean/z/absz_card1`, `amt_mean/z/absz_addr1` | 6 | `models/amount_stats.parquet` | train only |
 | `id_23` | 1 | IP proxy classification — a third-party list, not fitted here | — |
 
-Plus one artifact that produces no columns of its own: `models/vblock.parquet`,
-the 234 surviving V names and the median each gap is filled with.
+Plus three artifacts that produce no columns of their own:
+`models/vblock.parquet` (the 234 surviving V names and the median each gap is
+filled with), `models/categories.parquet` (the level each categorical code
+stands for — a booster records which features are categorical and the codes its
+splits test, never what those codes mean), and `models/medians.parquet` (the
+value each numeric null is filled with, shipped whenever `model.impute` is on).
+
+**Those last two moved this tier's boundary.** Before Phase 05 the tier-2 cost
+was two fitted tables; the shipped model now carries four, and a serving process
+missing any of them does not fail — it feeds the booster a distribution it was
+never fitted on and returns a plausible, wrong score.
 
 **The staleness contract.** These tables are frozen at train time, and that has a
 cost the other tiers do not pay:
