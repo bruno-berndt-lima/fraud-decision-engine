@@ -5,12 +5,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
-import pyarrow.parquet as pq
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities, write_run
-from fraud_engine.features import aggregations, amounts, encoders, vblock, velocity
+from fraud_engine.features.registry import resolve_families
 from fraud_engine.models.logistic import (
     FEATURE_COLUMNS,
     SOURCE_COLUMNS,
@@ -20,37 +19,6 @@ from fraud_engine.models.logistic import (
 )
 
 log = logging.getLogger(__name__)
-
-# Name -> the engineered columns it contributes. "none" is the bare probe, the
-# reference every delta and the noise floor itself are measured against.
-FAMILIES: dict[str, tuple[str, ...]] = {
-    "none": (),
-    "amount": amounts.COLUMNS,
-    "frequency": encoders.COLUMNS,
-    "entity": aggregations.COLUMNS,
-    "velocity": velocity.COLUMNS,
-}
-
-# Families whose membership is chosen by a fit, so it is not knowable until
-# build.py has run. Declared by the prefix every one of their columns carries.
-FAMILY_PREFIXES = {"vblock": vblock.PREFIX}
-
-
-def resolve_families(features_dir: Path | str) -> dict[str, tuple[str, ...]]:
-    """``FAMILIES`` with the prefix-declared families filled in from the matrices.
-
-    The V-block family keeps whichever columns survived its correlation
-    threshold, so hardcoding a list here would let the registry drift from the
-    threshold in config without either of them looking wrong. Reading the built
-    matrix's schema — the names only, not the data — asks the artifact instead.
-    """
-    names = pq.read_schema(Path(features_dir) / "train.parquet").names
-
-    resolved = dict(FAMILIES)
-    for family, prefix in FAMILY_PREFIXES.items():
-        resolved[family] = tuple(name for name in names if name.startswith(prefix))
-    return resolved
-
 
 NOISE_COLUMN = "_noise"
 

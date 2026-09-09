@@ -187,12 +187,14 @@ $(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
 $(FAMILY_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
                  src/fraud_engine/features/floor.py \
                  src/fraud_engine/features/evaluate.py \
+                 src/fraud_engine/features/registry.py \
                  src/fraud_engine/models/logistic.py \
                  src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.features.floor
 
 $(FAMILIES): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
              src/fraud_engine/features/evaluate.py \
+             src/fraud_engine/features/registry.py \
              src/fraud_engine/models/logistic.py \
              src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.features.evaluate
