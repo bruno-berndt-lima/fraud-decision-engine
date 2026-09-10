@@ -247,7 +247,7 @@ experiment. It says what each arm did. It does not choose.
 
 ## E3 — Servable features versus entity history
 
-**Status:** registered, not yet run. Phases 04–08.
+**Status:** the metric half answered in Phase 05; the USD half owed by Phase 06.
 
 Committed in `problem-statement.md` §3.4. A scoring request carries the
 transaction and its immediate attributes, not the card's history, so velocity and
@@ -287,12 +287,48 @@ pay for itself*, not *velocity is worthless*. The blind spots E4 registered
 apply unchanged: a redundant matrix reads a recoverable family as zero, and the
 detecting instrument is not the shipped one.
 
+### Result — Phase 05, the metric half
+
+| | features | `VAL-FIT` PR-AUC | delta | bar at width 4 | clears |
+|---|---:|---:|---:|---:|---|
+| `full` | 349 | 0.52820 | — | — | — |
+| tier 3 removed | 345 | 0.53074 | +0.00253 | 0.01598 | no |
+
+**The store cannot be shown to pay for itself.** The arm sits well inside the
+bar its own width produces, so the reading registered above is the one that
+applies — this is not a measurement of velocity being worthless, and E4's blind
+spots are not softened by the arm having been renamed for a different question.
+
+**The sign is positive and should not be read.** Removing the four columns moved
+the metric *up*, which at a fifth of the bar means the draws at that width move
+further in both directions than the arm did. A delta inside the bar has no
+direction to report.
+
+**The contrast with E7 is the useful part.** Measured on the same reference, at
+the same time, by the same rule: the tier that is expensive to serve and
+possible to build costs nothing detectable, and the tier that is free to serve
+and impossible to build costs nearly half the metric. The two axes `features.md`
+separated turn out to point in opposite directions, and a project that had
+merged them into one *needs-cache* label would have been unable to say so.
+
+**What Phase 06 still owes this.** The USD half. A delta inside the bar on
+PR-AUC does not by itself say the store is not worth building — the decision
+runs at a capacity, against a cost matrix, and recall at the reviewed band is
+where a small ranking change can still move money. The registered position is
+that the metric half is settled and the economic half is not.
+
+**A cheaper fallback stays on the table, and stays unmeasured.**
+`features.md` notes that `vel_recency_card1` alone needs only a last-seen
+timestamp rather than three rolling windows — a far smaller store, close to
+tier 2 in cost. Nothing here tests that arm. Its width is 3, its bar already
+exists, and running it would be a new arm rather than a re-reading of this one.
+
 ---
 
 ## E4 — What each feature family measurably adds
 
-**Status:** detection threshold registered, floor measured, first family
-reported. Phase 04.
+**Status:** complete under the linear probe in Phase 04, and re-measured
+under a tree in Phase 05. Both bars registered before their results.
 
 **Question.** Of the feature families this phase builds — amount transforms,
 frequency encodings, entity aggregates, velocity, V-block representatives —
@@ -1009,7 +1045,8 @@ rather than a correction to it.
 
 ## E6 — How large does a difference have to be before it is a difference?
 
-**Status:** registered, spread not yet measured. Phase 05.
+**Status:** complete. Spread measured, candidate accepted, and the bias the
+bar does not cover given a size of its own. Phase 05.
 
 **Question.** Two LightGBM configurations score differently on `VAL-FIT`. How much
 of that gap can be produced by nothing at all?
@@ -1201,7 +1238,7 @@ project than a marginally better number with a worse story behind it.
 
 ## E7 — What could be rebuilt from scratch
 
-**Status:** registered, not yet run. Phase 05.
+**Status:** complete. Phase 05.
 
 **The question an interviewer asks.** This model scores well on a dataset whose
 signal lives in columns nobody outside Vesta can reproduce. So: *how much of it
