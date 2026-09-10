@@ -24,10 +24,13 @@ from fraud_engine.models import ablation
 from fraud_engine.models.ablation import (
     BARE,
     REFERENCE,
+    REPRODUCIBLE,
+    all_arms,
     drop_columns,
     fit_without,
     measure,
     resolve_arms,
+    resolve_tier_arms,
 )
 from fraud_engine.models.train import apply_categories, fit_categories
 
@@ -82,14 +85,28 @@ def features_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
+INHERITED = (*VB_COLUMNS, "noise")
+
+
 @pytest.fixture
 def registry(monkeypatch: pytest.MonkeyPatch):
-    """The real family names, pointed at this file's synthetic columns."""
+    """The real family and tier names, pointed at this file's synthetic columns."""
     families = {BARE: (), **FAMILY_COLUMNS}
     monkeypatch.setattr(
         ablation,
         "resolve_families",
         lambda directory: {**families, "vblock": VB_COLUMNS},
+    )
+    monkeypatch.setattr(
+        ablation,
+        "resolve_tiers",
+        lambda directory: {
+            ablation.TIER_0: INHERITED,
+            "tier_1": ("signal", "brand"),
+            "tier_2": FAMILY_COLUMNS["frequency"],
+            "tier_3": FAMILY_COLUMNS["velocity"],
+            "keys": ("TransactionID",),
+        },
     )
 
 
@@ -281,3 +298,50 @@ def test_no_record_carries_the_calibration_slice(comparison, paths):
 def test_arms_without_a_reference_raise(matrices, paths):
     with pytest.raises(KeyError, match="every delta is measured against it"):
         measure(matrices, {"amount": FAMILY_COLUMNS["amount"]}, MODEL_CFG, CAPACITIES, paths)
+
+
+# ------------------------------------------------------------------------------
+# resolve_tier_arms and all_arms
+# ------------------------------------------------------------------------------
+
+
+def test_the_reproducible_arm_removes_the_inherited_tier(features_dir: Path, registry):
+    assert resolve_tier_arms(features_dir) == {REPRODUCIBLE: INHERITED}
+
+
+def test_the_live_entity_tier_is_kept(features_dir: Path, registry):
+    """Expensive to serve is not impossible to build, and E7 asks the second.
+
+    Dropping tier 3 here would answer the serving question a second time under
+    the rebuild question's name — the arm would look right and mean something
+    else.
+    """
+    removed = set(resolve_tier_arms(features_dir)[REPRODUCIBLE])
+
+    assert not removed & set(FAMILY_COLUMNS["velocity"])
+
+
+def test_the_serving_arm_is_not_duplicated(features_dir: Path, registry):
+    """E3's arm is the velocity family; naming it again writes a second, identical record."""
+    assert set(resolve_tier_arms(features_dir)) == {REPRODUCIBLE}
+
+
+def test_every_arm_shares_one_reference(features_dir: Path, registry):
+    """Families and tiers are merged rather than run twice.
+
+    A delta is comparable only to another measured from the same reference fit.
+    """
+    arms = all_arms(features_dir)
+
+    assert next(iter(arms)) == REFERENCE
+    assert set(arms) == {REFERENCE, *FAMILY_COLUMNS, "vblock", REPRODUCIBLE}
+
+
+def test_a_name_shared_by_a_tier_and_a_family_raises(
+    features_dir: Path, registry, monkeypatch: pytest.MonkeyPatch
+):
+    """They index one dict, so a collision drops an arm without saying so."""
+    monkeypatch.setattr(ablation, "REPRODUCIBLE", "amount")
+
+    with pytest.raises(ValueError, match="share a name"):
+        all_arms(features_dir)

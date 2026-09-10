@@ -27,7 +27,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities
-from fraud_engine.models.ablation import REFERENCE, fit_without, resolve_arms
+from fraud_engine.models.ablation import REFERENCE, all_arms, fit_without
 from fraud_engine.models.train import (
     apply_categories,
     apply_medians,
@@ -186,9 +186,11 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
         medians = fit_medians(matrices["train"], feature_columns(matrices["train"]))
         matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
 
-    # The family sizes, and nothing else. Sorted only so the log reads in order;
-    # the reference arm removes nothing and has no bar to measure.
-    arms = resolve_arms(paths["features_dir"])
+    # The arm sizes, and nothing else. Deduplicated because two arms of the same
+    # width share a bar — the draws do not know which family they stood in for.
+    # Sorted only so the log reads in order; the reference removes nothing and
+    # has no bar to measure.
+    arms = all_arms(paths["features_dir"])
     widths = sorted({len(dropped) for arm, dropped in arms.items() if arm != REFERENCE})
 
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))

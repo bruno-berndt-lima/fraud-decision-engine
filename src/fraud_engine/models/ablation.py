@@ -37,7 +37,7 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import load_capacities, write_run
-from fraud_engine.features.registry import resolve_families
+from fraud_engine.features.registry import TIER_0, resolve_families, resolve_tiers
 from fraud_engine.models.train import (
     apply_categories,
     apply_medians,
@@ -61,6 +61,11 @@ REFERENCE = "full"
 
 # Phase 04's reference key, which carries no columns and does not become an arm.
 BARE = "none"
+
+# Everything this project could construct from a raw transaction feed — which is
+# the complement of the inherited tier, the expensive-to-serve tier included.
+# Expensive and impossible are different claims, and E7 turns on not merging them.
+REPRODUCIBLE = "reproducible"
 
 
 def resolve_arms(features_dir) -> dict[str, tuple[str, ...]]:
@@ -103,6 +108,60 @@ def resolve_arms(features_dir) -> dict[str, tuple[str, ...]]:
             seen[column] = name
 
     return {REFERENCE: (), **arms}
+
+
+def resolve_tier_arms(features_dir) -> dict[str, tuple[str, ...]]:
+    """The serving-tier arms: what is lost by keeping only what could be rebuilt.
+
+    One arm, and it removes the inherited tier. The live-entity tier stays — it
+    is expensive to serve and perfectly possible to build, and dropping it here
+    would answer E3's question a second time under E7's name.
+
+    E3's own arm is not here either, for the opposite reason: it removes the
+    live-entity tier, which is exactly the `velocity` family, so naming it would
+    write a second record identical to one this run already produces.
+
+    Args:
+        features_dir: Directory holding `{split}.parquet`.
+
+    Returns:
+        `{arm: columns to drop}`, carrying no reference — it is merged into one
+        that has it.
+
+    Raises:
+        ValueError: Per `resolve_tiers`, if the matrix and the published
+            inventory have drifted apart.
+    """
+    return {REPRODUCIBLE: resolve_tiers(features_dir)[TIER_0]}
+
+
+def all_arms(features_dir) -> dict[str, tuple[str, ...]]:
+    """Every arm one run measures: the families, and the tiers.
+
+    Merged rather than run twice so they share a reference fit. The families
+    answer E4 and the tier arm answers E7, and a delta is only comparable to
+    another delta measured against the same reference — two runs would fit an
+    identical reference twice and invite the two tables to be read as one.
+
+    Args:
+        features_dir: Directory holding `{split}.parquet`.
+
+    Returns:
+        `{arm: columns to drop}`, the reference first.
+
+    Raises:
+        ValueError: If a tier arm and a family arm share a name. They index one
+            dict, so a collision would drop an arm silently and the missing one
+            would look like an experiment nobody ran.
+    """
+    families = resolve_arms(features_dir)
+    tiers = resolve_tier_arms(features_dir)
+
+    collisions = sorted(set(families) & set(tiers))
+    if collisions:
+        raise ValueError(f"tier and family arms share a name: {collisions}; one would be lost")
+
+    return {**families, **tiers}
 
 
 def drop_columns(frame: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataFrame:
@@ -285,7 +344,7 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
         medians = fit_medians(matrices["train"], feature_columns(matrices["train"]))
         matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
 
-    arms = resolve_arms(paths["features_dir"])
+    arms = all_arms(paths["features_dir"])
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
 
     # `tuned` emptied, and `impute` left as config has it. The instrument is the
