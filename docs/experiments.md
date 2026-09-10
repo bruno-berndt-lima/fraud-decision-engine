@@ -259,6 +259,34 @@ the difference in PR-AUC and USD saved is reported as **the measured cost of not
 building a feature store** — a more useful result than either silently training
 on unservable features or quietly dropping them.
 
+### Method — Phase 05
+
+The arm is `tier_3`: the four `vel_*` columns, removed from the full matrix.
+Everything else stays. Tier 3 is the only tier that needs a store written on
+every transaction — a keyed rolling window whose stale write produces a silently
+wrong count rather than an error — so the difference that arm makes *is* the
+price of the store, with nothing else moving alongside it.
+
+Tier 2 is not part of this question and stays in. A fitted table shipped beside
+the model is a file in the deployment, not a store with its own availability;
+`features.md` separates the two axes for exactly this reason, and folding them
+together would report the cost of a lookup file as if it were the cost of Redis.
+
+**Read against the bar at width 4**, drawn the same way and on the same
+instrument as every other arm — see E4. The bar and the arms are one run.
+
+**Half of this is already measured.** The `velocity` family in E4's tree
+ablation *is* the tier-3 arm: same four columns, same removal, same reference.
+Its delta did not clear the bar at its width. What E3 adds is naming that as an
+answer to the serving question rather than to the feature question, and carrying
+it into Phase 06 as USD.
+
+**The expected finding, registered before the USD half exists.** If the arm does
+not clear its bar, the reported result is *the feature store cannot be shown to
+pay for itself*, not *velocity is worthless*. The blind spots E4 registered
+apply unchanged: a redundant matrix reads a recoverable family as zero, and the
+detecting instrument is not the shipped one.
+
 ---
 
 ## E4 — What each feature family measurably adds
@@ -1161,3 +1189,61 @@ If the range is ever revisited, the honest form is to declare the new bounds
 before running and report both studies. That is not done here: the accepted gain
 is large and unambiguous, and a limitation stated plainly is worth more to this
 project than a marginally better number with a worse story behind it.
+
+---
+
+## E7 — What could be rebuilt from scratch
+
+**Status:** registered, not yet run. Phase 05.
+
+**The question an interviewer asks.** This model scores well on a dataset whose
+signal lives in columns nobody outside Vesta can reproduce. So: *how much of it
+survives if you only keep what you could build yourself?*
+
+`features.md` already partitions the matrix to answer that. Tiers 1 and 2 are
+what this project could construct from a raw transaction feed — the request's
+own fields, and tables fitted at train time from them. Tier 0 is 295 columns of
+pre-computed aggregates over windows never published, and `CLAUDE.md` names the
+exposure the project's principal limitation. **It has never been given a
+number.**
+
+**Distinct from E3, and the difference is the axis.** E3 asks what is expensive
+to *serve*; this asks what is impossible to *rebuild*. A tier-3 column is
+buildable and costly; a tier-0 column is cheap to serve — it arrives in the
+CSV — and cannot be derived at all. Two different reasons a feature might not
+be available, and conflating them would let a cheap answer stand in for a hard
+one.
+
+**The arms, and the bar, registered before running:**
+
+| arm | removed | features left | what it is |
+|---|---:|---:|---|
+| `full` | 0 | 349 | the reference, the shipped feature set |
+| `reproducible` | 299 | 50 | tiers 1 and 2 — everything this project could build |
+
+Read against the bar at width 299, drawn by the rule E4 registers: ten random
+draws of that width on the untuned reference, and the arm is movement only if
+its absolute delta exceeds the largest absolute delta of those draws. Nothing
+about the design is chosen after the fact — the width is what the partition
+produces.
+
+**The control at that width is degenerate, worse than the V-block's was.** 295
+of the 299 removed columns are tier 0, which is 84% of the matrix, so a random
+draw of 299 columns is overwhelmingly made of the same thing the arm removes.
+The bar there is close to a restatement of the arm rather than a control for it,
+and no reading may claim otherwise. It is measured anyway, because the
+alternative is reporting a delta with no scale at all.
+
+**What the number is for, and what it is not.** It is a statement about this
+dataset and this project's reach, reported beside the headline rather than
+subtracted from it. It does not change the shipped feature set: the model ships
+on everything the matrix carries, because a portfolio project that discards
+signal to look reproducible has optimised for the wrong reader.
+
+**Registered expectation.** The reproducible arm should lose, and lose clearly —
+Phase 04 measured essentially all linear signal inside tier 0, and the tree
+ablation showed the tier's members reconstruct each other. **If it does not
+lose, suspect the partition before believing the result**: a tier-0 column
+misfiled as tier 1 would leave the arm holding the very thing it claims to have
+removed, and `resolve_tiers` asserts sizes precisely because that failure looks
+like a good number rather than an error.
