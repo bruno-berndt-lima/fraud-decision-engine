@@ -1,0 +1,51 @@
+{
+  "name": "ablation_velocity",
+  "created": "2026-09-10T15:06:57+00:00",
+  "git_revision": "6c6d88e485b090ecc6d7ec3901eb8f270e38c28d-dirty",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.5307381789618559,
+      "roc_auc": 0.9038271448818523,
+      "recall_at_capacity": [
+        {
+          "recall": 0.12462311557788945,
+          "reviewed": 279,
+          "caught": 248,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 1,
+          "recall_ceiling": 0.14020100502512564,
+          "share_of_ceiling": 0.8888888888888888
+        },
+        {
+          "recall": 0.23065326633165828,
+          "reviewed": 567,
+          "caught": 459,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.28492462311557787,
+          "share_of_ceiling": 0.8095238095238095
+        },
+        {
+          "recall": 0.37889447236180906,
+          "reviewed": 1140,
+          "caught": 754,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.5728643216080402,
+          "share_of_ceiling": 0.6614035087719298
+        }
+      ]
+    }
+  }
+}
