@@ -486,6 +486,49 @@ trained LightGBM — where the fits are already being paid for, and where E3's
 servable-versus-history question needs a model that can actually use velocity —
 belongs there rather than here.
 
+#### The Phase 05 ablation, and its blind spots — registered before running
+
+Two things invert. **The direction:** an arm is the full matrix *minus* one
+family, because what a serving decision needs to know is what is lost by not
+building it, and because E3 needs that shape for the history-dependent columns.
+**The instrument:** a tree can represent thresholds and interactions the probe
+could not, which is the whole reason this was handed over.
+
+The consequence, stated so no one draws the table wrong: **Phase 04's deltas and
+Phase 05's are not two columns of one comparison.** Different base, opposite
+sign. A family that reads +0.004 there and −0.004 here is not contradicting
+itself.
+
+**Detection runs on the untuned configuration.** It subsamples neither rows nor
+columns, so repeated fits return identical digits and a delta carries no seed
+noise at all. The tuned configuration is stronger and does subsample; the spread
+`seeds.py` measured there is wide enough to hide most of these families by
+itself. Families that move go back to it for confirmation, the shape E6
+established for the tuning candidate.
+
+Three blind spots, and none of them is expected to be corrected here:
+
+1. **Leave-one-out against a correlated matrix measures redundancy, not
+   signal.** A family whose columns are recoverable from the survivors reads as
+   zero. Given where Phase 04 found the signal to live, this is the likeliest
+   way a real family comes back flat, and *the tree found it elsewhere* is a
+   different claim from *there was nothing there*.
+
+2. **The detecting instrument is not the shipped one.** The untuned
+   configuration has a hundred-odd trees and no subsampling. A family that only
+   earns its place in a large, heavily regularised model will not appear.
+
+3. **The arms will not stop at the same round**, so the same early-stopping
+   unfairness E6 recorded applies within this comparison — removing a family
+   changes the curve, and an arm that trains longer has had more chances at a
+   lucky `VAL-FIT` peak. `VAL-CAL` is not the way out of it: this is a field of
+   candidates, so it scores `VAL-FIT` only, and a family that lands inside that
+   unfairness is reported as undecided rather than broken open on the slice
+   Phase 06 calibrates against.
+
+**Every family still ships**, exactly as Phase 04 left it. This experiment
+characterises; it does not accept or reject.
+
 ### Result — the frequency family: worse than noise
 
 Seven columns — `card1`, `card2`, `card3`, `card5`, `addr1`, `addr2`,
@@ -893,6 +936,37 @@ and it favours the longer run. It is recorded here rather than corrected: the
 correction would need a slice neither this experiment nor Phase 05 is allowed to
 spend, and `VAL-CAL` in Phase 06 is where the shipped model meets data that
 neither tuning nor early stopping has touched.
+
+#### How large it turned out to be
+
+Both configurations were elected before either was scored on `VAL-CAL` — the
+study, the confirmation and the adoption all ran on `VAL-FIT`, and `tune.py` and
+`seeds.py` never load the calibration slice at all. Measuring two already-chosen
+models there is reporting, not selecting, and it is what `make train` writes for
+each of them anyway.
+
+| | `VAL-FIT` PR-AUC | `VAL-CAL` PR-AUC | trees |
+|---|---:|---:|---:|
+| untuned reference | 0.51558 | 0.46010 | 133 |
+| tuned candidate | 0.58878 | 0.52145 | 2990 |
+| **what tuning bought** | **+0.07320** | **+0.06134** | 22.5× the rounds |
+
+**Tuning keeps 83.8% of its `VAL-FIT` gain on the untouched slice.** The
+remaining 16.2% is the best estimate this project has of what early-stopping
+optimism is worth here, and it arrives as the difference between a fair slice
+and a spent one rather than as a correction anyone applied.
+
+Two readings, and the second is the load-bearing one. The gap is real: a 22.5×
+difference in rounds costs about a sixth of the measured gain, which is far less
+than the round counts would suggest and confirms that a boosting curve is not
+twenty-two hundred independent draws. And **the acceptance survives it** — E6
+accepted the candidate by a factor of eight over the bar, and the shrunk gain
+still clears it, so the number changes the size of the claim without changing
+which model ships.
+
+**It must change nothing in Phase 05, and it has not.** The candidate was
+adopted before this table existed. Recording the size of a known bias is the
+one thing an already-spent decision can still be given.
 
 **A run that exhausts its round budget is not evidence at all.** If
 `num_boost_round` binds before the patience window closes, the reported best

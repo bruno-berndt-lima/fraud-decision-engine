@@ -33,6 +33,25 @@ from fraud_engine.evaluation.metrics import evaluate
 # shows. Scoring it has to be a deliberate keystroke rather than a default, so
 # that "we were still iterating" and "test was scored" cannot quietly overlap.
 # The keys of the written report record which splits a run actually touched.
+#
+# VAL-CAL is in the default because measuring an already-elected model there is
+# the honest thing: no alternative exists for its number to send it to. A field
+# of candidates is the other case, and names ``("val_fit",)`` — a comparison
+# scored on VAL-CAL puts selection pressure on the exact rows Phase 06 fits its
+# calibrator to. The line is not who may be measured but who may *choose*.
+#
+# **The rule has a cost, and naming it is the point.** VAL-FIT is the early
+# stopping set, looked at once per round with the best kept. An arm that trains
+# for thousands of rounds has had far more chances at a lucky peak there than
+# one that stops in the hundreds, which makes VAL-FIT an unfair judge in exactly
+# the comparisons where the arms differ most — and the temptation is then to
+# break the tie on the clean slice, which is how the rule gets spent.
+#
+# Three ways out keep the rule intact: make the comparison fair (equal rounds,
+# or repeated fits); decide on an argument registered before the run and say
+# which one; or report both slices and let the comparison stay undecided. E2
+# took the second, which is why its VAL-CAL column is reported without ranking
+# anything.
 DEFAULT_SPLITS = ("val_fit", "val_cal")
 
 REQUIRED_COLUMNS = ("isFraud", "score", "day", "split")
@@ -310,7 +329,9 @@ def write_run(
         capacities: Review capacities to report.
         metrics_dir: Where the JSON record goes.
         predictions_dir: Where the score vector goes.
-        splits: Which splits to score and keep. Defaults to validation only.
+        splits: Which splits to score and keep. Defaults to validation only;
+            a run competing against others names ``("val_fit",)``. See
+            ``DEFAULT_SPLITS``.
 
     Returns:
         ``(metrics_path, predictions_path)``.
