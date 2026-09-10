@@ -1,7 +1,7 @@
 {
   "name": "ablation_entity",
-  "created": "2026-09-10T15:06:43+00:00",
-  "git_revision": "6c6d88e485b090ecc6d7ec3901eb8f270e38c28d-dirty",
+  "created": "2026-09-10T17:40:25+00:00",
+  "git_revision": "4c3c84fff53cb5998e04fb245551410c33076ae7",
   "capacities": [
     0.005,
     0.01,

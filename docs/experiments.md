@@ -662,6 +662,13 @@ two thirds of every draw at that width is `vb_*` by construction, so the
 contrast is between the whole family and a random two thirds of it plus
 whatever else came along. It is suggestive, not clean.
 
+**E7 corrects the second half of that reading.** Right about redundancy, wrong
+about where it lives: the 61 inherited columns left standing — `C*`, `D*`,
+`id_*` — are what covered for the V-block, and removing the inherited tier
+entire costs an order of magnitude more than removing this family did. The
+V-block is not unusually redundant among the matrix's columns; it is part of a
+block that is redundant with itself, and this arm never removed the block.
+
 #### What this settles
 
 **A null result, and it is the result.** Under a tree, measured against an
@@ -1254,3 +1261,69 @@ lose, suspect the partition before believing the result**: a tier-0 column
 misfiled as tier 1 would leave the arm holding the very thing it claims to have
 removed, and `resolve_tiers` asserts sizes precisely because that failure looks
 like a good number rather than an error.
+
+### Result — the limitation, with a number
+
+| arm | features | `VAL-FIT` PR-AUC | delta | bar at width 295 | clears |
+|---|---:|---:|---:|---:|---|
+| `full` | 349 | 0.52820 | — | — | — |
+| `reproducible` | 54 | 0.28433 | **−0.24387** | 0.13508 | **yes**, by 1.8× |
+
+**Keeping only what this project could build costs 46% of the metric.** The
+reproducible model retains 53.8% of the reference's PR-AUC. It is the only arm
+in either experiment that clears its bar, after six that moved nothing.
+
+The registered expectation held in direction and in size, so the sanity check it
+carried does not fire: the arm lost, clearly, and the partition is not under
+suspicion.
+
+For scale, on the same slice: the rules engine scores 0.12807 and the Phase 03
+logistic 0.32169. **A tree trained on only the reproducible columns beats the
+incumbent comfortably and lands below the linear baseline** — which is not a
+contradiction, because that baseline reads `D*`, and `D*` is inherited.
+
+### Removing the inherited tier costs more than removing that many columns at random
+
+| what is removed | inherited columns left | delta |
+|---|---:|---:|
+| the `vblock` family (234) | 61 — `C*`, `D*`, `id_*` | −0.00371 |
+| 295 arbitrary columns, mean of ten draws | ~46 | −0.10620 |
+| tier 0 entire (295) | 0 | −0.24387 |
+
+**The arm costs 2.3× what its own control does**, and the three rows are one
+finding rather than three. A random draw of 295 from 349 leaves about 46
+inherited columns standing, and those 46 recover most of what the tier carries.
+The signal lives in tier 0 as a **redundant mass**: any slice of it reconstructs
+much of the whole, and removing all of it has nothing left to reconstruct from.
+
+**This corrects how E4's V-block result reads.** Removing the 234 `vb_*` columns
+looked nearly free, and the reading offered there — that the V-block is the most
+redundant thing in the matrix — was right about redundancy and wrong about where
+it lives. `C*` and `D*` stayed behind and covered for it. They are not a
+different kind of column; they are the part of the same block that was not
+removed.
+
+**The degeneracy registered in advance does not explain this away, and points
+the other direction.** All 295 removed columns are tier 0, so a random draw at
+that width is mostly made of the same thing the arm removes — which should pull
+the control *toward* the arm. The arm still lands 2.3× further out. A
+contamination that biases the bar upward makes clearing it harder, so the
+finding survives its own worst caveat.
+
+### What it does and does not decide
+
+**It does not change the shipped feature set.** The model ships on everything
+the matrix carries. A portfolio project that discarded signal to look
+reproducible would have optimised for the wrong reader, and this number is
+reported beside the headline rather than subtracted from it.
+
+**It gives the README a figure where it had a paragraph.** The limitation was
+stated honestly and could not be sized; it now can, in the only terms that
+matter here — what the model would score if the unreproducible columns had never
+arrived.
+
+**One thing this does not measure, and it is the obvious next question.** The
+table above suggests `C*` and `D*` — 61 columns — carry most of what tier 0
+holds, with the V-block the redundant remainder. Nothing here tests that: it is
+a different arm, at a different width, and its bar would have to be drawn before
+it ran. Offered as a hypothesis, not a conclusion.
