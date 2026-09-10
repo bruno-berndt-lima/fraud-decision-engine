@@ -529,6 +529,130 @@ Three blind spots, and none of them is expected to be corrected here:
 **Every family still ships**, exactly as Phase 04 left it. This experiment
 characterises; it does not accept or reject.
 
+#### The bar the tree ablation is read against — registered before it is measured
+
+**The order was wrong and saying so is part of the record.** Phase 04 measured
+its noise floor before any family was scored. Here the six arms were run first,
+and the need for a bar became obvious from looking at them: the deltas span a
+range no existing instrument can rule on, and the `best_iteration` column ranges
+from under a hundred and fifty to nearly six hundred, which is blind spot 3
+arriving in the results rather than in theory.
+
+What is registered here is the bar's **design**, fixed in writing before it is
+run. The distinction that makes this worth anything: every choice below is
+determined by the families, not by what they scored. Choosing the widths, the
+draw count, or the statistic after seeing which families need to clear them
+would be picking a ruler by looking at what it has to measure, and that is the
+thing this note exists to rule out.
+
+**Neither of the two bars this project already owns applies.** The Phase 04
+noise floor was measured under the linear probe, on a different instrument and
+in the opposite direction. The seed spread says the untuned configuration has
+none — true, and it removes seed noise rather than the confound that is actually
+present here.
+
+| | |
+|---|---|
+| **Widths** | 3, 4, 6, 7, 234 — the five family sizes, and nothing else |
+| **Draws** | 10 per width, columns sampled uniformly from the 349 features without regard to family |
+| **Statistic** | per width: the standard deviation, and the largest absolute delta over the ten draws |
+| **The bar** | a family's delta is read as movement only if it exceeds the largest absolute delta at its own width |
+
+**Why this bar sees something the Phase 04 floor could not.** Each draw stops at
+its own round, so the spread it measures already contains the early-stopping
+unfairness rather than holding it constant. A family whose delta sits inside the
+bar is undecided for either reason, and this experiment does not need to
+separate them to report honestly.
+
+**The largest width is a degenerate control, and it is kept anyway.** 234 of the
+349 features are `vb_*`, so a random draw of 234 columns is about two thirds
+V-block by construction — the control at that width is partly made of the thing
+it controls for. It still answers the question it is being asked, *what does
+removing this many arbitrary columns cost*, and the V-block's delta is still
+read against it. It is not a clean control and no reading of it should claim it
+is.
+
+**Fifty fits, on the untuned reference**, the same instrument the arms were
+measured on. A bar drawn on a different configuration would not be a bar.
+
+#### Result — nothing clears, and that is the finding
+
+| arm | width | delta | \|delta\| | bar | draw σ | clears |
+|---|---:|---:|---:|---:|---:|---|
+| `amount` | 3 | −0.00659 | 0.00659 | 0.00673 | 0.00282 | no |
+| `velocity` | 4 | +0.00253 | 0.00253 | 0.01598 | 0.00742 | no |
+| `entity` | 6 | −0.00365 | 0.00365 | 0.01718 | 0.00760 | no |
+| `frequency` | 7 | +0.01141 | 0.01141 | 0.01323 | 0.00720 | no |
+| `vblock` | 234 | −0.00371 | 0.00371 | 0.06738 | 0.01423 | no |
+
+Reference arm `full`: 0.52820 `VAL-FIT` PR-AUC on 349 features, identical to
+E2's `imputed` arm to every digit — same instrument reached by two paths.
+
+**No family moves the metric further than removing that many arbitrary columns
+does.** `amount` comes closest and misses by 0.00014, which is the kind of
+margin the bar exists to refuse; a ninth draw instead of ten would likely have
+let it through.
+
+#### Why the bar is so wide, and it is not seed noise
+
+The untuned configuration samples neither rows nor columns, so repeated fits
+return identical digits. What moves instead is where training stops:
+
+| width | `best_iteration` across ten draws |
+|---:|---|
+| 3 | 177 – 804 |
+| 4 | 161 – 784 |
+| 6 | 142 – 491 |
+| 7 | 170 – 1213 |
+| 234 | 215 – 622 |
+
+**Removing seven arbitrary columns moves the stopping round by a factor of
+seven.** Blind spot 3 was registered as a caveat and arrives as the dominant
+term: a draw's delta is mostly a statement about which peak early stopping
+happened to find, and only secondarily about the columns that left.
+
+That is why the tree bar lands near σ 0.007 at the small widths against the
+linear probe's σ 0.00156 — roughly five times wider, on an instrument that has
+no seed noise at all. A bar that held the stopping round fixed would have been
+narrower and would have been measuring the wrong thing.
+
+#### The V-block reads differently from how it scores
+
+| | delta |
+|---|---:|
+| removing the 234 `vb_*` columns | −0.00371 |
+| removing 234 arbitrary columns, mean of ten | −0.03771 |
+| the worst of those ten | −0.06738 |
+
+Formally the V-block does not clear its bar. The reading is not *the V-block
+does not matter* — it is **the V-block is the most redundant thing in the
+matrix**. Every random draw at that width hurts; the actual family is the one
+cut that costs almost nothing. What it carries, `C*` and `D*` reconstruct.
+
+The caveat registered before the run still applies and is not softened here:
+two thirds of every draw at that width is `vb_*` by construction, so the
+contrast is between the whole family and a random two thirds of it plus
+whatever else came along. It is suggestive, not clean.
+
+#### What this settles
+
+**A null result, and it is the result.** Under a tree, measured against an
+instrument that absorbs the early-stopping instability rather than assuming it
+away, no hand-built family has a detectable contribution — in either direction.
+
+This does not contradict Phase 04; it explains it. The probe found signal in
+`vb_*` because a linear model needs those columns to express what the tree
+recovers from `C*` and `D*` on its own. Blind spot 1 predicted a redundant
+matrix would read as zero under leave-one-out, and it now has a number.
+
+**Every family still ships.** E4 is a reporting protocol. Nothing here accepts
+or rejects a family, and the shipped model's feature set is unchanged.
+
+**What it does change is the claim.** Phase 04 could say the V-block reduction
+moved the probe further than anything else built by hand. Phase 05 has to say
+that under the model that ships, no hand-built family — the reduction included —
+is distinguishable from removing that many columns at random.
+
 ### Result — the frequency family: worse than noise
 
 Seven columns — `card1`, `card2`, `card3`, `card5`, `addr1`, `addr2`,
