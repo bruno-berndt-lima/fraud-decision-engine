@@ -39,13 +39,9 @@ from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import load_capacities, write_run
 from fraud_engine.features.registry import TIER_0, resolve_families, resolve_tiers
 from fraud_engine.models.train import (
-    apply_categories,
-    apply_medians,
     feature_columns,
     fit,
-    fit_categories,
-    fit_medians,
-    load_split_matrices,
+    prepare_matrices,
     score,
     to_dataset,
 )
@@ -334,15 +330,9 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     config = load_config(config_path)
     paths, model_cfg = config["paths"], config["model"]
 
-    matrices = load_split_matrices(paths["features_dir"], ("train", "val_fit"))
-    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
-    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
-
-    # Fitted on the full training window and applied before anything is removed,
-    # so an arm inherits exactly what its surviving columns would have had.
-    if model_cfg["impute"]:
-        medians = fit_medians(matrices["train"], feature_columns(matrices["train"]))
-        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+    # Prepared before anything is removed, so an arm inherits exactly the levels
+    # and fills its surviving columns would have had.
+    matrices, _, _ = prepare_matrices(paths["features_dir"], model_cfg, ("train", "val_fit"))
 
     arms = all_arms(paths["features_dir"])
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))

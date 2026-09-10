@@ -16,12 +16,14 @@ from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import PREDICTION_COLUMNS, REQUIRED_COLUMNS
 from fraud_engine.models.train import (
     CONTRACT_PARAMS,
+    TRAINING_SPLITS,
     apply_categories,
     apply_medians,
     feature_columns,
     fit,
     fit_categories,
     fit_medians,
+    prepare_matrices,
     resolve_params,
     run_name,
     score,
@@ -317,3 +319,88 @@ def test_an_empty_tuned_block_names_the_untuned_reference():
 
 def test_tuned_parameters_name_a_tuned_run():
     assert run_name({"tuned": {"num_leaves": 251}}) == "lightgbm_tuned"
+
+
+# ------------------------------------------------------------------------------
+# prepare_matrices
+# ------------------------------------------------------------------------------
+
+
+def gappy_matrix(seed: int) -> pd.DataFrame:
+    """A matrix carrying nulls, so imputation has something to do.
+
+    `make_matrix` has none, and against a frame with no gaps "fill every split"
+    and "fill train alone" produce the same answer — which is a test that passes
+    on a function that leaks.
+    """
+    rng = np.random.default_rng(seed)
+    frame = make_matrix(seed=seed)
+    frame["gappy"] = np.where(rng.random(len(frame)) < 0.3, np.nan, rng.random(len(frame)))
+    return frame
+
+
+@pytest.fixture
+def features_dir(tmp_path: Path) -> Path:
+    for index, name in enumerate(SPLIT_NAMES[:3]):
+        gappy_matrix(seed=index).to_parquet(tmp_path / f"{name}.parquet")
+    return tmp_path
+
+
+PREPARE_CFG = {"min_category_rows": 1, "impute": True}
+
+
+def test_preparation_returns_the_tables_that_shaped_it(features_dir: Path):
+    """A caller writing them as artifacts needs the fits, not just the frames."""
+    matrices, vocabulary, medians = prepare_matrices(features_dir, PREPARE_CFG)
+
+    assert set(matrices) == set(TRAINING_SPLITS)
+    assert set(vocabulary) == {"brand", "device"}
+    assert medians is not None
+
+
+def test_every_split_is_re_levelled_against_the_training_vocabulary(features_dir: Path):
+    """A code must stand for the same level either side of the boundary."""
+    matrices, vocabulary, _ = prepare_matrices(features_dir, PREPARE_CFG)
+
+    for frame in matrices.values():
+        for column, levels in vocabulary.items():
+            assert list(frame[column].cat.categories) == list(levels)
+
+
+def test_validation_is_filled_too(features_dir: Path):
+    """A model fitted on filled data and scored on nulls meets a distribution it never saw."""
+    matrices, _, medians = prepare_matrices(features_dir, PREPARE_CFG)
+
+    assert pd.read_parquet(features_dir / "val_fit.parquet")["gappy"].isna().any(), (
+        "the fixture carries no nulls; this would pass on a function that fills train alone"
+    )
+
+    for frame in matrices.values():
+        assert frame[medians.index].isna().to_numpy().sum() == 0
+
+
+def test_the_fills_come_from_train_alone(features_dir: Path):
+    _, _, medians = prepare_matrices(features_dir, PREPARE_CFG)
+    raw = pd.read_parquet(features_dir / "train.parquet")
+
+    pd.testing.assert_series_equal(medians, raw[medians.index].median(), check_names=False)
+
+
+def test_imputation_off_returns_no_medians(features_dir: Path):
+    """`None` rather than an empty table: a caller has to tell the two apart."""
+    _, _, medians = prepare_matrices(features_dir, {**PREPARE_CFG, "impute": False})
+
+    assert medians is None
+
+
+def test_only_the_named_splits_are_read(features_dir: Path):
+    """Naming test has to be deliberate, and no experiment names it."""
+    matrices, _, _ = prepare_matrices(features_dir, PREPARE_CFG, ("train", "val_fit"))
+
+    assert set(matrices) == {"train", "val_fit"}
+
+
+def test_splits_without_train_raise(features_dir: Path):
+    """The fits come from train; without it they would come from validation."""
+    with pytest.raises(ValueError, match="there is nothing to fit on"):
+        prepare_matrices(features_dir, PREPARE_CFG, ("val_fit", "val_cal"))

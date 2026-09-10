@@ -270,6 +270,57 @@ def load_split_matrices(
     return {name: pd.read_parquet(features_dir / f"{name}.parquet") for name in splits}
 
 
+def prepare_matrices(
+    features_dir: Path | str, model_cfg: dict, splits: tuple[str, ...] = TRAINING_SPLITS
+) -> tuple[dict[str, pd.DataFrame], dict[str, pd.Index], pd.Series | None]:
+    """Matrices as a booster may see them, with the two tables that shaped them.
+
+    Everything between reading parquet and building a ``Dataset``: the
+    vocabulary and the medians are fitted on ``train`` and applied to every
+    split, including the ones only scored. Both directions of that matter — a
+    model fitted on filled data and scored on nulls meets a distribution it
+    never saw, and a validation split re-levelled against its own categories
+    means a code stands for two different things either side of the boundary.
+
+    **One function because four callers need the same answer.** Training, the
+    ablation, its floor and the purge experiment all start here, and this is
+    leakage-sensitive code: a copy that drifted — fitting on the wrong split,
+    or filling train alone — would produce an experiment that is wrong and
+    looks fine.
+
+    Args:
+        features_dir: Directory holding ``{split}.parquet``.
+        model_cfg: The ``model:`` config block.
+        splits: Which to read. ``train`` is required; it is what the fits see.
+
+    Returns:
+        ``(matrices, vocabulary, medians)``. ``medians`` is ``None`` when
+        ``impute`` is off, so a caller writing it as an artifact can tell the
+        difference between "filled with nothing" and "not filled".
+
+    Raises:
+        ValueError: If ``train`` is not among ``splits``, or per the functions
+            this composes.
+    """
+    if "train" not in splits:
+        raise ValueError(f"train is not among {list(splits)}; there is nothing to fit on")
+
+    matrices = load_split_matrices(features_dir, splits)
+
+    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
+    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
+
+    medians = (
+        fit_medians(matrices["train"], feature_columns(matrices["train"]))
+        if model_cfg["impute"]
+        else None
+    )
+    if medians is not None:
+        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+
+    return matrices, vocabulary, medians
+
+
 def write_categories(vocabulary: dict[str, pd.Index], path: Path | str) -> None:
     """Persist the vocabulary — the model cannot be served without it.
 
@@ -530,18 +581,8 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
 
     configure_tracking(config["tracking"])
 
-    matrices = load_split_matrices(paths["features_dir"])
-    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
-    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
-
+    matrices, vocabulary, medians = prepare_matrices(paths["features_dir"], model_cfg)
     columns = feature_columns(matrices["train"])
-
-    # Fitted on train and applied to every split, including the ones only
-    # scored: a model fitted on filled data and scored on data still carrying
-    # nulls would be measured on a distribution it never saw.
-    medians = fit_medians(matrices["train"], columns) if model_cfg["impute"] else None
-    if medians is not None:
-        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
 
     train = to_dataset(matrices["train"], columns)
     val_fit = to_dataset(matrices["val_fit"], columns, reference=train)

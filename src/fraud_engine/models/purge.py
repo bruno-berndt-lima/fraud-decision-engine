@@ -16,10 +16,25 @@ nobody chose.
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
+import pandas as pd
+import yaml
+
+from fraud_engine.data import splits
+from fraud_engine.data.splits import resolve_boundaries
+from fraud_engine.evaluation.report import write_run
+from fraud_engine.features import build
+from fraud_engine.models.ablation import fit_without
+from fraud_engine.models.train import LABEL, prepare_matrices
+
 log = logging.getLogger(__name__)
+
+# The shipped split, rebuilt rather than read from disk. Reading the shipped
+# matrices would compare artifacts produced by two code paths on two days.
+REFERENCE_ARM = "purged"
 
 # Every path the split and feature stages write. Named rather than derived from
 # the config, because the failure this guards is an arm overwriting the shipped
@@ -87,3 +102,124 @@ def redirect(config: dict, directory: Path | str, *, train_start: int, gap_days:
         "paths": paths,
         "splits": {**config["splits"], "train_start": train_start, "gap_days": gap_days},
     }
+
+
+def build_arm(config: dict, directory: Path | str, *, train_start: int, gap_days: int) -> dict:
+    """Run the split and feature stages for one arm, into its own directory.
+
+    The derived config is written beside the artifacts it produces, and the
+    stages are handed its path rather than its contents — which is the interface
+    they already have, so nothing about the shipped pipeline changes to
+    accommodate this. It also leaves each arm's provenance on disk: what
+    produced these matrices is a file next to them, diffable against the
+    shipped config.
+
+    Paths inside a config are relative to the working directory rather than to
+    the config, so a config living under `data/` still addresses the project.
+
+    Args:
+        config: The loaded `config.yaml`.
+        directory: Where this arm's artifacts and its config go. Created here.
+        train_start: First training day.
+        gap_days: Purged days between train and `VAL-FIT`.
+
+    Returns:
+        The arm's config, as `redirect` produced it.
+    """
+    arm = redirect(config, directory, train_start=train_start, gap_days=gap_days)
+
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    config_path = directory / "config.yaml"
+    config_path.write_text(yaml.safe_dump(arm, sort_keys=False))
+
+    splits.main(config_path)
+    build.main(config_path)
+
+    return arm
+
+
+def measure(
+    arms: dict[str, dict],
+    model_cfg: dict,
+    capacities: list[float],
+    paths: dict,
+) -> pd.DataFrame:
+    """Fit the untuned reference on every arm and score `VAL-FIT`.
+
+    Each arm brings its own matrices, and its own fitted vocabulary and medians
+    with them. That is the experiment rather than a detail: the encoders and
+    aggregates are fitted on `TRAIN`, and `TRAIN` is what moves — so an arm
+    scores validation encoded against its own training window. Reusing one
+    arm's fits across the others would score an unpurged model through a purged
+    model's encoders, which is none of the three runs.
+
+    The instrument is whatever `model_cfg` carries; `main` passes the untuned
+    reference. The tuned knobs were selected on `VAL-FIT` under the shipped
+    split, and carrying them into an arm that trains on different data would
+    import a selection that arm never made.
+
+    Args:
+        arms: `{name: arm config}`, the reference first. `REFERENCE_ARM` must be
+            among them.
+        model_cfg: The `model:` config block, carrying the instrument.
+        capacities: Review capacities.
+        paths: The shipped `paths:` block — records go where every other run's
+            records go, not into the arm directories.
+
+    Returns:
+        One row per arm: `arm`, `train_rows`, `train_frauds`, `pr_auc`,
+        `best_iteration`, `delta`. `delta` is against the purged arm.
+
+    Raises:
+        KeyError: If the purged arm is absent. It is what the others are read
+            against, and a table of unpurged runs answers nothing.
+    """
+    if REFERENCE_ARM not in arms:
+        raise KeyError(f"no `{REFERENCE_ARM}` arm: it is what the gap is measured against")
+
+    measured = []
+
+    for name, arm in arms.items():
+        # The arm's own fits, from the arm's own training window. That is the
+        # experiment: reusing one arm's tables would score an unpurged model
+        # through a purged model's encoders, which is none of the three runs.
+        matrices, _, _ = prepare_matrices(
+            arm["paths"]["features_dir"], model_cfg, ("train", "val_fit")
+        )
+
+        scored, best_iteration, _ = fit_without(matrices, (), model_cfg)
+        metrics_path, _ = write_run(
+            f"purge_{name}",
+            scored,
+            capacities,
+            paths["metrics_dir"],
+            paths["predictions_dir"],
+            splits=("val_fit",),
+        )
+
+        pr_auc = json.loads(Path(metrics_path).read_text())["splits"]["val_fit"]["pr_auc"]
+        measured.append(
+            {
+                "arm": name,
+                "train_days": f"{arm['splits']['train_start']}-{_train_end(arm)}",
+                "train_rows": len(matrices["train"]),
+                "train_frauds": int(matrices["train"][LABEL].sum()),
+                "pr_auc": pr_auc,
+                "best_iteration": best_iteration,
+            }
+        )
+        log.info("arm=%-10s val_fit pr_auc=%.5f -> %s", name, pr_auc, metrics_path)
+
+    comparison = pd.DataFrame(measured)
+
+    reference = comparison.loc[comparison["arm"] == REFERENCE_ARM, "pr_auc"].item()
+    comparison["delta"] = comparison["pr_auc"] - reference
+
+    return comparison
+
+
+def _train_end(arm: dict) -> int:
+    """The arm's last training day, derived the way `splits.py` derives it."""
+    return resolve_boundaries(arm["splits"])["train"][1]

@@ -28,14 +28,7 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities
 from fraud_engine.models.ablation import REFERENCE, all_arms, fit_without
-from fraud_engine.models.train import (
-    apply_categories,
-    apply_medians,
-    feature_columns,
-    fit_categories,
-    fit_medians,
-    load_split_matrices,
-)
+from fraud_engine.models.train import feature_columns, prepare_matrices
 
 log = logging.getLogger(__name__)
 
@@ -178,13 +171,7 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     config = load_config(config_path)
     paths, model_cfg = config["paths"], config["model"]
 
-    matrices = load_split_matrices(paths["features_dir"], ("train", "val_fit"))
-    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
-    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
-
-    if model_cfg["impute"]:
-        medians = fit_medians(matrices["train"], feature_columns(matrices["train"]))
-        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+    matrices, _, _ = prepare_matrices(paths["features_dir"], model_cfg, ("train", "val_fit"))
 
     # The arm sizes, and nothing else. Deduplicated because two arms of the same
     # width share a bar — the draws do not know which family they stood in for.
