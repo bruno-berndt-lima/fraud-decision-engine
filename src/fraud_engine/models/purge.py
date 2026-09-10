@@ -24,8 +24,9 @@ import pandas as pd
 import yaml
 
 from fraud_engine.data import splits
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import resolve_boundaries
-from fraud_engine.evaluation.report import write_run
+from fraud_engine.evaluation.report import load_capacities, write_run
 from fraud_engine.features import build
 from fraud_engine.models.ablation import fit_without
 from fraud_engine.models.train import LABEL, prepare_matrices
@@ -223,3 +224,57 @@ def measure(
 def _train_end(arm: dict) -> int:
     """The arm's last training day, derived the way `splits.py` derives it."""
     return resolve_boundaries(arm["splits"])["train"][1]
+
+
+# Each arm's training window. The evaluation boundaries are not here: they come
+# from the shipped config untouched, and an arm that moved them would compare
+# two models on two different validation sets.
+ARMS = {
+    REFERENCE_ARM: {"train_start": 1, "gap_days": 30},
+    "recent": {"train_start": 31, "gap_days": 0},
+    "unpurged": {"train_start": 1, "gap_days": 0},
+}
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Build every arm, measure it, and write the comparison.
+
+    Wiring only. Invoked by `make purge` as
+    `python -m fraud_engine.models.purge`.
+
+    Each arm rebuilds splits and features from `interim`, so the shipped
+    artifacts are read by nothing here and written by nothing here. `VAL-CAL` is
+    never loaded: three arms compete for an explanation and none of them ships.
+
+    Args:
+        config_path: Path to `config.yaml`.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, model_cfg = config["paths"], config["model"]
+
+    working = Path(paths["purge_dir"])
+
+    arms = {}
+    for name, window in ARMS.items():
+        log.info("building arm %s — %s", name, window)
+        arms[name] = build_arm(config, working / name, **window)
+
+    capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
+
+    # The untuned reference, as with every other Phase 05 comparison. The tuned
+    # knobs were selected on VAL-FIT under the shipped split; carrying them into
+    # an arm that trains on other data imports a selection it never made.
+    comparison = measure(arms, {**model_cfg, "tuned": {}}, capacities, paths)
+
+    path = Path(paths["purge"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    comparison.to_csv(path, index=False)
+
+    log.info("\n%s", comparison.to_string(index=False))
+    log.info("wrote %s", path)
+
+
+if __name__ == "__main__":
+    main()

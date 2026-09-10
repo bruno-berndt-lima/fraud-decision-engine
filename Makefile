@@ -54,6 +54,7 @@ SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
 ABL_FLOOR   := $(REPORTS_DIR)/metrics/ablation_floor.csv
+PURGE       := $(REPORTS_DIR)/metrics/purge.csv
 TUNING      := $(REPORTS_DIR)/metrics/tuning.json
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
@@ -241,6 +242,18 @@ $(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
               src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.floor
 
+# Depends on $(INTERIM) rather than $(FEATURES): every arm rebuilds its own
+# splits and matrices from the pre-split frame, so the shipped ones are neither
+# read nor written here.
+$(PURGE): $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+          src/fraud_engine/models/purge.py \
+          src/fraud_engine/models/ablation.py \
+          src/fraud_engine/models/train.py \
+          src/fraud_engine/data/splits.py \
+          src/fraud_engine/features/build.py \
+          src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+	$(RUN) python -m fraud_engine.models.purge
+
 # Writes a verdict, never the model. Adopting the winning parameters is a
 # committed edit to config.yaml, so $(MODEL) stays the one thing `make train`
 # produces and the history shows when tuning changed it.
@@ -259,7 +272,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -272,6 +285,7 @@ spread:    $(SEED_SPREAD) ## Measure how far one configuration moves on seed alo
 imbalance: $(IMBALANCE)   ## E2: none vs class weighting vs SMOTE, on LightGBM
 ablation:  $(ABLATION)    ## E4: what each feature family costs when removed
 ablation-floor: $(ABL_FLOOR)  ## E4: what removing that many arbitrary columns costs
+purge:     $(PURGE)       ## E1: what the label-maturity gap costs
 tune:      $(TUNING)      ## Search hyperparameters and judge the winner by E6
 
 # ==============================================================================

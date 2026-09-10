@@ -11,8 +11,18 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
-from fraud_engine.models.purge import REDIRECTED, SHARED, redirect
+from fraud_engine.data.splits import resolve_boundaries
+from fraud_engine.models import purge
+from fraud_engine.models.purge import (
+    ARMS,
+    REDIRECTED,
+    REFERENCE_ARM,
+    SHARED,
+    build_arm,
+    redirect,
+)
 
 CONFIG = {
     "paths": {
@@ -131,3 +141,109 @@ def test_the_shipped_window_can_be_reproduced():
     purged = redirect(CONFIG, "data/e1/purged", train_start=1, gap_days=30)
 
     assert purged["splits"] == CONFIG["splits"]
+
+
+# ------------------------------------------------------------------------------
+# ARMS
+# ------------------------------------------------------------------------------
+
+
+def test_the_reference_arm_is_the_shipped_window():
+    assert ARMS[REFERENCE_ARM] == {"train_start": 1, "gap_days": 30}
+
+
+def test_the_reference_comes_first():
+    assert next(iter(ARMS)) == REFERENCE_ARM
+
+
+def test_the_middle_arm_holds_the_shipped_width():
+    """Recency without volume. If its width drifted, the decomposition stops working."""
+    boundaries = {
+        name: resolve_boundaries({**CONFIG["splits"], **arm}) for name, arm in ARMS.items()
+    }
+    widths = {name: b["train"][1] - b["train"][0] + 1 for name, b in boundaries.items()}
+
+    assert widths["recent"] == widths[REFERENCE_ARM]
+    assert widths["unpurged"] > widths[REFERENCE_ARM]
+
+
+def test_only_the_unpurged_arms_reach_the_validation_boundary():
+    boundaries = {
+        name: resolve_boundaries({**CONFIG["splits"], **arm}) for name, arm in ARMS.items()
+    }
+    first_validation_day = CONFIG["splits"]["val_fit_start"]
+
+    assert boundaries[REFERENCE_ARM]["train"][1] < first_validation_day - 1
+    for name in ("recent", "unpurged"):
+        assert boundaries[name]["train"][1] == first_validation_day - 1
+
+
+def test_no_arm_moves_an_evaluation_boundary():
+    for arm in ARMS.values():
+        boundaries = resolve_boundaries({**CONFIG["splits"], **arm})
+        for split in ("val_fit", "val_cal", "test"):
+            assert boundaries[split] == resolve_boundaries(CONFIG["splits"])[split]
+
+
+# ------------------------------------------------------------------------------
+# build_arm
+# ------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def stages(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Record which config path each stage was handed, and run nothing."""
+    seen: list[Path] = []
+    monkeypatch.setattr(purge.splits, "main", lambda path: seen.append(path))
+    monkeypatch.setattr(purge.build, "main", lambda path: seen.append(path))
+    return seen
+
+
+def test_both_stages_run_against_the_arms_config(tmp_path: Path, stages):
+    build_arm(CONFIG, tmp_path / "unpurged", train_start=1, gap_days=0)
+
+    assert stages == [tmp_path / "unpurged" / "config.yaml"] * 2
+
+
+def test_the_arms_config_is_left_beside_its_artifacts(tmp_path: Path, stages):
+    """Provenance: what produced these matrices is a file next to them."""
+    arm = build_arm(CONFIG, tmp_path / "unpurged", train_start=1, gap_days=0)
+
+    written = yaml.safe_load((tmp_path / "unpurged" / "config.yaml").read_text())
+
+    assert written == arm
+
+
+def test_the_written_config_carries_the_arms_window(tmp_path: Path, stages):
+    build_arm(CONFIG, tmp_path / "recent", train_start=31, gap_days=0)
+
+    written = yaml.safe_load((tmp_path / "recent" / "config.yaml").read_text())
+
+    assert (written["splits"]["train_start"], written["splits"]["gap_days"]) == (31, 0)
+
+
+def test_the_written_config_points_at_the_arms_directory(tmp_path: Path, stages):
+    """A stage reading it must not find a shipped path."""
+    build_arm(CONFIG, tmp_path / "unpurged", train_start=1, gap_days=0)
+
+    written = yaml.safe_load((tmp_path / "unpurged" / "config.yaml").read_text())
+
+    for key in REDIRECTED:
+        assert Path(written["paths"][key]).is_relative_to(tmp_path / "unpurged")
+
+
+def test_the_directory_is_created(tmp_path: Path, stages):
+    build_arm(CONFIG, tmp_path / "nested" / "unpurged", train_start=1, gap_days=0)
+
+    assert (tmp_path / "nested" / "unpurged").is_dir()
+
+
+# ------------------------------------------------------------------------------
+# measure
+# ------------------------------------------------------------------------------
+
+
+def test_measuring_without_the_purged_arm_raises():
+    """A table of unpurged runs answers nothing."""
+    with pytest.raises(KeyError, match="it is what the gap is measured against"):
+        purge.measure({"unpurged": {}}, {}, [0.1], CONFIG["paths"])

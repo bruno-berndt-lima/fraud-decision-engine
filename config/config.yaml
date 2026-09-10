@@ -55,6 +55,15 @@ paths:
   # family delta is read against. Tracked: a decision input, exactly like
   # noise_floor.csv, and measured under the tree rather than under the probe.
   ablation_floor: reports/metrics/ablation_floor.csv
+  # E1's three training windows, side by side. Tracked: the comparison is the
+  # deliverable, and the purged arm is the shipped split rebuilt rather than
+  # read, so all three rows come from one code path on one day.
+  purge: reports/metrics/purge.csv
+  # Where E1's arms build their own splits and matrices. Gitignored with the
+  # rest of data/. Separate from the shipped pipeline on purpose: an arm that
+  # wrote over the artifacts it is compared against would be measured against
+  # itself, and nothing would look wrong.
+  purge_dir: data/e1
   # The study, the winner, the confirmation runs and E6's verdict, in one
   # record. Tracked, and one file rather than three: a verdict separated from
   # the runs behind it is a claim without its evidence. mlruns/ is gitignored,
