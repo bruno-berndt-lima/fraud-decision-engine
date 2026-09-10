@@ -14,7 +14,7 @@ Results land back in this file as each phase closes.
 
 ## E1 — What the purge gap costs
 
-**Status:** registered, not yet run. Phase 05.
+**Status:** method registered at three arms, not yet run. Phase 05.
 
 **Question.** How much of the model's apparent performance comes from the
 label-maturity purge being absent? Equivalently: what is methodological honesty
@@ -70,6 +70,63 @@ boundary being written out as a literal. Hardcoding `train_end: 90` alongside
 `gap_days: 30` states the same fact twice, and setting the gap to 0 would then
 leave days 91–120 belonging to no split at all: silently discarded, and the
 ablation would measure a smaller training set rather than an unpurged one.
+
+### Method — Phase 05, revised to three arms
+
+**Two arms answer with one number what the question above splits into two
+advantages.** The unpurged run is handed *recency* — training up to the
+validation boundary — and *volume*: 31% more rows and 36% more fraud. Measured
+together, a large delta cannot say which one produced it, and the two have
+completely different implications. Recency is something a production retrain
+cadence can partly buy; labels that could not exist yet is something nothing
+buys.
+
+| arm | `TRAIN` | days | gap | what it is handed |
+|---|---|---:|---|---|
+| `purged` | 1–90 | 90 | 91–120 | nothing — the shipped split |
+| `recent` | 31–120 | 90 | none | recency, at the shipped volume |
+| `unpurged` | 1–120 | 120 | none | recency **and** volume |
+
+`purged → recent` isolates recency. `recent → unpurged` isolates volume. Each
+arm is a config value and nothing else: `recent` is `train_start: 31` with
+`gap_days: 0`, and `resolve_boundaries` already derives the rest.
+
+**Nothing shipped is overwritten.** Each arm runs the split and feature stages
+against a config whose outputs are redirected into a working directory —
+`splits`, `split_summary`, `features_dir`, and the three fitted artifacts. Only
+`interim` is shared, and sharing it is what makes the arms comparable: it is
+pre-split, so every arm reads the same rows and differs only in how they are
+labelled. Editing the shipped config in place and restoring it afterwards would
+put every downstream stage one interruption away from silently reading the
+wrong split.
+
+**"Identical evaluation slices" needs stating precisely.** The `VAL-FIT` *rows*
+are the same in all three arms, and so is the label vector. **The feature values
+are not.** Frequency encodings, entity aggregates and the V-block reduction are
+fitted on `TRAIN`, and `TRAIN` is what moves — so validation arrives encoded
+against a different fit in each arm. That is correct and unavoidable: it is part
+of what the purge costs, not a confound to be removed. Removing it would mean
+scoring an unpurged model through a purged model's encoders, which is neither
+run.
+
+**Instrument: the untuned reference**, as with every other Phase 05 comparison.
+It samples neither rows nor columns, so no arm carries seed noise. The tuned
+configuration is not used — its knobs were selected on this project's `VAL-FIT`
+under the shipped split, and carrying them into an arm that trains on different
+data would import a selection the arm did not make.
+
+**This experiment has no bar, and that is registered rather than papered over.**
+There is no natural control: the ablation floor measures removing *columns*, and
+the seed spread is zero on this instrument. The early-stopping unfairness E6
+recorded applies — more training data moves where the curve peaks — and nothing
+here bounds it. So the reading rule is directional, not a threshold: E1 is a
+measurement with a registered expected ordering and the sanity check above, and
+the `recent` arm is the closest thing to a control, since it moves the training
+window without removing the purge.
+
+**Reported on `VAL-FIT` only.** Three arms compete for an explanation and none
+of them ships, so `VAL-CAL` is not scored — the rule `DEFAULT_SPLITS` states.
+The USD half belongs to Phase 06 and is not owed by this run.
 
 ---
 
