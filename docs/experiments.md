@@ -1200,12 +1200,18 @@ project than a marginally better number with a worse story behind it.
 signal lives in columns nobody outside Vesta can reproduce. So: *how much of it
 survives if you only keep what you could build yourself?*
 
-`features.md` already partitions the matrix to answer that. Tiers 1 and 2 are
-what this project could construct from a raw transaction feed — the request's
-own fields, and tables fitted at train time from them. Tier 0 is 295 columns of
-pre-computed aggregates over windows never published, and `CLAUDE.md` names the
-exposure the project's principal limitation. **It has never been given a
-number.**
+`features.md` already partitions the matrix to answer that. Tiers 1, 2 and 3 are
+all constructible from a raw transaction feed — the request's own fields, tables
+fitted at train time from them, and a keyed store this project could stand up.
+Tier 0 is 295 columns of pre-computed aggregates over windows never published,
+and `CLAUDE.md` names the exposure the project's principal limitation. **It has
+never been given a number.**
+
+**The buildable set is the complement of tier 0, and tier 3 is inside it.** Tier
+3 is the expensive tier, not an impossible one; `features.md` grades it *us,
+expensively*. Removing it here would answer the serving question a second time
+under the reproducibility question's name — which is the exact conflation the
+next paragraph exists to prevent, so it is worth stating twice.
 
 **Distinct from E3, and the difference is the axis.** E3 asks what is expensive
 to *serve*; this asks what is impossible to *rebuild*. A tier-3 column is
@@ -1219,17 +1225,18 @@ one.
 | arm | removed | features left | what it is |
 |---|---:|---:|---|
 | `full` | 0 | 349 | the reference, the shipped feature set |
-| `reproducible` | 299 | 50 | tiers 1 and 2 — everything this project could build |
+| `reproducible` | 295 | 54 | tiers 1, 2 and 3 — everything this project could build |
 
-Read against the bar at width 299, drawn by the rule E4 registers: ten random
+Read against the bar at width 295, drawn by the rule E4 registers: ten random
 draws of that width on the untuned reference, and the arm is movement only if
 its absolute delta exceeds the largest absolute delta of those draws. Nothing
 about the design is chosen after the fact — the width is what the partition
-produces.
+produces, and `resolve_tiers` asserts the partition against what `features.md`
+publishes rather than trusting it.
 
-**The control at that width is degenerate, worse than the V-block's was.** 295
-of the 299 removed columns are tier 0, which is 84% of the matrix, so a random
-draw of 299 columns is overwhelmingly made of the same thing the arm removes.
+**The control at that width is degenerate, worse than the V-block's was.** All
+295 removed columns are tier 0, which is 84% of the matrix, so a random draw of
+295 columns is overwhelmingly made of the same thing the arm removes.
 The bar there is close to a restatement of the arm rather than a control for it,
 and no reading may claim otherwise. It is measured anyway, because the
 alternative is reporting a delta with no scale at all.
