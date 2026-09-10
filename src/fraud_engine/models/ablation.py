@@ -35,9 +35,20 @@ from pathlib import Path
 
 import pandas as pd
 
-from fraud_engine.evaluation.report import write_run
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
+from fraud_engine.evaluation.report import load_capacities, write_run
 from fraud_engine.features.registry import resolve_families
-from fraud_engine.models.train import feature_columns, fit, score, to_dataset
+from fraud_engine.models.train import (
+    apply_categories,
+    apply_medians,
+    feature_columns,
+    fit,
+    fit_categories,
+    fit_medians,
+    load_split_matrices,
+    score,
+    to_dataset,
+)
 
 log = logging.getLogger(__name__)
 
@@ -125,6 +136,37 @@ def drop_columns(frame: pd.DataFrame, columns: tuple[str, ...]) -> pd.DataFrame:
     return frame.drop(columns=list(columns))
 
 
+def fit_without(
+    matrices: dict[str, pd.DataFrame], dropped: tuple[str, ...], model_cfg: dict
+) -> tuple[pd.DataFrame, int, int]:
+    """Fit with these columns gone and score `VAL-FIT`.
+
+    One arm, whether the columns came from the registry or from a draw. The
+    two callers differ in what they do with the result — one records it as a
+    run, the other only needs its number — and not in how it was produced,
+    which is the property that lets a family be compared to the floor at all.
+
+    Args:
+        matrices: Prepared matrices. `train` and `val_fit` are required.
+        dropped: Columns to remove. Empty is the reference arm.
+        model_cfg: The `model:` config block, carrying the instrument.
+
+    Returns:
+        `(scored, best_iteration, n_features)`, the frame carrying `VAL-FIT`
+        alone.
+    """
+    frames = {split: drop_columns(matrices[split], dropped) for split in ("train", "val_fit")}
+    columns = feature_columns(frames["train"])
+
+    train = to_dataset(frames["train"], columns)
+    val_fit = to_dataset(frames["val_fit"], columns, reference=train)
+
+    booster = fit(train, val_fit, model_cfg)
+    scored = score(booster, {"val_fit": frames["val_fit"]}, columns)
+
+    return scored, booster.best_iteration, len(columns)
+
+
 def measure(
     matrices: dict[str, pd.DataFrame],
     arms: dict[str, tuple[str, ...]],
@@ -175,15 +217,8 @@ def measure(
     measured = []
 
     for arm, dropped in arms.items():
-        frames = {split: drop_columns(matrices[split], dropped) for split in ("train", "val_fit")}
-        columns = feature_columns(frames["train"])
+        scored, best_iteration, n_features = fit_without(matrices, dropped, model_cfg)
 
-        train = to_dataset(frames["train"], columns)
-        val_fit = to_dataset(frames["val_fit"], columns, reference=train)
-
-        booster = fit(train, val_fit, model_cfg)
-
-        scored = score(booster, {"val_fit": frames["val_fit"]}, columns)
         metrics_path, _ = write_run(
             f"ablation_{arm}",
             scored,
@@ -198,9 +233,9 @@ def measure(
             {
                 "arm": arm,
                 "removed": len(dropped),
-                "n_features": len(columns),
+                "n_features": n_features,
                 "pr_auc": pr_auc,
-                "best_iteration": booster.best_iteration,
+                "best_iteration": best_iteration,
             }
         )
         log.info(
@@ -219,3 +254,53 @@ def measure(
     comparison["delta"] = comparison["pr_auc"] - reference
 
     return comparison
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Measure every arm on the untuned configuration and write the comparison.
+
+    Wiring only. Invoked by ``make ablation`` as
+    ``python -m fraud_engine.models.ablation``.
+
+    `VAL-CAL` is not loaded. Naming it in `write_run` would keep it out of the
+    records, but a field of candidates should not be able to reach the
+    calibration slice at all — the same structural guarantee `tune.py` and
+    `seeds.py` already make.
+
+    Args:
+        config_path: Path to `config.yaml`.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, model_cfg = config["paths"], config["model"]
+
+    matrices = load_split_matrices(paths["features_dir"], ("train", "val_fit"))
+    vocabulary = fit_categories(matrices["train"], model_cfg["min_category_rows"])
+    matrices = {split: apply_categories(frame, vocabulary) for split, frame in matrices.items()}
+
+    # Fitted on the full training window and applied before anything is removed,
+    # so an arm inherits exactly what its surviving columns would have had.
+    if model_cfg["impute"]:
+        medians = fit_medians(matrices["train"], feature_columns(matrices["train"]))
+        matrices = {split: apply_medians(frame, medians) for split, frame in matrices.items()}
+
+    arms = resolve_arms(paths["features_dir"])
+    capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
+
+    # `tuned` emptied, and `impute` left as config has it. The instrument is the
+    # untuned reference exactly as E2 measured it — repeated fits return
+    # identical digits, so a delta carries no seed noise. Anything else would be
+    # a third configuration nobody has a spread for.
+    comparison = measure(matrices, arms, {**model_cfg, "tuned": {}}, capacities, paths)
+
+    path = Path(paths["ablation"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    comparison.to_csv(path, index=False)
+
+    log.info("\n%s", comparison.to_string(index=False))
+    log.info("wrote %s", path)
+
+
+if __name__ == "__main__":
+    main()

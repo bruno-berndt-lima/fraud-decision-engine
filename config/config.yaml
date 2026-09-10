@@ -46,6 +46,15 @@ paths:
   # E2's LightGBM arms, side by side. Tracked: the comparison is the deliverable,
   # and the point of the experiment is that the losing arms are reported too.
   imbalance: reports/metrics/imbalance.csv
+  # E4's family deltas, re-measured under a tree by removal rather than by
+  # addition. Tracked for the same reason: the comparison is the deliverable,
+  # and the families that move nothing are as much the result as the one that
+  # does.
+  ablation: reports/metrics/ablation.csv
+  # How far removing that many arbitrary columns moves the metric — the bar each
+  # family delta is read against. Tracked: a decision input, exactly like
+  # noise_floor.csv, and measured under the tree rather than under the probe.
+  ablation_floor: reports/metrics/ablation_floor.csv
   # The study, the winner, the confirmation runs and E6's verdict, in one
   # record. Tracked, and one file rather than three: a verdict separated from
   # the runs behind it is a claim without its evidence. mlruns/ is gitignored,
@@ -335,6 +344,11 @@ model:
   # Fixed so a rerun reproduces. Step 4 varies it deliberately, to measure how
   # much of a difference between two configs is just the seed; nothing else may.
   seed: 0
+
+  # Random column sets per width in the ablation floor. The widths themselves
+  # are not here on purpose: they are the family sizes, read from the built
+  # matrices, so no choice about them can be made after seeing a delta.
+  floor_draws: 10
 
   # Where the seed spread is measured. Points, not one point: the untuned
   # reference has no seed sensitivity at all, because LightGBM's defaults sample

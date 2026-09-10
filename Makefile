@@ -52,6 +52,8 @@ MODEL     := $(MODEL_DIR)/model.txt
 MEDIANS   := $(MODEL_DIR)/medians.parquet
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
+ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
+ABL_FLOOR   := $(REPORTS_DIR)/metrics/ablation_floor.csv
 TUNING      := $(REPORTS_DIR)/metrics/tuning.json
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
@@ -218,6 +220,27 @@ $(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
               src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.models.imbalance
 
+# E4's handoff, under a tree. Measures on the untuned reference rather than on
+# the shipped configuration, so it does not depend on $(MODEL) and adopting a
+# new one does not restage it.
+$(ABLATION): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+             src/fraud_engine/models/ablation.py \
+             src/fraud_engine/models/train.py \
+             src/fraud_engine/features/registry.py \
+             src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+	$(RUN) python -m fraud_engine.models.ablation
+
+# Separate from $(ABLATION) for the reason $(FAMILY_FLOOR) is separate from
+# $(FAMILIES): fifty fits answer a question the six arms do not change, so
+# re-measuring a family should not re-measure the bar it is read against.
+$(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+              src/fraud_engine/models/floor.py \
+              src/fraud_engine/models/ablation.py \
+              src/fraud_engine/models/train.py \
+              src/fraud_engine/features/registry.py \
+              src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.models.floor
+
 # Writes a verdict, never the model. Adopting the winning parameters is a
 # committed edit to config.yaml, so $(MODEL) stays the one thing `make train`
 # produces and the history shows when tuning changed it.
@@ -236,7 +259,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -247,6 +270,8 @@ floor:     $(FAMILY_FLOOR) ## Re-measure how far chance alone moves the metric
 train:     $(MODEL)     ## Train the model
 spread:    $(SEED_SPREAD) ## Measure how far one configuration moves on seed alone
 imbalance: $(IMBALANCE)   ## E2: none vs class weighting vs SMOTE, on LightGBM
+ablation:  $(ABLATION)    ## E4: what each feature family costs when removed
+ablation-floor: $(ABL_FLOOR)  ## E4: what removing that many arbitrary columns costs
 tune:      $(TUNING)      ## Search hyperparameters and judge the winner by E6
 
 # ==============================================================================
