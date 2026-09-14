@@ -14,6 +14,7 @@ from fraud_engine.evaluation.report import (
     PREDICTION_COLUMNS,
     build_report,
     evaluate_splits,
+    git_revision,
     load_capacities,
     load_operating_capacity,
     write_predictions,
@@ -246,3 +247,78 @@ def test_the_record_and_the_scores_describe_the_same_rows(tmp_path):
         rows = written[written["split"] == split]
         assert record["splits"][split]["n"] == len(rows)
         assert record["splits"][split]["positives"] == int(rows["isFraud"].sum())
+
+
+# ------------------------------------------------------------------------------
+# git_revision
+# ------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def checkout(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    """A throwaway repository with one commit, as the working directory."""
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "test")
+    (tmp_path / "src.py").write_text("x = 1\n")
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "kept.json").write_text("{}\n")
+    git("add", ".")
+    git("commit", "-q", "-m", "init")
+
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def test_a_clean_tree_is_stamped_with_the_bare_commit(checkout):
+    revision = git_revision()
+
+    assert revision is not None
+    assert len(revision) == 40
+    assert not revision.endswith("-dirty")
+
+
+def test_a_modified_tracked_file_marks_the_revision_dirty(checkout):
+    """The failure this exists for: a number produced by code the commit does not hold.
+
+    A tuned model once shipped stamped with the commit *before* its own
+    configuration, and nothing in the record said so.
+    """
+    (checkout / "src.py").write_text("x = 2\n")
+
+    assert git_revision().endswith("-dirty")
+
+
+def test_staged_but_uncommitted_changes_are_still_dirty(checkout):
+    import subprocess
+
+    (checkout / "src.py").write_text("x = 3\n")
+    subprocess.run(["git", "add", "src.py"], cwd=checkout, check=True)
+
+    assert git_revision().endswith("-dirty")
+
+
+def test_untracked_source_marks_the_revision_dirty(checkout):
+    (checkout / "new_module.py").write_text("y = 1\n")
+
+    assert git_revision().endswith("-dirty")
+
+
+def test_output_under_reports_does_not(checkout):
+    """A stage writes there before its result can be committed; that is not dirty code."""
+    (checkout / "reports" / "kept.json").write_text('{"changed": true}\n')
+    (checkout / "reports" / "fresh.json").write_text("{}\n")
+
+    assert not git_revision().endswith("-dirty")
+
+
+def test_outside_a_checkout_there_is_no_revision(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+
+    assert git_revision() is None
