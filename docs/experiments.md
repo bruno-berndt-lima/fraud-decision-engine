@@ -339,8 +339,8 @@ flattered by being measured on its own terms.
 | `none` | 0.51558 | 0.46010 | 24.83% | 133 |
 | `scale_pos_weight` | 0.49569 | 0.45359 | 25.06% | 312 |
 | `is_unbalance` | 0.49569 | 0.45359 | 25.06% | 312 |
-| `imputed` | 0.52820 | **0.47850** | **25.39%** | 561 |
-| `smote` | **0.54507** | 0.47375 | 25.17% | 897 |
+| `imputed` | **0.52820** | **0.47850** | **25.39%** | 561 |
+| `smote` | 0.52570 | 0.45244 | 24.83% | 350 |
 
 **`is_unbalance` and `scale_pos_weight` are the same thing**, to every digit, as
 expected. Demonstrated once so it never has to be argued again.
@@ -353,17 +353,27 @@ LightGBM loses 0.0065 — five times less. The direction is still negative, so
 the prediction was sound. Recall at capacity is a wash, marginally better in
 some cells and worse in others; PR-AUC decides it.
 
-**SMOTE wins the spent slice and loses the clean one.** It is first on `VAL-FIT`
-by a wide margin, second on `VAL-CAL`, and its drop between the two is the
-largest of any arm. That is the shape E6 registered in advance under *what this
-bar does not cover*: early stopping picks a round from the `VAL-FIT` curve, and
-an arm that trains for nine hundred rounds has far more opportunities to land on
-a lucky peak than one that stops at a hundred and thirty. The note was written
-before this run existed, and this is what it predicted.
+**SMOTE loses on both slices.** Below its own control, `imputed`, on `VAL-FIT`
+and on `VAL-CAL` alike, and below the untouched reference on `VAL-CAL`.
+
+**This paragraph said the opposite until the arm was re-measured**, and the
+correction is recorded rather than overwritten. As first measured, SMOTE was
+first on `VAL-FIT` by a wide margin — 0.54507, stopping at round 897 — and
+second on `VAL-CAL`, and the text read that as the long-run, lucky-peak shape
+E6 registered in advance. That run was made before `to_dataset` turned
+`feature_pre_filter` off. Re-fitting the identical resampled data with the flag
+in each state reproduces both numbers exactly: on, 0.54507 at round 897; off,
+0.52570 at round 350. The resampling is deterministic and the difference is the
+flag alone. Why the flag moves this arm and not the other four was not
+established.
+
+So the win on the spent slice was a property of how the dataset was built, not
+of the method, and the prediction it was offered as confirming has no
+confirmation here. **The verdict does not move** — SMOTE earns no place — and it
+now rests on the arm losing everywhere rather than on a gap between slices.
 
 **The control won.** `imputed` was added only to make the SMOTE arm
-interpretable, and it is the best arm on the untouched slice on both metric
-families. That was not an expected outcome and it sits awkwardly beside Phase
+interpretable, and it is the best arm on both slices on both metric families. That was not an expected outcome and it sits awkwardly beside Phase
 04's finding that missingness in this dataset is signal.
 
 An untested mechanism, offered as a hypothesis and not a conclusion: a column
@@ -1269,9 +1279,9 @@ first is measured here.** Early stopping picks the best round from the
 `VAL-FIT` curve, so a configuration that trains for many rounds has more
 opportunities to land on a lucky peak than one that stops early. The measured
 points differ by an order of magnitude in exactly that respect — the untuned
-reference chooses among a hundred-odd rounds, the aggressive point among nearly
-two thousand — so comparing them on `VAL-FIT` is not entirely fair to the
-shorter one.
+reference chooses among a hundred-odd rounds, the aggressive point among up to
+two and a half thousand — so comparing them on `VAL-FIT` is not entirely fair to
+the shorter one.
 
 The effect is smaller than the round counts suggest, because a boosting curve is
 smooth rather than a sequence of independent draws, and the number of effectively
@@ -1345,6 +1355,22 @@ Gap 0.06920 against a bar of 0.00832. **Accepted**, by a factor of eight.
 **The reference's spread is exactly zero**, over ten seeds. Re-running it was
 the part of the method that looked wasteful, and it is the part that turned an
 expectation into a check.
+
+**The spread at the subsampling points was measured twice, and the first
+measurement described a pipeline that no longer exists.** It was taken before
+`feature_pre_filter` was turned off, and that flag changes which columns a
+subsampled tree draws from; the check that it changed nothing had been run only
+on the untuned reference, the one configuration with nothing to draw. Re-measured
+under the current pipeline, every subsampled and aggressive seed returns a
+different number and the spread barely moves:
+
+| point | spread, first measured | spread, current pipeline |
+|---|---:|---:|
+| subsampled | 0.00827 | 0.00831 |
+| aggressive | 0.00915 | 0.00813 |
+
+The verdict above is unaffected. It was computed from the confirmation runs, which
+were made after the flag changed and reproduce to every digit.
 
 **The selection inflation was far smaller than predicted.** The search reported
 0.58878; re-measured across seeds the same configuration averages 0.58478. So

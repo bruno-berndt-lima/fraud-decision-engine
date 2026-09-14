@@ -398,9 +398,13 @@ def to_dataset(
     features would stay wrongly dropped. A search that moves that knob downward
     hits it. Setting the flag only where the search runs would bin the tuned
     candidate differently from the reference it is judged against, which is the
-    one thing E6's comparison cannot survive. It costs memory and nothing else:
-    a pre-filtered feature is one that could not have been split anyway, and the
-    untuned reference returns the same score to eight decimal places either way.
+    one thing E6's comparison cannot survive.
+
+    **It is not free, and every result in this project is measured with it
+    off.** On the untuned reference it changes nothing. Where columns are
+    subsampled, or the rows are synthesised, it changes which model trains: the
+    seed-spread points and E2's SMOTE arm both moved when it was turned off, and
+    were re-measured. Why those two and not the rest was not established.
 
     Args:
         frame: A prepared matrix, already through ``apply_categories``. Passing
