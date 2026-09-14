@@ -1,0 +1,51 @@
+{
+  "name": "purge_unpurged",
+  "created": "2026-09-14T15:12:38+00:00",
+  "git_revision": "caf3fc0d9c995b8ac5df67c96b7d5f51926b8d39-dirty",
+  "capacities": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "splits": {
+    "val_fit": {
+      "n": 57464,
+      "positives": 1990,
+      "base_rate": 0.03463037727968815,
+      "pr_auc": 0.6504302400526281,
+      "roc_auc": 0.9326754278295615,
+      "recall_at_capacity": [
+        {
+          "recall": 0.13266331658291458,
+          "reviewed": 279,
+          "caught": 264,
+          "positives": 1990,
+          "capacity": 0.005,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.14020100502512564,
+          "share_of_ceiling": 0.9462365591397849
+        },
+        {
+          "recall": 0.2552763819095477,
+          "reviewed": 567,
+          "caught": 508,
+          "positives": 1990,
+          "capacity": 0.01,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.28492462311557787,
+          "share_of_ceiling": 0.8959435626102292
+        },
+        {
+          "recall": 0.4467336683417085,
+          "reviewed": 1140,
+          "caught": 889,
+          "positives": 1990,
+          "capacity": 0.02,
+          "ambiguous_days": 0,
+          "recall_ceiling": 0.5728643216080402,
+          "share_of_ceiling": 0.7798245614035086
+        }
+      ]
+    }
+  }
+}

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pandas as pd
 import pytest
 import yaml
 
@@ -21,6 +22,7 @@ from fraud_engine.models.purge import (
     REFERENCE_ARM,
     SHARED,
     build_arm,
+    cut_interim,
     redirect,
 )
 
@@ -215,11 +217,11 @@ def test_the_arms_config_is_left_beside_its_artifacts(tmp_path: Path, stages):
 
 
 def test_the_written_config_carries_the_arms_window(tmp_path: Path, stages):
-    build_arm(CONFIG, tmp_path / "recent", train_start=31, gap_days=0)
+    build_arm(CONFIG, tmp_path / "unpurged", train_start=1, gap_days=0)
 
-    written = yaml.safe_load((tmp_path / "recent" / "config.yaml").read_text())
+    written = yaml.safe_load((tmp_path / "unpurged" / "config.yaml").read_text())
 
-    assert (written["splits"]["train_start"], written["splits"]["gap_days"]) == (31, 0)
+    assert (written["splits"]["train_start"], written["splits"]["gap_days"]) == (1, 0)
 
 
 def test_the_written_config_points_at_the_arms_directory(tmp_path: Path, stages):
@@ -247,3 +249,119 @@ def test_measuring_without_the_purged_arm_raises():
     """A table of unpurged runs answers nothing."""
     with pytest.raises(KeyError, match="it is what the gap is measured against"):
         purge.measure({"unpurged": {}}, {}, [0.1], CONFIG["paths"])
+
+
+# ------------------------------------------------------------------------------
+# a later start: the cut
+# ------------------------------------------------------------------------------
+
+
+def interim_frame(days=range(1, 61), rows_per_day: int = 3) -> pd.DataFrame:
+    """A pre-split frame valid under the interim schema's day column, and little else."""
+    day = [d for d in days for _ in range(rows_per_day)]
+    return pd.DataFrame(
+        {
+            "TransactionID": range(1, len(day) + 1),
+            "day": pd.array(day, dtype="int32"),
+            "isFraud": [0] * len(day),
+        }
+    )
+
+
+@pytest.fixture
+def no_schema(monkeypatch: pytest.MonkeyPatch):
+    """The synthetic frame carries three columns; the real schema wants hundreds."""
+    monkeypatch.setattr(purge, "validate_interim", lambda frame: frame)
+
+
+@pytest.fixture
+def shipped_interim(tmp_path: Path) -> Path:
+    path = tmp_path / "shipped" / "transactions.parquet"
+    path.parent.mkdir()
+    interim_frame().to_parquet(path, index=False)
+    return path
+
+
+def test_a_later_start_reads_its_own_cut():
+    arm = redirect(CONFIG, "data/e1/recent", train_start=31, gap_days=0)
+
+    assert arm["paths"][SHARED] == "data/e1/recent/transactions.parquet"
+
+
+def test_the_shipped_start_does_not_move_interim():
+    arm = redirect(CONFIG, "data/e1/purged", train_start=1, gap_days=30)
+
+    assert arm["paths"][SHARED] == CONFIG["paths"][SHARED]
+
+
+def test_a_start_before_the_table_raises():
+    with pytest.raises(ValueError, match="days the table does not hold"):
+        redirect(CONFIG, "data/e1/early", train_start=0, gap_days=0)
+
+
+def test_the_cut_keeps_only_days_from_the_first_one(tmp_path: Path, shipped_interim, no_schema):
+    destination = tmp_path / "recent" / "transactions.parquet"
+
+    dropped = cut_interim(shipped_interim, destination, first_day=31)
+    cut = pd.read_parquet(destination)
+
+    assert int(cut["day"].min()) == 31
+    assert int(cut["day"].max()) == 60
+    assert dropped == 30 * 3
+
+
+def test_the_cut_preserves_dtypes(tmp_path: Path, shipped_interim, no_schema):
+    destination = tmp_path / "recent" / "transactions.parquet"
+
+    cut_interim(shipped_interim, destination, first_day=31)
+
+    assert pd.read_parquet(destination).dtypes.equals(pd.read_parquet(shipped_interim).dtypes)
+
+
+def test_the_shipped_frame_is_not_modified(tmp_path: Path, shipped_interim, no_schema):
+    before = pd.read_parquet(shipped_interim)
+
+    cut_interim(shipped_interim, tmp_path / "recent" / "transactions.parquet", first_day=31)
+
+    pd.testing.assert_frame_equal(pd.read_parquet(shipped_interim), before)
+
+
+def test_cutting_in_place_raises(shipped_interim, no_schema):
+    with pytest.raises(ValueError, match="refusing to cut"):
+        cut_interim(shipped_interim, shipped_interim, first_day=31)
+
+
+def test_a_cut_that_drops_nothing_raises(tmp_path: Path, shipped_interim, no_schema):
+    """It would be the unpurged arm under another name, and read as volume doing nothing."""
+    with pytest.raises(ValueError, match="drops no rows"):
+        cut_interim(shipped_interim, tmp_path / "recent" / "transactions.parquet", first_day=1)
+
+
+def test_the_cut_is_validated_against_the_interim_schema(
+    tmp_path: Path, shipped_interim, monkeypatch: pytest.MonkeyPatch
+):
+    seen = []
+    monkeypatch.setattr(purge, "validate_interim", lambda frame: seen.append(len(frame)))
+
+    cut_interim(shipped_interim, tmp_path / "recent" / "transactions.parquet", first_day=31)
+
+    assert seen == [30 * 3]
+
+
+def test_a_later_arm_writes_its_cut_before_either_stage_runs(
+    tmp_path: Path, shipped_interim, no_schema, monkeypatch: pytest.MonkeyPatch
+):
+    """The split stage must never see a row the arm excluded."""
+    config = {**CONFIG, "paths": {**CONFIG["paths"], SHARED: str(shipped_interim)}}
+    first_days = []
+
+    def stage(path):
+        arm = yaml.safe_load(Path(path).read_text())
+        first_days.append(int(pd.read_parquet(arm["paths"][SHARED])["day"].min()))
+
+    monkeypatch.setattr(purge.splits, "main", stage)
+    monkeypatch.setattr(purge.build, "main", stage)
+
+    build_arm(config, tmp_path / "recent", train_start=31, gap_days=0)
+
+    assert first_days == [31, 31]

@@ -87,18 +87,47 @@ buys.
 | `recent` | 31–120 | 90 | none | recency, at the shipped volume |
 | `unpurged` | 1–120 | 120 | none | recency **and** volume |
 
-`purged → recent` isolates recency. `recent → unpurged` isolates volume. Each
-arm is a config value and nothing else: `recent` is `train_start: 31` with
-`gap_days: 0`, and `resolve_boundaries` already derives the rest.
+`purged → recent` isolates recency. `recent → unpurged` isolates volume. The
+`purged` and `unpurged` arms are a config value and nothing else — `gap_days` —
+and `resolve_boundaries` derives the rest.
+
+**`recent` cannot be a config value, and the attempt to make it one was refused
+by the right guard.** `train_start: 31` leaves days 1–30 claimed by no split,
+and `validate_splits` rejects a declared span narrower than the table because
+that is how rows get discarded silently. The honest construction removes the
+rows from the data rather than from the boundaries: the arm writes its own copy
+of `interim` holding days 31 onward, and every stage reads that. The cut is a
+file on disk, not an implication of a config.
 
 **Nothing shipped is overwritten.** Each arm runs the split and feature stages
 against a config whose outputs are redirected into a working directory —
-`splits`, `split_summary`, `features_dir`, and the three fitted artifacts. Only
-`interim` is shared, and sharing it is what makes the arms comparable: it is
-pre-split, so every arm reads the same rows and differs only in how they are
-labelled. Editing the shipped config in place and restoring it afterwards would
-put every downstream stage one interruption away from silently reading the
-wrong split.
+`splits`, `split_summary`, `features_dir`, and the three fitted artifacts.
+`interim` is shared by `purged` and `unpurged`, which read the same rows and
+differ only in how they are labelled; `recent` reads its own cut, and that
+difference is the arm. Editing the shipped config in place and restoring it
+afterwards would put every downstream stage one interruption away from silently
+reading the wrong split.
+
+**Why the cut and not the cheaper alternative.** `recent` could reuse the
+`unpurged` matrices and drop training rows before the booster. It would then fit
+its encoders, aggregates and V-block reduction on 120 days and its booster on
+90 — scoring a 90-day model through 120-day tables, which leaks volume into the
+one arm that exists to hold volume fixed. The same objection the next paragraph
+makes about sharing fits across arms.
+
+**What the cut costs, registered before it runs.** The causal features start
+cold. `velocity`'s seven-day window is not full until day 38, and
+`vel_recency_card1` reads a card last seen before day 31 as never seen — for
+infrequent cards, for longer than a week. The inherited columns are untouched,
+being pre-computed upstream, and validation carries ninety days of lookback
+inside the arm. So the artifact is confined to one family, on early training
+rows, and E3 measured that family's whole removal inside its bar.
+
+A degraded feature is not an absent one, though, and can mislead a tree more
+than a missing column would. The bias most plausibly runs against `recent`,
+which fixes how the arm is read: **if `recent` scores at or above `purged`,
+recency survives the artifact; if it scores below, the artifact is a live
+explanation and the recency reading is undecided.**
 
 **"Identical evaluation slices" needs stating precisely.** The `VAL-FIT` *rows*
 are the same in all three arms, and so is the label vector. **The feature values
@@ -121,8 +150,8 @@ the seed spread is zero on this instrument. The early-stopping unfairness E6
 recorded applies — more training data moves where the curve peaks — and nothing
 here bounds it. So the reading rule is directional, not a threshold: E1 is a
 measurement with a registered expected ordering and the sanity check above, and
-the `recent` arm is the closest thing to a control, since it moves the training
-window without removing the purge.
+the `recent` arm is the closest thing to a control, since it removes the purge
+without adding volume.
 
 **Reported on `VAL-FIT` only.** Three arms compete for an explanation and none
 of them ships, so `VAL-CAL` is not scored — the rule `DEFAULT_SPLITS` states.

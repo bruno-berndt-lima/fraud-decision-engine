@@ -12,6 +12,11 @@ split and feature stages against a config whose outputs are redirected into a
 working directory. Editing the shipped config in place and restoring it after
 would leave every downstream stage one interruption away from reading a split
 nobody chose.
+
+**An arm that starts later cuts its data, not its boundaries.** A declared span
+narrower than the table is refused by `validate_splits` as silent row loss, so
+such an arm writes its own copy of the pre-split frame and every stage reads
+that. E1 registers what the cut costs.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ import yaml
 from fraud_engine.data import splits
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import resolve_boundaries
+from fraud_engine.data.validate import validate_interim
 from fraud_engine.evaluation.report import load_capacities, write_run
 from fraud_engine.features import build
 from fraud_engine.models.ablation import fit_without
@@ -43,9 +49,10 @@ REFERENCE_ARM = "purged"
 # somewhere new has to be added here deliberately for that to keep holding.
 REDIRECTED = ("splits", "split_summary", "features_dir", "encoders", "amount_stats", "vblock")
 
-# Read and never written, and deliberately left where it is. It is pre-split, so
-# every arm reads the same rows and differs only in how they are labelled —
-# which is what makes the arms comparable at all.
+# Read and never written. Left where it is for every arm that starts on the
+# shipped first day, so those arms read the same rows and differ only in how
+# they are labelled. An arm starting later gets its own cut instead — see
+# `cut_interim` — and never a write to this one.
 SHARED = "interim"
 
 
@@ -57,7 +64,8 @@ def redirect(config: dict, directory: Path | str, *, train_start: int, gap_days:
     boundary from it, so an arm is two integers rather than a table of days.
     `paths` gets every written location rewritten under `directory`, keeping
     each file's own name so an arm's directory reads like a small copy of the
-    project.
+    project. An arm starting after the shipped first day also gets `interim`
+    redirected, to the cut `build_arm` writes.
 
     The input is not modified. A caller holding the shipped config after
     building three arms still holds the shipped config.
@@ -73,8 +81,9 @@ def redirect(config: dict, directory: Path | str, *, train_start: int, gap_days:
         A new config, shallow-copied except for the two blocks that change.
 
     Raises:
-        ValueError: If a redirected path is missing from config, or if two of
-            them would land on the same name. Either one leaves a stage writing
+        ValueError: If `train_start` precedes the shipped first day, if a
+            redirected path is missing from config, or if two of them would
+            land on the same name. Either one leaves a stage writing
             where the shipped pipeline writes, and the arm would be measured
             against an artifact it had just overwritten.
     """
@@ -87,11 +96,23 @@ def redirect(config: dict, directory: Path | str, *, train_start: int, gap_days:
             "an arm would write where the shipped pipeline writes"
         )
 
+    shipped_start = config["splits"]["train_start"]
+    if train_start < shipped_start:
+        raise ValueError(
+            f"train_start={train_start} precedes the shipped first day {shipped_start}; "
+            "an arm cannot train on days the table does not hold"
+        )
+
     paths = {**config["paths"]}
     for key in REDIRECTED:
         paths[key] = str(directory / Path(paths[key]).name)
 
-    landed = [paths[key] for key in REDIRECTED]
+    # A later start reads its own cut of the pre-split frame. Redirected here,
+    # alongside everything else, so the arm's config names the file it read.
+    if train_start > shipped_start:
+        paths[SHARED] = str(directory / Path(config["paths"][SHARED]).name)
+
+    landed = [paths[key] for key in (*REDIRECTED, SHARED) if paths[key] != config["paths"][key]]
     if len(set(landed)) != len(landed):
         raise ValueError(
             f"redirected paths collide under {directory}: {sorted(landed)}; "
@@ -103,6 +124,48 @@ def redirect(config: dict, directory: Path | str, *, train_start: int, gap_days:
         "paths": paths,
         "splits": {**config["splits"], "train_start": train_start, "gap_days": gap_days},
     }
+
+
+def cut_interim(source: Path | str, destination: Path | str, first_day: int) -> int:
+    """Write the pre-split frame from `first_day` onward, and nothing else about it.
+
+    A row filter and a re-validation. The schema is checked again because the
+    cut is a new artifact every later stage trusts, and a filter that quietly
+    changed a dtype on the way through parquet would surface as a feature
+    difference nobody could trace back here.
+
+    Args:
+        source: The shipped `interim` parquet. Read, never written.
+        destination: Where the cut goes.
+        first_day: The first day kept.
+
+    Returns:
+        How many rows were dropped.
+
+    Raises:
+        ValueError: If `destination` is `source`, or if the cut drops nothing —
+            the arm would then be the unpurged arm under another name, and its
+            difference from it would read as volume having no effect.
+    """
+    source, destination = Path(source), Path(destination)
+    if source.resolve() == destination.resolve():
+        raise ValueError(f"refusing to cut {source} in place; the shipped frame is read-only here")
+
+    frame = pd.read_parquet(source)
+    kept = frame[frame["day"] >= first_day]
+
+    dropped = len(frame) - len(kept)
+    if dropped == 0:
+        raise ValueError(
+            f"cutting at day {first_day} drops no rows from {source}; "
+            "this arm would be indistinguishable from one that was never cut"
+        )
+
+    validate_interim(kept.reset_index(drop=True))
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    kept.to_parquet(destination, index=False)
+    return dropped
 
 
 def build_arm(config: dict, directory: Path | str, *, train_start: int, gap_days: int) -> dict:
@@ -118,6 +181,9 @@ def build_arm(config: dict, directory: Path | str, *, train_start: int, gap_days
     Paths inside a config are relative to the working directory rather than to
     the config, so a config living under `data/` still addresses the project.
 
+    An arm that starts after the shipped first day has its cut written before
+    either stage runs, so the split stage never sees a row the arm excluded.
+
     Args:
         config: The loaded `config.yaml`.
         directory: Where this arm's artifacts and its config go. Created here.
@@ -131,6 +197,10 @@ def build_arm(config: dict, directory: Path | str, *, train_start: int, gap_days
 
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
+
+    if arm["paths"][SHARED] != config["paths"][SHARED]:
+        dropped = cut_interim(config["paths"][SHARED], arm["paths"][SHARED], train_start)
+        log.info("cut %d rows before day %d -> %s", dropped, train_start, arm["paths"][SHARED])
 
     config_path = directory / "config.yaml"
     config_path.write_text(yaml.safe_dump(arm, sort_keys=False))
