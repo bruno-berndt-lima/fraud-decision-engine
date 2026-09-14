@@ -14,12 +14,14 @@ experiment can produce.
 import json
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from conftest import children
 from fraud_engine.models import ablation
 from fraud_engine.models.ablation import (
     BARE,
@@ -244,7 +246,7 @@ def test_removing_the_signal_costs_more_than_removing_noise(matrices):
 
 
 @pytest.fixture
-def comparison(matrices, paths) -> pd.DataFrame:
+def comparison(matrices, paths, experiment_run) -> pd.DataFrame:
     """Three arms, one of which must come back negative.
 
     `signal` is the planted column, so removing it has to cost — and a delta
@@ -345,3 +347,36 @@ def test_a_name_shared_by_a_tier_and_a_family_raises(
 
     with pytest.raises(ValueError, match="share a name"):
         all_arms(features_dir)
+
+
+# ------------------------------------------------------------------------------
+# what reaches MLflow
+# ------------------------------------------------------------------------------
+
+
+def test_every_arm_is_a_child_run(comparison, experiment_run):
+    assert [run.info.run_name for run in children(experiment_run)] == [
+        "ablation_full",
+        "ablation_amount",
+        "ablation_planted",
+    ]
+
+
+def test_each_child_records_the_columns_it_trained_without(comparison, experiment_run):
+    """The commit cannot say this: the V-block's members come from a fitted threshold."""
+    by_name = {run.info.run_name: run for run in children(experiment_run)}
+    run = by_name["ablation_amount"]
+
+    removed = mlflow.artifacts.load_dict(f"{run.info.artifact_uri}/removed_columns.json")
+
+    assert removed == list(FAMILY_COLUMNS["amount"])
+    assert run.data.params["removed"] == str(len(FAMILY_COLUMNS["amount"]))
+
+
+def test_each_child_carries_the_record_and_its_provenance(comparison, experiment_run, paths):
+    run = {r.info.run_name: r for r in children(experiment_run)}["ablation_full"]
+    record = json.loads((Path(paths["metrics_dir"]) / "ablation_full.json").read_text())
+
+    assert run.data.metrics["val_fit.pr_auc"] == record["splits"]["val_fit"]["pr_auc"]
+    assert "git_revision" in run.data.params
+    assert run.data.params["objective"] == "binary"

@@ -17,16 +17,24 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import lightgbm as lgb
+import mlflow
 import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    flatten_metrics,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.models.train import (
     apply_categories,
     feature_columns,
     fit,
     fit_categories,
     load_split_matrices,
+    resolve_params,
     score,
     to_dataset,
 )
@@ -71,9 +79,22 @@ def measure(
 
     for point, tuned in model_cfg["spread"]["points"].items():
         for seed in seeds:
-            booster = fit(train, val_fit, {**model_cfg, "tuned": tuned, "seed": seed})
-            scored = score(booster, {"val_fit": matrices["val_fit"]}, columns)
-            pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+            point_cfg = {**model_cfg, "tuned": tuned, "seed": seed}
+
+            with tracked_child(
+                f"spread_{point}_seed{seed}", {**resolve_params(point_cfg), "point": point}
+            ):
+                booster = fit(train, val_fit, point_cfg)
+                scored = score(booster, {"val_fit": matrices["val_fit"]}, columns)
+                evaluated = evaluate_splits(scored, capacities, ("val_fit",))
+                mlflow.log_metrics(
+                    {
+                        **flatten_metrics({"splits": evaluated}),
+                        "best_iteration": booster.best_iteration,
+                    }
+                )
+
+            pr_auc = evaluated["val_fit"]["pr_auc"]
 
             measured.append(
                 {
@@ -132,7 +153,10 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
     seeds = range(model_cfg["spread"]["seeds"])
 
-    spread = measure(train, val_fit, matrices, columns, model_cfg, capacities, seeds)
+    configure_tracking(config["tracking"])
+    points = ",".join(model_cfg["spread"]["points"])
+    with tracked_run("seed_spread", {"seeds": len(seeds), "points": points}, config_path):
+        spread = measure(train, val_fit, matrices, columns, model_cfg, capacities, seeds)
 
     path = Path(paths["seed_spread"])
     path.parent.mkdir(parents=True, exist_ok=True)

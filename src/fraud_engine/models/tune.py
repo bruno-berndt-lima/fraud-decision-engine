@@ -29,7 +29,12 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, git_revision, load_capacities
-from fraud_engine.evaluation.tracking import configure_tracking, tracked_run
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    flatten_metrics,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.models.train import (
     apply_categories,
     apply_medians,
@@ -38,6 +43,7 @@ from fraud_engine.models.train import (
     fit_categories,
     fit_medians,
     load_split_matrices,
+    resolve_params,
     score,
     to_dataset,
 )
@@ -175,21 +181,20 @@ def objective(
     trial.set_user_attr("params", params)
     trial.set_user_attr("impute", impute)
 
-    with mlflow.start_run(run_name=f"trial-{trial.number:03d}", nested=True):
-        mlflow.log_params({**params, "impute": impute})
+    trial_cfg = {**model_cfg, "tuned": params}
 
-        booster = fit(
-            variant.train,
-            variant.val_fit,
-            {**model_cfg, "tuned": params},
-        )
+    with tracked_child(
+        f"trial-{trial.number:03d}", {**resolve_params(trial_cfg), "impute": impute}
+    ):
+        booster = fit(variant.train, variant.val_fit, trial_cfg)
 
         scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
-        pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+        evaluated = evaluate_splits(scored, capacities, ("val_fit",))
+        mlflow.log_metrics(
+            {**flatten_metrics({"splits": evaluated}), "best_iteration": booster.best_iteration}
+        )
 
-        mlflow.log_metrics({"val_fit.pr_auc": pr_auc, "best_iteration": booster.best_iteration})
-
-    return pr_auc
+    return evaluated["val_fit"]["pr_auc"]
 
 
 def confirm(
@@ -244,13 +249,24 @@ def confirm(
     for name, (params, impute) in configurations.items():
         variant = variants[impute]
         for seed in seeds:
-            booster = fit(
-                variant.train,
-                variant.val_fit,
-                {**model_cfg, "tuned": params, "seed": seed},
-            )
-            scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
-            pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+            seed_cfg = {**model_cfg, "tuned": params, "seed": seed}
+
+            # The runs E6's verdict is computed from, so each is recorded: the
+            # decision is only reproducible if the twenty numbers behind it are.
+            with tracked_child(
+                f"confirm_{name}_seed{seed}",
+                {**resolve_params(seed_cfg), "config": name, "impute": impute},
+            ):
+                booster = fit(variant.train, variant.val_fit, seed_cfg)
+                scored = score(booster, {"val_fit": variant.matrices["val_fit"]}, columns)
+                evaluated = evaluate_splits(scored, capacities, ("val_fit",))
+                mlflow.log_metrics(
+                    {
+                        **flatten_metrics({"splits": evaluated}),
+                        "best_iteration": booster.best_iteration,
+                    }
+                )
+            pr_auc = evaluated["val_fit"]["pr_auc"]
 
             measured.append(
                 {

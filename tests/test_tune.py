@@ -16,7 +16,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fraud_engine.models.tune import Variant, build_variants, search_space, verdict
+from conftest import children
+from fraud_engine.models.tune import Variant, build_variants, confirm, search_space, verdict
 
 SPACE = {
     "num_leaves": [15, 255],
@@ -75,6 +76,7 @@ def make_matrix(rows: int = 300, seed: int = 0) -> pd.DataFrame:
         {
             "TransactionID": range(rows),
             "isFraud": (signal > 0.8).astype(int),
+            "day": 1,
             "signal": signal,
             "gappy": gappy,
             "brand": pd.Categorical(rng.choice(["visa", "amex"], rows)),
@@ -276,3 +278,50 @@ def test_the_unimputed_variant_is_the_untouched_matrix(variants):
     matrices = {name: make_matrix(seed=i) for i, name in enumerate(("train", "val_fit"))}
 
     pd.testing.assert_frame_equal(variants[False].matrices["train"], matrices["train"])
+
+
+# ------------------------------------------------------------------------------
+# confirm
+# ------------------------------------------------------------------------------
+
+CONFIRM_CFG = {"tuned": {}, "seed": 0, "early_stopping_rounds": 5, "num_boost_round": 60}
+CANDIDATE = ({"num_leaves": 7, "bagging_fraction": 0.6, "bagging_freq": 1}, True)
+
+
+@pytest.fixture
+def confirmation(variants, experiment_run) -> pd.DataFrame:
+    return confirm(CANDIDATE, variants, FEATURES, CONFIRM_CFG, [0.1], range(2))
+
+
+def test_both_configurations_run_at_every_seed(confirmation):
+    assert list(zip(confirmation["config"], confirmation["seed"], strict=True)) == [
+        ("candidate", 0),
+        ("candidate", 1),
+        ("reference", 0),
+        ("reference", 1),
+    ]
+
+
+def test_every_confirmation_fit_is_a_child_run(confirmation, experiment_run):
+    """The verdict is only reproducible if the numbers behind it are recorded."""
+    names = [run.info.run_name for run in children(experiment_run)]
+
+    assert names == [
+        "confirm_candidate_seed0",
+        "confirm_candidate_seed1",
+        "confirm_reference_seed0",
+        "confirm_reference_seed1",
+    ]
+
+
+def test_children_carry_what_the_verdict_was_computed_from(confirmation, experiment_run):
+    logged = [run.data.metrics["val_fit.pr_auc"] for run in children(experiment_run)]
+
+    assert logged == pytest.approx(list(confirmation["pr_auc"]))
+
+
+def test_the_candidate_children_record_its_parameters(confirmation, experiment_run):
+    candidate = [r for r in children(experiment_run) if r.data.params["config"] == "candidate"]
+
+    assert {r.data.params["num_leaves"] for r in candidate} == {"7"}
+    assert {r.data.params["impute"] for r in candidate} == {"True"}

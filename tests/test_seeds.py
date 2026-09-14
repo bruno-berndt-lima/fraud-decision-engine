@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from conftest import children
 from fraud_engine.models.seeds import measure, summarize
 from fraud_engine.models.train import (
     CONTRACT_PARAMS,
@@ -78,7 +79,7 @@ def datasets(matrices) -> tuple[lgb.Dataset, lgb.Dataset]:
 
 
 @pytest.fixture
-def spread(datasets, matrices) -> pd.DataFrame:
+def spread(datasets, matrices, experiment_run) -> pd.DataFrame:
     train, val_fit = datasets
     return measure(train, val_fit, matrices, FEATURES, MODEL_CFG, CAPACITIES, SEEDS)
 
@@ -104,7 +105,7 @@ def test_one_row_per_point_and_seed(spread):
     assert list(spread["point"].unique()) == list(POINTS)
 
 
-def test_the_points_come_from_config(datasets, matrices):
+def test_the_points_come_from_config(datasets, matrices, experiment_run):
     """Nothing about which configurations are measured is fixed in this module."""
     train, val_fit = datasets
     renamed = {**MODEL_CFG, "spread": {"points": {"only_one": {}}, "seeds": 2}}
@@ -149,7 +150,7 @@ def test_scores_are_a_metric_and_not_a_count(spread):
     assert spread["pr_auc"].between(0, 1).all()
 
 
-def test_only_the_seed_varies_within_a_point(datasets, matrices):
+def test_only_the_seed_varies_within_a_point(datasets, matrices, experiment_run):
     """Re-measuring a point returns the same rows, so the bar is reproducible."""
     train, val_fit = datasets
 
@@ -159,7 +160,7 @@ def test_only_the_seed_varies_within_a_point(datasets, matrices):
     pd.testing.assert_frame_equal(first, second)
 
 
-def test_no_point_may_override_the_contract(datasets, matrices):
+def test_no_point_may_override_the_contract(datasets, matrices, experiment_run):
     """A point that moved `metric` would change what every other point measured."""
     train, val_fit = datasets
     tampered = {
@@ -230,3 +231,27 @@ def test_a_single_seed_reports_no_spread_rather_than_zero():
     result = summarize(frame({"lonely": [0.5]}))
 
     assert pd.isna(result.loc["lonely", "pr_auc_std"])
+
+
+# ------------------------------------------------------------------------------
+# what reaches MLflow
+# ------------------------------------------------------------------------------
+
+
+def test_every_point_and_seed_is_a_child_run(spread, experiment_run):
+    names = [run.info.run_name for run in children(experiment_run)]
+
+    assert names == [f"spread_{point}_seed{seed}" for point in POINTS for seed in SEEDS]
+
+
+def test_each_child_records_the_seed_it_trained_with(spread, experiment_run):
+    """The seed is the only thing that varies within a point, so it must be a column."""
+    for run in children(experiment_run):
+        seed = int(run.info.run_name.rsplit("seed", 1)[1])
+        assert run.data.params["seed"] == str(seed)
+
+
+def test_child_metrics_match_the_returned_spread(spread, experiment_run):
+    logged = [run.data.metrics["val_fit.pr_auc"] for run in children(experiment_run)]
+
+    assert logged == pytest.approx(list(spread["pr_auc"]))

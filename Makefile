@@ -202,12 +202,13 @@ $(FAMILIES): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
              src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.features.evaluate
 
-$(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py | $(MODEL_DIR)
+$(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py src/fraud_engine/evaluation/tracking.py | $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.models.train
 
 # A bar rather than a result, so it is measured when the data or the pipeline
 # changes and not once per tuning trial. Same reasoning as $(FAMILY_FLOOR).
 $(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+                src/fraud_engine/evaluation/tracking.py \
                 src/fraud_engine/models/seeds.py \
                 src/fraud_engine/models/train.py \
                 src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
@@ -216,6 +217,7 @@ $(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # E2's second run. Separate from $(MODEL) because the shipped model is one arm
 # of it, and retraining should not re-answer a question that has not changed.
 $(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+              src/fraud_engine/evaluation/tracking.py \
               src/fraud_engine/models/imbalance.py \
               src/fraud_engine/models/train.py \
               src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
@@ -225,6 +227,7 @@ $(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # the shipped configuration, so it does not depend on $(MODEL) and adopting a
 # new one does not restage it.
 $(ABLATION): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+             src/fraud_engine/evaluation/tracking.py \
              src/fraud_engine/models/ablation.py \
              src/fraud_engine/models/train.py \
              src/fraud_engine/features/registry.py \
@@ -235,6 +238,7 @@ $(ABLATION): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # $(FAMILIES): fifty fits answer a question the six arms do not change, so
 # re-measuring a family should not re-measure the bar it is read against.
 $(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+              src/fraud_engine/evaluation/tracking.py \
               src/fraud_engine/models/floor.py \
               src/fraud_engine/models/ablation.py \
               src/fraud_engine/models/train.py \
@@ -246,6 +250,7 @@ $(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # splits and matrices from the pre-split frame, so the shipped ones are neither
 # read nor written here.
 $(PURGE): $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+          src/fraud_engine/evaluation/tracking.py \
           src/fraud_engine/models/purge.py \
           src/fraud_engine/models/ablation.py \
           src/fraud_engine/models/train.py \
@@ -258,6 +263,7 @@ $(PURGE): $(INTERIM) $(CONFIG) $(COST_MATRIX) \
 # committed edit to config.yaml, so $(MODEL) stays the one thing `make train`
 # produces and the history shows when tuning changed it.
 $(TUNING): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+           src/fraud_engine/evaluation/tracking.py \
            src/fraud_engine/models/tune.py \
            src/fraud_engine/models/train.py \
            src/fraud_engine/models/imbalance.py \

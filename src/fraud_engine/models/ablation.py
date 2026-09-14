@@ -29,19 +29,26 @@ different base, opposite sign.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
+import mlflow
 import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import load_capacities, write_run
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    log_report,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.features.registry import TIER_0, resolve_families, resolve_tiers
 from fraud_engine.models.train import (
     feature_columns,
     fit,
     prepare_matrices,
+    resolve_params,
     score,
     to_dataset,
 )
@@ -272,18 +279,28 @@ def measure(
     measured = []
 
     for arm, dropped in arms.items():
-        scored, best_iteration, n_features = fit_without(matrices, dropped, model_cfg)
-
-        metrics_path, _ = write_run(
+        # The removed names are an artifact, not a param: the V-block's are
+        # resolved from a fitted threshold, so the commit alone cannot say
+        # which columns this arm trained without.
+        with tracked_child(
             f"ablation_{arm}",
-            scored,
-            capacities,
-            paths["metrics_dir"],
-            paths["predictions_dir"],
-            splits=("val_fit",),
-        )
+            {**resolve_params(model_cfg), "arm": arm, "removed": len(dropped)},
+            artifacts={"removed_columns.json": list(dropped)},
+        ):
+            scored, best_iteration, n_features = fit_without(matrices, dropped, model_cfg)
 
-        pr_auc = json.loads(Path(metrics_path).read_text())["splits"]["val_fit"]["pr_auc"]
+            metrics_path, _ = write_run(
+                f"ablation_{arm}",
+                scored,
+                capacities,
+                paths["metrics_dir"],
+                paths["predictions_dir"],
+                splits=("val_fit",),
+            )
+            mlflow.log_param("n_features", n_features)
+            report = log_report(metrics_path, {"best_iteration": best_iteration})
+
+        pr_auc = report["splits"]["val_fit"]["pr_auc"]
         measured.append(
             {
                 "arm": arm,
@@ -341,7 +358,9 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     # untuned reference exactly as E2 measured it — repeated fits return
     # identical digits, so a delta carries no seed noise. Anything else would be
     # a third configuration nobody has a spread for.
-    comparison = measure(matrices, arms, {**model_cfg, "tuned": {}}, capacities, paths)
+    configure_tracking(config["tracking"])
+    with tracked_run("ablation", {"arms": ",".join(arms)}, config_path):
+        comparison = measure(matrices, arms, {**model_cfg, "tuned": {}}, capacities, paths)
 
     path = Path(paths["ablation"])
     path.parent.mkdir(parents=True, exist_ok=True)

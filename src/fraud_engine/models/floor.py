@@ -22,13 +22,20 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import evaluate_splits, load_capacities
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    flatten_metrics,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.models.ablation import REFERENCE, all_arms, fit_without
-from fraud_engine.models.train import feature_columns, prepare_matrices
+from fraud_engine.models.train import feature_columns, prepare_matrices, resolve_params
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +67,16 @@ def draw(columns: list[str], width: int, rng: np.random.Generator) -> tuple[str,
     return tuple(str(name) for name in rng.choice(columns, size=width, replace=False))
 
 
+def log_evaluation(evaluated: dict, best_iteration: int) -> None:
+    """Log an in-memory evaluation onto the open child, under the record's names.
+
+    The draws write no JSON of their own — fifty records in `reports/` would be
+    noise — so they go through `flatten_metrics` directly, which keeps their
+    metric names identical to every recorded run's.
+    """
+    mlflow.log_metrics({**flatten_metrics({"splits": evaluated}), "best_iteration": best_iteration})
+
+
 def measure(
     matrices: dict[str, pd.DataFrame],
     widths: list[int],
@@ -89,8 +106,13 @@ def measure(
     """
     columns = feature_columns(matrices["train"])
 
-    scored, best_iteration, _ = fit_without(matrices, (), model_cfg)
-    reference = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+    params = resolve_params(model_cfg)
+
+    with tracked_child(f"floor_{REFERENCE}", {**params, "width": 0}):
+        scored, best_iteration, _ = fit_without(matrices, (), model_cfg)
+        evaluated = evaluate_splits(scored, capacities, ("val_fit",))
+        log_evaluation(evaluated, best_iteration)
+    reference = evaluated["val_fit"]["pr_auc"]
     log.info("%s val_fit pr_auc=%.5f  best_iteration=%d", REFERENCE, reference, best_iteration)
 
     measured = []
@@ -101,8 +123,15 @@ def measure(
             # not the ones before it ran.
             dropped = draw(columns, width, np.random.default_rng([model_cfg["seed"], width, index]))
 
-            scored, best_iteration, n_features = fit_without(matrices, dropped, model_cfg)
-            pr_auc = evaluate_splits(scored, capacities, ("val_fit",))["val_fit"]["pr_auc"]
+            with tracked_child(
+                f"floor_w{width}_d{index}",
+                {**params, "width": width, "draw": index},
+                artifacts={"removed_columns.json": list(dropped)},
+            ):
+                scored, best_iteration, n_features = fit_without(matrices, dropped, model_cfg)
+                evaluated = evaluate_splits(scored, capacities, ("val_fit",))
+                log_evaluation(evaluated, best_iteration)
+            pr_auc = evaluated["val_fit"]["pr_auc"]
 
             measured.append(
                 {
@@ -182,9 +211,12 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
 
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
 
-    floor = measure(
-        matrices, widths, model_cfg["floor_draws"], {**model_cfg, "tuned": {}}, capacities
-    )
+    configure_tracking(config["tracking"])
+    run_params = {"draws": model_cfg["floor_draws"], "widths": ",".join(map(str, widths))}
+    with tracked_run("ablation_floor", run_params, config_path):
+        floor = measure(
+            matrices, widths, model_cfg["floor_draws"], {**model_cfg, "tuned": {}}, capacities
+        )
 
     path = Path(paths["ablation_floor"])
     path.parent.mkdir(parents=True, exist_ok=True)

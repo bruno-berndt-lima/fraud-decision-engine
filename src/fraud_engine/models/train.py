@@ -12,7 +12,6 @@ lets it memorise three transactions — which is why the vocabulary has a floor.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
@@ -23,11 +22,7 @@ import pandas as pd
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import SPLIT_NAMES
 from fraud_engine.evaluation.report import load_capacities, write_run
-from fraud_engine.evaluation.tracking import (
-    configure_tracking,
-    flatten_metrics,
-    tracked_run,
-)
+from fraud_engine.evaluation.tracking import configure_tracking, log_report, tracked_run
 from fraud_engine.features.encoders import MISSING
 
 # Levels the training window never saw, and levels it saw too rarely to learn
@@ -601,14 +596,20 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
             name, scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
         )
 
-        report = json.loads(Path(metrics_path).read_text())
-        mlflow.log_metrics({**flatten_metrics(report), "best_iteration": booster.best_iteration})
+        log_report(metrics_path, {"best_iteration": booster.best_iteration})
 
         booster.save_model(paths["model"], num_iteration=booster.best_iteration)
         write_categories(vocabulary, paths["categories"])
         if medians is not None:
             write_medians(medians, paths["medians"])
+
+        # The two tables ship with the model, so they are recorded with it: a
+        # booster without the vocabulary it was fitted against scores plausibly
+        # and wrongly, and a run that kept only the booster could not be served.
         mlflow.log_artifact(paths["model"])
+        mlflow.log_artifact(paths["categories"])
+        if medians is not None:
+            mlflow.log_artifact(paths["medians"])
 
     log.info("%s — %d trees -> %s", name, booster.num_trees(), metrics_path)
 

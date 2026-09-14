@@ -20,6 +20,7 @@ which the skinny package omits and which MLflow 3 now requires.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -230,4 +231,91 @@ def tracked_run(name: str, params: dict, config_path: Path) -> Iterator[None]:
     with mlflow.start_run(run_name=name):
         log_provenance(config_path)
         mlflow.log_params(params)
+        yield
+
+
+def log_report(metrics_path: Path | str, extra: dict[str, float] | None = None) -> dict:
+    """Log a written metrics record onto the open run, and hand the record back.
+
+    Read from the file ``write_run`` just wrote rather than passed in, so what
+    MLflow holds is what the tracked JSON holds — the rule this module exists
+    for, made the only path rather than a convention every caller repeats.
+
+    Args:
+        metrics_path: A record as ``report.write_report`` wrote it.
+        extra: Run-level numbers the record does not carry, such as
+            ``best_iteration``. A name colliding with a flattened metric raises.
+
+    Returns:
+        The record, so a caller that needs a number from it does not read the
+        file a second time.
+
+    Raises:
+        RuntimeError: If no run is open.
+        ValueError: If ``extra`` names a metric the record already supplies.
+    """
+    if mlflow.active_run() is None:
+        raise RuntimeError("log_report needs an open run; logging would start a stray one")
+
+    report = json.loads(Path(metrics_path).read_text())
+    metrics = flatten_metrics(report)
+
+    shadowed = sorted(set(extra or {}) & set(metrics))
+    if shadowed:
+        raise ValueError(f"extra metrics shadow the record: {shadowed}")
+
+    mlflow.log_metrics({**metrics, **(extra or {})})
+    return report
+
+
+@contextmanager
+def tracked_child(
+    name: str,
+    params: dict,
+    *,
+    config: dict | None = None,
+    artifacts: dict[str, object] | None = None,
+) -> Iterator[None]:
+    """One arm, trial or draw, as a run nested under the experiment that owns it.
+
+    **Every booster fit that produces a reported number is a run.** An
+    experiment's arms are what its comparison is made of, and a record naming
+    only the commit cannot say what an arm was: the purge arms train on a
+    window no committed config holds, and the ablation's removed columns are
+    resolved at run time from a fitted threshold. What distinguishes a child
+    is therefore logged *onto* it — as params where the comparison view needs
+    to sort on it, as artifacts where it is a list or a whole config.
+
+    The revision is logged on the child as well as the parent. Nesting records
+    the relationship, but a child exported or compared on its own should still
+    say which code produced it.
+
+    Args:
+        name: Run name in the comparison view.
+        params: What distinguishes this child, plus the parameters it trained
+            with.
+        config: The *effective* config, when it differs from the committed one.
+            Its split boundaries become sortable params and the whole mapping is
+            attached as ``config.yaml``.
+        artifacts: ``{filename: JSON- or YAML-serialisable content}``.
+
+    Yields:
+        Nothing; the child is the active run inside the block.
+
+    Raises:
+        RuntimeError: If no parent run is open. A child with no parent is a
+            top-level run pretending to belong to an experiment that never
+            recorded its own provenance.
+    """
+    if mlflow.active_run() is None:
+        raise RuntimeError(f"{name} needs a parent run; open the experiment's tracked_run first")
+
+    with mlflow.start_run(run_name=name, nested=True):
+        mlflow.log_param("git_revision", git_revision())
+        if config is not None:
+            mlflow.log_params({f"split.{key}": value for key, value in config["splits"].items()})
+            mlflow.log_dict(config, "config.yaml")
+        mlflow.log_params(params)
+        for filename, content in (artifacts or {}).items():
+            mlflow.log_dict(content, filename)
         yield

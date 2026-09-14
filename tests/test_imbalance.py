@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from conftest import children
 from fraud_engine.models.imbalance import (
     IMPUTED_ARMS,
     WEIGHT_ARMS,
@@ -194,7 +195,7 @@ def test_validation_is_never_resampled(matrices, resampled):
 
 
 @pytest.fixture
-def comparison(matrices, paths) -> pd.DataFrame:
+def comparison(matrices, paths, experiment_run) -> pd.DataFrame:
     return measure(matrices, FEATURES, MODEL_CFG, CAPACITIES, paths)
 
 
@@ -233,7 +234,7 @@ def test_the_two_weighting_arms_land_on_the_same_number(comparison):
 
 
 def test_the_ratio_is_measured_from_the_training_window(
-    matrices, paths, caplog: pytest.LogCaptureFixture
+    matrices, paths, experiment_run, caplog: pytest.LogCaptureFixture
 ):
     """Not from config, and not from validation.
 
@@ -259,3 +260,30 @@ def test_the_ratio_is_measured_from_the_training_window(
 def test_records_carry_the_splits_they_were_given(comparison, paths):
     for path in Path(paths["metrics_dir"]).glob("*.json"):
         assert "test" not in json.loads(path.read_text())["splits"]
+
+
+# ------------------------------------------------------------------------------
+# what reaches MLflow
+# ------------------------------------------------------------------------------
+
+
+def test_every_arm_is_a_child_run(comparison, experiment_run):
+    names = [run.info.run_name for run in children(experiment_run)]
+
+    assert names == [f"imbalance_{arm}" for arm in (*WEIGHT_ARMS, *IMPUTED_ARMS)]
+
+
+def test_the_measured_ratio_is_recorded_on_its_arm(comparison, experiment_run, matrices):
+    """Logged only in the terminal before; the record now says what weight was used."""
+    train = matrices["train"]
+    expected = (len(train) - train[LABEL].sum()) / train[LABEL].sum()
+    run = {r.info.run_name: r for r in children(experiment_run)}["imbalance_scale_pos_weight"]
+
+    assert float(run.data.params["scale_pos_weight"]) == pytest.approx(expected)
+
+
+def test_the_resampled_arm_records_its_row_count(comparison, experiment_run):
+    runs = {r.info.run_name: r for r in children(experiment_run)}
+    rows = comparison.set_index("arm")["train_rows"]
+
+    assert runs["imbalance_smote"].data.params["train_rows"] == str(rows["smote"])

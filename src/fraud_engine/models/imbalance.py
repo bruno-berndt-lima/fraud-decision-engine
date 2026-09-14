@@ -15,7 +15,6 @@ apply.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
@@ -24,6 +23,12 @@ from imblearn.over_sampling import SMOTENC
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import load_capacities, write_run
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    log_report,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.models.train import (
     LABEL,
     apply_categories,
@@ -33,6 +38,7 @@ from fraud_engine.models.train import (
     fit_categories,
     fit_medians,
     load_split_matrices,
+    resolve_params,
     score,
     to_dataset,
 )
@@ -143,17 +149,33 @@ def measure(
         if arm == "smote":
             train_frame = resample(train_frame, columns, model_cfg["seed"])
 
-        train = to_dataset(train_frame, columns)
-        val_fit = to_dataset(source["val_fit"], columns, reference=train)
+        arm_cfg = {**model_cfg, "tuned": arm_params(arm, ratio)}
+        params = {
+            **resolve_params(arm_cfg),
+            "arm": arm,
+            "impute": arm in IMPUTED_ARMS,
+            "train_rows": len(train_frame),
+        }
 
-        booster = fit(train, val_fit, {**model_cfg, "tuned": arm_params(arm, ratio)})
+        with tracked_child(f"imbalance_{arm}", params):
+            train = to_dataset(train_frame, columns)
+            val_fit = to_dataset(source["val_fit"], columns, reference=train)
 
-        scored = score(booster, {split: source[split] for split in ("val_fit", "val_cal")}, columns)
-        metrics_path, _ = write_run(
-            f"imbalance_{arm}", scored, capacities, paths["metrics_dir"], paths["predictions_dir"]
-        )
+            booster = fit(train, val_fit, arm_cfg)
 
-        pr_auc = json.loads(Path(metrics_path).read_text())["splits"]["val_fit"]["pr_auc"]
+            scored = score(
+                booster, {split: source[split] for split in ("val_fit", "val_cal")}, columns
+            )
+            metrics_path, _ = write_run(
+                f"imbalance_{arm}",
+                scored,
+                capacities,
+                paths["metrics_dir"],
+                paths["predictions_dir"],
+            )
+            report = log_report(metrics_path, {"best_iteration": booster.best_iteration})
+
+        pr_auc = report["splits"]["val_fit"]["pr_auc"]
         measured.append(
             {
                 "arm": arm,
@@ -185,7 +207,10 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     columns = feature_columns(matrices["train"])
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
 
-    comparison = measure(matrices, columns, model_cfg, capacities, paths)
+    configure_tracking(config["tracking"])
+    arms = (*WEIGHT_ARMS, *IMPUTED_ARMS)
+    with tracked_run("imbalance", {"arms": ",".join(arms)}, config_path):
+        comparison = measure(matrices, columns, model_cfg, capacities, paths)
 
     path = Path(paths["imbalance"])
     path.parent.mkdir(parents=True, exist_ok=True)

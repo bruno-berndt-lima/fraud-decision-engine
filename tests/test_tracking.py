@@ -8,6 +8,7 @@ Synthetic records throughout — ``flatten_metrics`` takes a mapping, so nothing
 has to be scored to test what it names.
 """
 
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from fraud_engine.evaluation.tracking import (
     configure_tracking,
     flatten_metrics,
     log_provenance,
+    log_report,
+    tracked_child,
     tracked_run,
 )
 
@@ -267,3 +270,120 @@ def test_a_caller_cannot_shadow_a_provenance_param(store: Path, tmp_path: Path):
         pass
 
     assert only_run().data.params["git_revision"] == str(git_revision())
+
+
+# ------------------------------------------------------------------------------
+# tracked_child and log_report
+# ------------------------------------------------------------------------------
+
+
+def child_runs(parent_id: str) -> list:
+    return mlflow.search_runs(
+        experiment_names=[EXPERIMENT],
+        filter_string=f"tags.mlflow.parentRunId = '{parent_id}'",
+        output_format="list",
+    )
+
+
+def test_a_child_without_a_parent_raises(store: Path):
+    with pytest.raises(RuntimeError, match="needs a parent run"), tracked_child("orphan", {}):
+        pass
+
+    assert mlflow.search_runs(experiment_names=[EXPERIMENT], output_format="list") == []
+
+
+def test_a_child_is_nested_under_the_open_run(store: Path, tmp_path: Path):
+    with tracked_run("experiment", {}, write_config(tmp_path)) as _:
+        parent = mlflow.active_run().info.run_id
+        with tracked_child("arm", {"arm": "a"}):
+            pass
+
+    (child,) = child_runs(parent)
+    assert child.info.run_name == "arm"
+    assert child.data.params["arm"] == "a"
+
+
+def test_a_child_carries_its_own_revision(store: Path, tmp_path: Path):
+    """Nesting records the relationship; a child compared on its own still names its code."""
+    with tracked_run("experiment", {}, write_config(tmp_path)):
+        parent = mlflow.active_run().info.run_id
+        with tracked_child("arm", {}):
+            pass
+
+    (child,) = child_runs(parent)
+    assert child.data.params["git_revision"] == str(git_revision())
+
+
+def test_an_effective_config_becomes_sortable_boundaries_and_an_artifact(
+    store: Path, tmp_path: Path
+):
+    """The window a purge arm trained on is held by no committed config."""
+    effective = {"splits": {**BOUNDARIES, "train_start": 31, "gap_days": 0}, "paths": {}}
+
+    with tracked_run("experiment", {}, write_config(tmp_path)):
+        parent = mlflow.active_run().info.run_id
+        with tracked_child("recent", {}, config=effective):
+            pass
+
+    (child,) = child_runs(parent)
+    assert child.data.params["split.train_start"] == "31"
+    assert child.data.params["split.gap_days"] == "0"
+    downloaded = mlflow.artifacts.download_artifacts(f"{child.info.artifact_uri}/config.yaml")
+    assert yaml.safe_load(Path(downloaded).read_text()) == effective
+
+
+def test_extra_artifacts_are_attached(store: Path, tmp_path: Path):
+    with tracked_run("experiment", {}, write_config(tmp_path)):
+        parent = mlflow.active_run().info.run_id
+        with tracked_child("arm", {}, artifacts={"removed_columns.json": ["a", "b"]}):
+            pass
+
+    (child,) = child_runs(parent)
+    assert mlflow.artifacts.load_dict(f"{child.info.artifact_uri}/removed_columns.json") == [
+        "a",
+        "b",
+    ]
+
+
+def test_a_failing_child_is_kept_and_marked_failed(store: Path, tmp_path: Path):
+    """A crashed arm that leaves no trace is how the same mistake gets made twice."""
+    with tracked_run("experiment", {}, write_config(tmp_path)):
+        parent = mlflow.active_run().info.run_id
+        with pytest.raises(RuntimeError, match="arm broke"), tracked_child("arm", {"arm": "a"}):
+            raise RuntimeError("arm broke")
+        assert mlflow.active_run().info.run_id == parent
+
+    (child,) = child_runs(parent)
+    assert child.info.status == "FAILED"
+
+
+def test_the_record_reaches_mlflow_under_its_flattened_names(store: Path, tmp_path: Path):
+    record = make_report()
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(record))
+
+    with tracked_run("experiment", {}, write_config(tmp_path)):
+        returned = log_report(path, {"best_iteration": 42})
+
+    run = only_run()
+    assert returned == record
+    assert run.data.metrics == {**flatten_metrics(record), "best_iteration": 42.0}
+
+
+def test_an_extra_metric_may_not_shadow_the_record(store: Path, tmp_path: Path):
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(make_report()))
+
+    with (
+        tracked_run("experiment", {}, write_config(tmp_path)),
+        pytest.raises(ValueError, match="shadow the record"),
+    ):
+        log_report(path, {"val_fit.pr_auc": 0.99})
+
+
+def test_logging_a_record_without_a_run_raises(store: Path, tmp_path: Path):
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(make_report()))
+
+    with pytest.raises(RuntimeError, match="needs an open run"):
+        log_report(path)

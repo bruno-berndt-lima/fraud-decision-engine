@@ -21,7 +21,6 @@ that. E1 registers what the cut costs.
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
@@ -33,9 +32,15 @@ from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.data.splits import resolve_boundaries
 from fraud_engine.data.validate import validate_interim
 from fraud_engine.evaluation.report import load_capacities, write_run
+from fraud_engine.evaluation.tracking import (
+    configure_tracking,
+    log_report,
+    tracked_child,
+    tracked_run,
+)
 from fraud_engine.features import build
 from fraud_engine.models.ablation import fit_without
-from fraud_engine.models.train import LABEL, prepare_matrices
+from fraud_engine.models.train import LABEL, prepare_matrices, resolve_params
 
 log = logging.getLogger(__name__)
 
@@ -260,17 +265,31 @@ def measure(
             arm["paths"]["features_dir"], model_cfg, ("train", "val_fit")
         )
 
-        scored, best_iteration, _ = fit_without(matrices, (), model_cfg)
-        metrics_path, _ = write_run(
+        # The arm's effective config rides on the child. No committed config
+        # holds this training window, so the commit alone cannot say what
+        # produced the number.
+        with tracked_child(
             f"purge_{name}",
-            scored,
-            capacities,
-            paths["metrics_dir"],
-            paths["predictions_dir"],
-            splits=("val_fit",),
-        )
+            {
+                **resolve_params(model_cfg),
+                "arm": name,
+                "train_rows": len(matrices["train"]),
+                "train_frauds": int(matrices["train"][LABEL].sum()),
+            },
+            config=arm,
+        ):
+            scored, best_iteration, _ = fit_without(matrices, (), model_cfg)
+            metrics_path, _ = write_run(
+                f"purge_{name}",
+                scored,
+                capacities,
+                paths["metrics_dir"],
+                paths["predictions_dir"],
+                splits=("val_fit",),
+            )
+            report = log_report(metrics_path, {"best_iteration": best_iteration})
 
-        pr_auc = json.loads(Path(metrics_path).read_text())["splits"]["val_fit"]["pr_auc"]
+        pr_auc = report["splits"]["val_fit"]["pr_auc"]
         measured.append(
             {
                 "arm": name,
@@ -336,7 +355,9 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     # The untuned reference, as with every other Phase 05 comparison. The tuned
     # knobs were selected on VAL-FIT under the shipped split; carrying them into
     # an arm that trains on other data imports a selection it never made.
-    comparison = measure(arms, {**model_cfg, "tuned": {}}, capacities, paths)
+    configure_tracking(config["tracking"])
+    with tracked_run("purge", {"arms": ",".join(arms)}, config_path):
+        comparison = measure(arms, {**model_cfg, "tuned": {}}, capacities, paths)
 
     path = Path(paths["purge"])
     path.parent.mkdir(parents=True, exist_ok=True)

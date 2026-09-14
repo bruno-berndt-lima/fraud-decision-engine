@@ -10,10 +10,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import mlflow
 import pandas as pd
 import pytest
 import yaml
 
+from conftest import children
 from fraud_engine.data.splits import resolve_boundaries
 from fraud_engine.models import purge
 from fraud_engine.models.purge import (
@@ -365,3 +367,90 @@ def test_a_later_arm_writes_its_cut_before_either_stage_runs(
     build_arm(config, tmp_path / "recent", train_start=31, gap_days=0)
 
     assert first_days == [31, 31]
+
+
+# ------------------------------------------------------------------------------
+# measure, and what each arm records
+# ------------------------------------------------------------------------------
+
+
+def arm_matrix(rows: int, seed: int) -> pd.DataFrame:
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    signal = rng.random(rows)
+    return pd.DataFrame(
+        {
+            "TransactionID": range(rows),
+            "TransactionDT": np.arange(rows) * 60,
+            "isFraud": (signal > 0.8).astype(int),
+            "day": 1,
+            "signal": signal,
+            "noise": rng.random(rows),
+            "brand": pd.Categorical(rng.choice(["visa", "amex"], rows)),
+        }
+    )
+
+
+@pytest.fixture
+def built_arms(tmp_path: Path) -> dict:
+    """Two arms with matrices on disk, as `build_arm` would have left them."""
+    arms = {}
+    for name, window in (
+        (REFERENCE_ARM, {"train_start": 1, "gap_days": 30}),
+        ("recent", {"train_start": 31, "gap_days": 0}),
+    ):
+        arm = redirect(CONFIG, tmp_path / name, **window)
+        features = Path(arm["paths"]["features_dir"])
+        features.mkdir(parents=True)
+        arm_matrix(300, seed=0 if name == REFERENCE_ARM else 2).to_parquet(
+            features / "train.parquet"
+        )
+        arm_matrix(200, seed=1).to_parquet(features / "val_fit.parquet")
+        arms[name] = arm
+    return arms
+
+
+MEASURE_CFG = {
+    "tuned": {},
+    "seed": 0,
+    "early_stopping_rounds": 5,
+    "num_boost_round": 60,
+    "min_category_rows": 1,
+    "impute": True,
+}
+
+
+@pytest.fixture
+def measured(built_arms, tmp_path: Path, experiment_run) -> pd.DataFrame:
+    paths = {"metrics_dir": str(tmp_path / "metrics"), "predictions_dir": str(tmp_path / "preds")}
+    return purge.measure(built_arms, MEASURE_CFG, [0.1], paths)
+
+
+def test_one_row_per_arm_with_the_reference_at_zero(measured):
+    assert list(measured["arm"]) == [REFERENCE_ARM, "recent"]
+    assert measured.loc[measured["arm"] == REFERENCE_ARM, "delta"].item() == 0.0
+
+
+def test_each_arm_records_the_window_it_trained_on(measured, experiment_run):
+    """No committed config holds the recent window, so the child has to."""
+    runs = {run.info.run_name: run for run in children(experiment_run)}
+
+    assert runs["purge_recent"].data.params["split.train_start"] == "31"
+    assert runs["purge_recent"].data.params["split.gap_days"] == "0"
+    assert runs[f"purge_{REFERENCE_ARM}"].data.params["split.gap_days"] == "30"
+
+
+def test_each_arm_attaches_its_effective_config(measured, experiment_run, built_arms):
+    run = {r.info.run_name: r for r in children(experiment_run)}["purge_recent"]
+
+    downloaded = mlflow.artifacts.download_artifacts(f"{run.info.artifact_uri}/config.yaml")
+
+    assert yaml.safe_load(Path(downloaded).read_text()) == built_arms["recent"]
+
+
+def test_each_arm_records_its_training_volume(measured, experiment_run):
+    runs = {run.info.run_name: run for run in children(experiment_run)}
+    rows = measured.set_index("arm")["train_rows"]
+
+    assert runs["purge_recent"].data.params["train_rows"] == str(rows["recent"])
