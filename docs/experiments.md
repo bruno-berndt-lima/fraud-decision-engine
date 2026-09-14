@@ -14,7 +14,7 @@ Results land back in this file as each phase closes.
 
 ## E1 — What the purge gap costs
 
-**Status:** method registered at three arms, not yet run. Phase 05.
+**Status:** complete. Phase 05; the USD half owed by Phase 06.
 
 **Question.** How much of the model's apparent performance comes from the
 label-maturity purge being absent? Equivalently: what is methodological honesty
@@ -156,6 +156,68 @@ without adding volume.
 **Reported on `VAL-FIT` only.** Three arms compete for an explanation and none
 of them ships, so `VAL-CAL` is not scored — the rule `DEFAULT_SPLITS` states.
 The USD half belongs to Phase 06 and is not owed by this run.
+
+### Result — Phase 05
+
+| arm | `TRAIN` | rows | frauds | `VAL-FIT` PR-AUC | vs `purged` | best iteration |
+|---|---|---:|---:|---:|---:|---:|
+| `purged` | 1–90 | 315,927 | 10,702 | 0.52820 | — | 561 |
+| `recent` | 31–120 | 280,203 | 11,199 | **0.67345** | **+0.14524** | 1000 |
+| `unpurged` | 1–120 | 414,542 | 14,600 | 0.65043 | +0.12223 | 966 |
+
+The `purged` arm reproduces the shipped reference to every digit, so the rebuilt
+pipeline is the shipped one and the three rows are comparable. The shipped
+artifacts were fingerprinted before and after and did not change. `VAL-FIT` holds
+the same 57,464 rows in every arm.
+
+**The sanity check does not fire.** The unpurged run beats the purged one, as
+the ordering registered above said it must; the harness is not under suspicion.
+
+**Recency is essentially all of it.** `recent` clears `purged` by more than the
+full unpurged run does, which under the rule registered for the cut means
+recency survives the cold-start artifact. `recent` stopped on a round number
+and was re-fitted to check: early stopping closed at 1100 with the peak at 1000,
+against a ceiling of 5000. A coincidence, not a bound.
+
+**Volume adds nothing, and the direction is against it.** Extending `recent`
+back over days 1–30 moved PR-AUC from 0.67345 to 0.65043. The artifact biases
+against `recent`, so the ordering survives it. This experiment has no bar, so
+the size is a direction and not a finding — but the two arms stopped within a
+few dozen rounds of each other, which leaves little room for the early-stopping
+unfairness to explain it.
+
+### Why a number this large is the expected one
+
+**The purge costs twice what tuning bought.** That reads as too good, and the
+check is whether it makes sense. It does, and the reason is the argument for the
+purge. Days 91–120 sit immediately before `VAL-FIT`: cards, addresses and
+devices committing fraud on day 115 are still committing it on day 125, and a
+model trained on those labels learns those identities. `recent`'s training
+window also carries a higher fraud rate than `purged`'s — the end of the window
+looks more like validation than the start does.
+
+In production those labels arrive weeks later, through chargebacks. So what the
+unpurged arms are handed is almost entirely the one advantage the question above
+said nothing buys, and the part a retrain cadence could buy — more data — turns
+out to be worth nothing here.
+
+### What it does and does not decide
+
+**It does not change which split ships.** The purged split is the headline, as
+registered. What changes is the size of the claim the purge supports: **an
+evaluation without it would have overstated this model's `VAL-FIT` PR-AUC by
+roughly a quarter**, and nearly all of that overstatement is labels that could
+not have existed yet.
+
+**It does not measure the gap's length.** Thirty days is argued from how
+chargebacks arrive, and this experiment tests zero against thirty rather than
+the curve between. A shorter gap that kept most of the honesty would need arms
+at intermediate widths, registered before they run.
+
+**It gives Phase 09 a prior.** E5 asks whether the train/validation gap is the
+model or the data. That recency dominates volume this sharply says the
+distribution near the boundary is moving fast, which is the shape E5 should
+expect to find.
 
 ---
 
