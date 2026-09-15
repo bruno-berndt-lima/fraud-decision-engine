@@ -33,6 +33,7 @@ PATH_PAIRS = [
     ("TUNING", "paths.tuning"),
     ("CALIBRATOR", "paths.calibrator"),
     ("CONFIG_STAMPS", "paths.config_stamps"),
+    ("REHEARSAL", "paths.rehearsal"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment
