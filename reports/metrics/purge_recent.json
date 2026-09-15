@@ -1,7 +1,7 @@
 {
   "name": "purge_recent",
-  "created": "2026-09-14T15:11:55+00:00",
-  "git_revision": "caf3fc0d9c995b8ac5df67c96b7d5f51926b8d39-dirty",
+  "created": "2026-09-15T14:31:21+00:00",
+  "git_revision": "ad820dfabaeb079d3d73aafbf325e54abbfbc43d",
   "capacities": [
     0.005,
     0.01,

@@ -1,7 +1,7 @@
 {
   "name": "ablation_reproducible",
-  "created": "2026-09-10T17:40:52+00:00",
-  "git_revision": "4c3c84fff53cb5998e04fb245551410c33076ae7",
+  "created": "2026-09-15T12:31:47+00:00",
+  "git_revision": "ad820dfabaeb079d3d73aafbf325e54abbfbc43d",
   "capacities": [
     0.005,
     0.01,
