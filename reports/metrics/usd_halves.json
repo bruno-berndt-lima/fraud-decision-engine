@@ -1,0 +1,86 @@
+{
+  "name": "usd_halves",
+  "created": "2026-09-15T19:07:20+00:00",
+  "git_revision": "3d3b0a128d24ac2c01b22fbe7a7ee36e41ebd295",
+  "split": "val_cal",
+  "instrument": "untuned",
+  "probabilities": "platt, out-of-fold, refitted per arm",
+  "review_capacity": 0.01,
+  "cost_matrix_version": 1,
+  "rules_usd_per_1000": 5140.392193014802,
+  "bootstrap": {
+    "bootstrap_resamples": 2000,
+    "interval": 0.95,
+    "seed": 0
+  },
+  "experiments": {
+    "E1": {
+      "reference": "purged",
+      "arms": {
+        "purged": {
+          "best_iteration": 561,
+          "removed": 0,
+          "usd_per_1000": 2569.3848004354777,
+          "reviews_per_day": 27.95,
+          "block_rate": 0.06546208010676219,
+          "reduction_vs_rules": 0.5001578276601202
+        },
+        "recent": {
+          "best_iteration": 1000,
+          "removed": 0,
+          "usd_per_1000": 2289.2889427382393,
+          "reviews_per_day": 27.95,
+          "block_rate": 0.06542696096507401,
+          "reduction_vs_rules": 0.5546470275460464,
+          "delta_vs_reference": -280.09585769723844,
+          "delta_interval": [
+            -437.8892890902112,
+            -124.38457586313844
+          ],
+          "interval_excludes_zero": true
+        },
+        "unpurged": {
+          "best_iteration": 966,
+          "removed": 0,
+          "usd_per_1000": 2213.9119914309294,
+          "reviews_per_day": 27.95,
+          "block_rate": 0.06525136525663312,
+          "reduction_vs_rules": 0.569310685196476,
+          "delta_vs_reference": -355.47280900454825,
+          "delta_interval": [
+            -459.774532320522,
+            -256.6229697462953
+          ],
+          "interval_excludes_zero": true
+        }
+      }
+    },
+    "E3": {
+      "reference": "full",
+      "arms": {
+        "full": {
+          "best_iteration": 561,
+          "removed": 0,
+          "usd_per_1000": 2569.3848004354777,
+          "reviews_per_day": 27.95,
+          "block_rate": 0.06546208010676219,
+          "reduction_vs_rules": 0.5001578276601202
+        },
+        "velocity": {
+          "best_iteration": 283,
+          "removed": 4,
+          "usd_per_1000": 2466.972677307766,
+          "reviews_per_day": 27.95,
+          "block_rate": 0.06442606542696097,
+          "reduction_vs_rules": 0.5200808450646828,
+          "delta_vs_reference": -102.41212312771177,
+          "delta_interval": [
+            -171.0660119642298,
+            -28.68665373698956
+          ],
+          "interval_excludes_zero": true
+        }
+      }
+    }
+  }
+}
