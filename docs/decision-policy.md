@@ -283,6 +283,67 @@ If the advantage over the rules engine disappears anywhere inside these ranges, 
 headline is reported as depending on that assumption (`cost_matrix.yaml`,
 `problem-statement.md` §5).
 
+### Result
+
+Record: `reports/metrics/sensitivity_val_cal.json`; chart:
+`reports/figures/sensitivity_false_positive.png`. Same probabilities, capacity and cost
+matrix as the rehearsal, which the headline point of every sweep reproduces.
+
+**The advantage never falls below the 15% bar in any sweep.** By the rule above, the
+headline does not depend on any one assumption within its registered range. How large
+it is depends heavily on one of them.
+
+| assumption | range | smallest EV reduction | at | largest |
+|---|---|---:|---|---:|
+| false-positive cost | $5–$100 | **34.0%** | $100 | 69.1% |
+| chargeback fee | $15–$100 | 54.4% | $24.44 | 56.4% |
+| review capacity | 0.5%–2% | 54.0% | 2% | 54.7% |
+
+The fee grid of ten points skips the headline's $25, so that value was added to it;
+the sweep has eleven points.
+
+**The false-positive cost sets the size of the margin.**
+
+| false-positive cost | EV, USD per 1,000 | reduction | EV block rate | naive reduction |
+|---:|---:|---:|---:|---:|
+| $5 | 1,588 | 69.1% | 15.4% | 19.4% |
+| **$15** | **2,343** | **54.4%** | **5.6%** | 18.9% |
+| $30 | 2,887 | 43.8% | 2.9% | 18.1% |
+| $50 | 3,208 | 37.6% | 1.8% | 17.2% |
+| $100 | 3,392 | 34.0% | 1.2% | 14.8% |
+
+- **The margin halves across the range but does not vanish.** The EV cost rises
+  steeply up to about $40 and then flattens: past that point the policy blocks only
+  near-certain fraud, and about a third less than the rules engine is what remains.
+  That floor is the part of the headline that does not depend on what declining a
+  customer costs.
+- **The low end is a policy that wins by declining.** At $5 it refuses 15.4% of all
+  transactions. The 69% there is real under the matrix and not a figure to quote
+  without its block rate; the same holds, less starkly, at the headline's 5.6%.
+- **A fixed cut does not adapt; the per-transaction threshold does.** The naive 0.5
+  policy drops below the 15% bar from about $95, while the EV policy stays above 34%.
+  Deriving the threshold from the costs is what keeps the result standing when the
+  cost assumption is badly wrong.
+- **The rules engine is flat across this sweep.** It never blocks, so it never pays a
+  false positive; every movement in the margin is the EV policy's.
+- The EV curve is not perfectly smooth — $75 costs slightly less than $70. The policy
+  minimises expected cost; the chart shows realised cost, under the labels.
+
+**The fee and the capacity barely move the margin.**
+
+- The fee is paid on allowed fraud by both sides, so their costs rise together — the
+  rules engine from $4,839 to $7,403 per 1,000, the EV policy from $2,201 to $3,228 —
+  and the reduction stays within two points. A higher fee makes the EV policy block a
+  little more (5.3% to 7.8%).
+- Doubling capacity helps the rules engine more than the EV policy ($259 against $98
+  per 1,000), without changing the margin by more than a point. Review is a small
+  lever beside blocking, as the rehearsal showed.
+
+**Limitation.** One assumption at a time, as registered. The sweep does not measure
+the corner least favourable to the EV policy — a high false-positive cost with a low
+fee. The fee moves the margin so little that the corner is unlikely to sit far below
+34%, but that is an inference, not a measurement, and is not stated as one.
+
 ## 6. The USD halves owed by E1 and E3
 
 `experiments.md` records both as owing a USD figure. Their boosters were not saved, so
