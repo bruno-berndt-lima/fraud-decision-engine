@@ -92,6 +92,9 @@ paths:
   # capacities from here so the sweep and the reports cannot diverge.
   cost_matrix: config/cost_matrix.yaml
   features_dir: data/features
+  # One stamp per config section, so a stage restages when a section it reads
+  # changes and not when any key anywhere does. See fraud_engine/config_stamps.py.
+  config_stamps: data/config
 
 # ------------------------------------------------------------------------------
 # Phase 01 — load

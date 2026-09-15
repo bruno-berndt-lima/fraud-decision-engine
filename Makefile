@@ -29,8 +29,11 @@ REPORTS_DIR     := reports
 CONFIG_DIR      := config
 
 # ---- Config (stage inputs: editing these should trigger a rebuild) -----------
-CONFIG      := $(CONFIG_DIR)/config.yaml
-COST_MATRIX := $(CONFIG_DIR)/cost_matrix.yaml
+# config.yaml is never a prerequisite itself: stages depend on the sections they
+# read, through `$(call sections,...)` below. cost_matrix.yaml is small and read
+# whole, so it stays a plain file prerequisite.
+CONFIG_STAMPS := $(DATA_DIR)/config
+COST_MATRIX   := $(CONFIG_DIR)/cost_matrix.yaml
 RAW_SUMS    := docs/raw_checksums.txt
 
 # ---- Stage outputs -----------------------------------------------------------
@@ -73,6 +76,28 @@ FIGURES   := $(REPORTS_DIR)/figures/pr_curve_baselines.png
 # the single-sentinel note above. Both tracked, like the other reports/ outputs.
 FAMILY_FLOOR := $(REPORTS_DIR)/metrics/noise_floor.csv
 FAMILIES     := $(REPORTS_DIR)/metrics/family_none.json
+
+# ---- Config sections ----------------------------------------------------------
+# One stamp per top-level section of config.yaml, rewritten only when that
+# section's content changes. Refreshed here, while the Makefile is parsed, so
+# make compares timestamps that are already current: as a phony prerequisite
+# instead, make 3.81 reports every dependent as stale on a dry run.
+#
+# Skipped for goals that build nothing from config, so `make check` in CI never
+# runs the pipeline's Python.
+sections = $(foreach section,$(1),$(CONFIG_STAMPS)/$(section).stamp)
+
+NON_PIPELINE_GOALS := help setup test lint format check download verify-data clean
+ifneq ($(filter-out $(NON_PIPELINE_GOALS),$(or $(MAKECMDGOALS),$(.DEFAULT_GOAL))),)
+_STAMPS_FAILED := $(shell $(RUN) python -m fraud_engine.config_stamps >&2 || echo failed)
+ifneq ($(_STAMPS_FAILED),)
+$(error could not refresh the config section stamps in $(CONFIG_STAMPS))
+endif
+endif
+
+# A stamp the refresh did not write is a section config.yaml does not have.
+$(CONFIG_STAMPS)/%.stamp:
+	$(error config.yaml has no section '$*', but a stage depends on it)
 
 # ==============================================================================
 # Meta
@@ -139,19 +164,19 @@ $(VERIFIED): $(RAW_TXN) $(RAW_ID) $(RAW_SUMS)
 	cd $(RAW_DIR) && shasum -a 256 -c $(abspath $(RAW_SUMS))
 	touch $@
 
-$(INTERIM): $(VERIFIED) $(CONFIG) \
+$(INTERIM): $(VERIFIED) $(call sections,load) \
             src/fraud_engine/data/load.py src/fraud_engine/data/validate.py \
             | $(INTERIM_DIR)
 	$(RUN) python -m fraud_engine.data.load
 
-$(SPLITS): $(INTERIM) $(CONFIG) src/fraud_engine/data/splits.py | $(SPLITS_DIR)
+$(SPLITS): $(INTERIM) $(call sections,load splits) src/fraud_engine/data/splits.py | $(SPLITS_DIR)
 	$(RUN) python -m fraud_engine.data.splits
 
 # Phase 03. Reads interim + splits directly and skips $(FEATURES) entirely:
 # the incumbent must be servable from a single request, so it uses only columns
 # that arrive with one. Engineered features are Phase 04 and are not available
 # to it by design.
-$(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+$(BASELINES): $(SPLITS) $(INTERIM) $(call sections,load baselines) $(COST_MATRIX) \
               src/fraud_engine/models/rules.py \
               src/fraud_engine/evaluation/report.py \
               src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
@@ -159,7 +184,7 @@ $(BASELINES): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
 
 # Two records from one run - E2 requires both variants reported, so they are
 # produced together and logistic_baseline.json stands for the pair.
-$(LOGISTIC): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+$(LOGISTIC): $(SPLITS) $(INTERIM) $(call sections,load baselines) $(COST_MATRIX) \
              src/fraud_engine/models/logistic.py \
              src/fraud_engine/evaluation/report.py \
              src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
@@ -168,7 +193,7 @@ $(LOGISTIC): $(SPLITS) $(INTERIM) $(CONFIG) $(COST_MATRIX) \
 # Reads the predictions both stages above wrote — never a model. A figure is a
 # view of what a run said, so redrawing it must not be able to produce numbers
 # the metrics record disagrees with.
-$(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
+$(FIGURES): $(BASELINES) $(LOGISTIC) $(call sections,load) $(COST_MATRIX) \
             src/fraud_engine/evaluation/figures.py \
             src/fraud_engine/evaluation/plots.py \
             src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR)
@@ -177,7 +202,7 @@ $(FIGURES): $(BASELINES) $(LOGISTIC) $(CONFIG) $(COST_MATRIX) \
 # Phase 04. $(INTERIM) is named even though $(SPLITS) already depends on it:
 # build.py reads the interim table itself, and a rule should declare the
 # dependencies a stage has rather than the ones it happens to inherit.
-$(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
+$(FEATURES): $(SPLITS) $(INTERIM) $(call sections,load splits features) \
              src/fraud_engine/features/build.py \
              src/fraud_engine/features/amounts.py \
              src/fraud_engine/features/encoders.py \
@@ -189,7 +214,7 @@ $(FEATURES): $(SPLITS) $(INTERIM) $(CONFIG) \
 # Both depend on logistic.py because the probe IS the logistic pipeline: a change
 # to build_pipeline changes every family's number and the floor they are read
 # against, so both must go stale.
-$(FAMILY_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(FAMILY_FLOOR): $(FEATURES) $(call sections,load splits baselines features) $(COST_MATRIX) \
                  src/fraud_engine/features/floor.py \
                  src/fraud_engine/features/evaluate.py \
                  src/fraud_engine/features/registry.py \
@@ -197,19 +222,19 @@ $(FAMILY_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
                  src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.features.floor
 
-$(FAMILIES): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(FAMILIES): $(FEATURES) $(call sections,load splits baselines) $(COST_MATRIX) \
              src/fraud_engine/features/evaluate.py \
              src/fraud_engine/features/registry.py \
              src/fraud_engine/models/logistic.py \
              src/fraud_engine/evaluation/report.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.features.evaluate
 
-$(MODEL): $(FEATURES) $(CONFIG) src/fraud_engine/models/train.py src/fraud_engine/evaluation/tracking.py | $(MODEL_DIR)
+$(MODEL): $(FEATURES) $(call sections,load splits model) src/fraud_engine/models/train.py src/fraud_engine/evaluation/tracking.py | $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.models.train
 
 # A bar rather than a result, so it is measured when the data or the pipeline
 # changes and not once per tuning trial. Same reasoning as $(FAMILY_FLOOR).
-$(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(SEED_SPREAD): $(FEATURES) $(call sections,load splits model) $(COST_MATRIX) \
                 src/fraud_engine/evaluation/tracking.py \
                 src/fraud_engine/models/seeds.py \
                 src/fraud_engine/models/train.py \
@@ -218,7 +243,7 @@ $(SEED_SPREAD): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 
 # E2's second run. Separate from $(MODEL) because the shipped model is one arm
 # of it, and retraining should not re-answer a question that has not changed.
-$(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(IMBALANCE): $(FEATURES) $(call sections,load splits model) $(COST_MATRIX) \
               src/fraud_engine/evaluation/tracking.py \
               src/fraud_engine/models/imbalance.py \
               src/fraud_engine/models/train.py \
@@ -228,7 +253,7 @@ $(IMBALANCE): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # E4's handoff, under a tree. Measures on the untuned reference rather than on
 # the shipped configuration, so it does not depend on $(MODEL) and adopting a
 # new one does not restage it.
-$(ABLATION): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(ABLATION): $(FEATURES) $(call sections,load splits model) $(COST_MATRIX) \
              src/fraud_engine/evaluation/tracking.py \
              src/fraud_engine/models/ablation.py \
              src/fraud_engine/models/train.py \
@@ -239,7 +264,7 @@ $(ABLATION): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # Separate from $(ABLATION) for the reason $(FAMILY_FLOOR) is separate from
 # $(FAMILIES): fifty fits answer a question the six arms do not change, so
 # re-measuring a family should not re-measure the bar it is read against.
-$(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(ABL_FLOOR): $(FEATURES) $(call sections,load splits model) $(COST_MATRIX) \
               src/fraud_engine/evaluation/tracking.py \
               src/fraud_engine/models/floor.py \
               src/fraud_engine/models/ablation.py \
@@ -251,7 +276,7 @@ $(ABL_FLOOR): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 # Depends on $(INTERIM) rather than $(FEATURES): every arm rebuilds its own
 # splits and matrices from the pre-split frame, so the shipped ones are neither
 # read nor written here.
-$(PURGE): $(INTERIM) $(CONFIG) $(COST_MATRIX) \
+$(PURGE): $(INTERIM) $(call sections,load splits features model) $(COST_MATRIX) \
           src/fraud_engine/evaluation/tracking.py \
           src/fraud_engine/models/purge.py \
           src/fraud_engine/models/ablation.py \
@@ -264,7 +289,7 @@ $(PURGE): $(INTERIM) $(CONFIG) $(COST_MATRIX) \
 # Writes a verdict, never the model. Adopting the winning parameters is a
 # committed edit to config.yaml, so $(MODEL) stays the one thing `make train`
 # produces and the history shows when tuning changed it.
-$(TUNING): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
+$(TUNING): $(FEATURES) $(call sections,load splits model) $(COST_MATRIX) \
            src/fraud_engine/evaluation/tracking.py \
            src/fraud_engine/models/tune.py \
            src/fraud_engine/models/train.py \
@@ -274,12 +299,12 @@ $(TUNING): $(FEATURES) $(CONFIG) $(COST_MATRIX) \
 
 # Reads the shipped model's VAL-CAL scores, which `make train` writes beside it,
 # so it depends on $(MODEL) rather than on the matrices.
-$(CALIBRATOR): $(MODEL) $(CONFIG) \
+$(CALIBRATOR): $(MODEL) $(call sections,load splits model calibration) \
                src/fraud_engine/models/calibrate.py \
                src/fraud_engine/evaluation/tracking.py | $(MODEL_DIR) $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.calibrate
 
-$(RELIABILITY): $(CALIBRATOR) $(CONFIG) \
+$(RELIABILITY): $(CALIBRATOR) $(call sections,load splits model calibration) \
                 src/fraud_engine/evaluation/reliability.py \
                 src/fraud_engine/evaluation/plots.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.evaluation.reliability

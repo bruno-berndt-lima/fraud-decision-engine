@@ -6,11 +6,14 @@ read them out of a YAML file at parse time. This test is what keeps the two
 declarations honest.
 """
 
+import ast
 import re
 from pathlib import Path
 
 import pytest
 import yaml
+
+from fraud_engine.config_stamps import UNSTAMPED
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,6 +32,7 @@ PATH_PAIRS = [
     ("IMBALANCE", "paths.imbalance"),
     ("TUNING", "paths.tuning"),
     ("CALIBRATOR", "paths.calibrator"),
+    ("CONFIG_STAMPS", "paths.config_stamps"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment
@@ -93,16 +97,20 @@ def test_every_makefile_data_file_is_mapped(make_vars):
     )
 
 
-# A stage that reads config.yaml but does not depend on it in the Makefile will
-# not rebuild when the config changes: `make data` reports "nothing to be done"
-# and hands back an artifact built under the old settings. Nothing errors, and
-# the stale parquet is indistinguishable from a fresh one.
+# A stage that reads a config section but does not depend on its stamp will not
+# rebuild when that section changes: make reports "nothing to be done" and hands
+# back an artifact built under the old settings. Nothing errors, and the stale
+# output is indistinguishable from a fresh one.
 STAGE_RULE = re.compile(r"^\$\((\w+)\):\s*([^\n]*)\n((?:\t[^\n]*\n?)*)", re.MULTILINE)
+STAGE_MODULE = re.compile(r"python -m (fraud_engine[\w.]+)")
+DECLARED_SECTIONS = re.compile(r"\$\(call sections,([\w ]+)\)")
+SECTION_READ = re.compile(r'config\[\s*"(\w+)"\s*\]')
+SRC = REPO_ROOT / "src"
 
 
 @pytest.fixture(scope="module")
-def stage_rules() -> dict[str, str]:
-    """Map each pipeline stage's target variable to its prerequisites.
+def stage_rules() -> dict[str, tuple[str, str]]:
+    """Map each pipeline stage's target variable to its prerequisites and module.
 
     Order-only prerequisites (after `|`) are dropped: those are the mkdir rules
     for output directories, which are not stage inputs and never trigger a
@@ -113,10 +121,43 @@ def stage_rules() -> dict[str, str]:
     joined = re.sub(r"\\\n\s*", " ", text)
 
     return {
-        target: prerequisites.split("|")[0]
+        target: (prerequisites.split("|")[0], STAGE_MODULE.search(recipe).group(1))
         for target, prerequisites, recipe in STAGE_RULE.findall(joined)
-        if "python -m fraud_engine" in recipe
+        if STAGE_MODULE.search(recipe)
     }
+
+
+def module_path(module: str) -> Path:
+    path = SRC / module.replace(".", "/")
+    return path.with_suffix(".py") if path.with_suffix(".py").exists() else path / "__init__.py"
+
+
+def sections_read(module: str, seen: set[str] | None = None) -> set[str]:
+    """Config sections read by `module` and every `fraud_engine` module it imports.
+
+    Module-level, not function-level, so it over-approximates: importing one
+    function from a module counts every section that module reads. A spurious
+    dependency costs a rebuild; a missing one costs a stale artifact.
+    """
+    seen = set() if seen is None else seen
+    if module in seen:
+        return set()
+    seen.add(module)
+
+    source = module_path(module).read_text()
+    found = set(SECTION_READ.findall(source))
+
+    for node in ast.walk(ast.parse(source)):
+        imported = []
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("fraud_engine"):
+            imported = [node.module, *(f"{node.module}.{alias.name}" for alias in node.names)]
+        elif isinstance(node, ast.Import):
+            imported = [alias.name for alias in node.names if alias.name.startswith("fraud_engine")]
+        for name in imported:
+            if module_path(name).exists():
+                found |= sections_read(name, seen)
+
+    return found
 
 
 def test_stage_rules_are_found(stage_rules):
@@ -124,11 +165,39 @@ def test_stage_rules_are_found(stage_rules):
     assert stage_rules, "no Makefile rule with a `python -m fraud_engine` recipe was parsed"
 
 
-def test_every_pipeline_stage_depends_on_the_config(stage_rules):
-    missing = sorted(
-        target for target, prereqs in stage_rules.items() if "$(CONFIG)" not in prereqs
+def test_the_section_scan_sees_through_imports():
+    """Guards the guard: train reads `splits` only through tracking.log_provenance."""
+    assert "splits" in sections_read("fraud_engine.models.train")
+
+
+def test_no_stage_depends_on_the_whole_config(stage_rules):
+    """Depending on config.yaml itself restages everything on any edit."""
+    whole = sorted(
+        target for target, (prereqs, _) in stage_rules.items() if "config.yaml" in prereqs
     )
+    assert not whole, f"stages depend on config.yaml directly: {whole}"
+
+
+def test_every_stage_depends_on_the_sections_it_reads(stage_rules):
+    missing = {}
+    for target, (prereqs, module) in stage_rules.items():
+        declared = {name for group in DECLARED_SECTIONS.findall(prereqs) for name in group.split()}
+        needed = sections_read(module) - UNSTAMPED
+        if needed - declared:
+            missing[target] = sorted(needed - declared)
+
     assert not missing, (
-        f"Makefile stages run from config.yaml but do not depend on it: {missing}. "
-        "Editing config.yaml would leave their outputs stale without a word."
+        f"Makefile stages read config sections they do not depend on: {missing}. "
+        "Add them to the stage's `$(call sections,...)`, or editing them leaves its "
+        "output stale without a word."
     )
+
+
+def test_every_declared_section_exists(stage_rules, config):
+    declared = {
+        name
+        for prereqs, _ in stage_rules.values()
+        for group in DECLARED_SECTIONS.findall(prereqs)
+        for name in group.split()
+    }
+    assert declared <= set(config) - UNSTAMPED, sorted(declared - (set(config) - UNSTAMPED))
