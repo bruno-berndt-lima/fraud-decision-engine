@@ -1,0 +1,1405 @@
+{
+  "name": "sensitivity_val_cal",
+  "created": "2026-09-15T18:46:14+00:00",
+  "git_revision": "74f5307b5e59ba4d469a5d96a41e07d989f66127",
+  "split": "val_cal",
+  "probabilities": "platt, out-of-fold",
+  "cost_matrix_version": 1,
+  "base": {
+    "false_positive": 15.0,
+    "chargeback_fee": 25.0,
+    "review_capacity": 0.01
+  },
+  "bars": {
+    "win": 0.15,
+    "noise": 0.05
+  },
+  "verdicts": {
+    "false_positive": {
+      "min_reduction": 0.34006526503816803,
+      "at_value": 100.0,
+      "max_reduction": 0.6911506566428296,
+      "above_win_everywhere": true,
+      "above_noise_everywhere": true,
+      "positive_everywhere": true
+    },
+    "chargeback_fee": {
+      "min_reduction": 0.5435533596072659,
+      "at_value": 24.4444444444,
+      "max_reduction": 0.5639303399833575,
+      "above_win_everywhere": true,
+      "above_noise_everywhere": true,
+      "positive_everywhere": true
+    },
+    "review_capacity": {
+      "min_reduction": 0.5400272295995523,
+      "at_value": 0.02,
+      "max_reduction": 0.5468599609678824,
+      "above_win_everywhere": true,
+      "above_noise_everywhere": true,
+      "positive_everywhere": true
+    }
+  },
+  "points": [
+    {
+      "assumption": "false_positive",
+      "value": 5.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 5.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4145.694920016154,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.19350610530268997
+    },
+    {
+      "assumption": "false_positive",
+      "value": 5.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3934.6367100388065,
+      "reviews_per_day": 7.65,
+      "block_rate": 0.01130836362359304,
+      "reduction_vs_rules": 0.23456488098602235
+    },
+    {
+      "assumption": "false_positive",
+      "value": 5.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 1587.6067534109466,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.1539271980192804,
+      "reduction_vs_rules": 0.6911506566428296
+    },
+    {
+      "assumption": "false_positive",
+      "value": 10.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 10.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4158.074417461237,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.19109782652156782
+    },
+    {
+      "assumption": "false_positive",
+      "value": 10.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3941.423484170047,
+      "reviews_per_day": 13.2,
+      "block_rate": 0.009359251259899209,
+      "reduction_vs_rules": 0.2332445976542441
+    },
+    {
+      "assumption": "false_positive",
+      "value": 10.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2051.4662417250524,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.08184515970429683,
+      "reduction_vs_rules": 0.6009125053701627
+    },
+    {
+      "assumption": "false_positive",
+      "value": 15.0,
+      "is_base": true,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 15.0,
+      "is_base": true,
+      "policy": "naive",
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.188689547740446
+    },
+    {
+      "assumption": "false_positive",
+      "value": 15.0,
+      "is_base": true,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3945.7694779539584,
+      "reviews_per_day": 14.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23239913808214818
+    },
+    {
+      "assumption": "false_positive",
+      "value": 15.0,
+      "is_base": true,
+      "policy": "ev",
+      "usd_per_1000": 2343.1792656587477,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05585699485504574,
+      "reduction_vs_rules": 0.5441633288520558
+    },
+    {
+      "assumption": "false_positive",
+      "value": 20.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 20.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4182.833412351402,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.18628126895932395
+    },
+    {
+      "assumption": "false_positive",
+      "value": 20.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3949.3516304061527,
+      "reviews_per_day": 15.05,
+      "block_rate": 0.008709547138667931,
+      "reduction_vs_rules": 0.2317022744348447
+    },
+    {
+      "assumption": "false_positive",
+      "value": 20.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2571.9953115945846,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.04165130204217809,
+      "reduction_vs_rules": 0.49964998486114953
+    },
+    {
+      "assumption": "false_positive",
+      "value": 25.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 25.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4195.212909796484,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.18387299017820213
+    },
+    {
+      "assumption": "false_positive",
+      "value": 25.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3951.9767862473436,
+      "reviews_per_day": 15.7,
+      "block_rate": 0.00848127271769478,
+      "reduction_vs_rules": 0.23119158269331608
+    },
+    {
+      "assumption": "false_positive",
+      "value": 25.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2770.6709160828113,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.03341586331630055,
+      "reduction_vs_rules": 0.4610000925906329
+    },
+    {
+      "assumption": "false_positive",
+      "value": 30.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 30.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4207.592407241566,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1814647113970802
+    },
+    {
+      "assumption": "false_positive",
+      "value": 30.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3955.0145920033715,
+      "reviews_per_day": 16.1,
+      "block_rate": 0.00834079615094207,
+      "reduction_vs_rules": 0.23060061499241657
+    },
+    {
+      "assumption": "false_positive",
+      "value": 30.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2886.867723752831,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.028516743050799837,
+      "reduction_vs_rules": 0.43839543455930263
+    },
+    {
+      "assumption": "false_positive",
+      "value": 35.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 35.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4219.971904686649,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.17905643261595816
+    },
+    {
+      "assumption": "false_positive",
+      "value": 35.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3958.693322095208,
+      "reviews_per_day": 16.25,
+      "block_rate": 0.008288117438409806,
+      "reduction_vs_rules": 0.22988496335462227
+    },
+    {
+      "assumption": "false_positive",
+      "value": 35.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2998.1300286221,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0250399480236703,
+      "reduction_vs_rules": 0.4167507232821239
+    },
+    {
+      "assumption": "false_positive",
+      "value": 40.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 40.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4232.351402131731,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.17664815383483634
+    },
+    {
+      "assumption": "false_positive",
+      "value": 40.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3961.8540448471435,
+      "reviews_per_day": 16.65,
+      "block_rate": 0.008147640871657097,
+      "reduction_vs_rules": 0.22927008366582513
+    },
+    {
+      "assumption": "false_positive",
+      "value": 40.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3114.0093065725478,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.02173874870498165,
+      "reduction_vs_rules": 0.39420783674752946
+    },
+    {
+      "assumption": "false_positive",
+      "value": 45.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 45.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4244.730899576814,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1742398750537143
+    },
+    {
+      "assumption": "false_positive",
+      "value": 45.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3965.4186377284936,
+      "reviews_per_day": 16.75,
+      "block_rate": 0.00811252172996892,
+      "reduction_vs_rules": 0.2285766360167929
+    },
+    {
+      "assumption": "false_positive",
+      "value": 45.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3186.1995996417845,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.019596481062002846,
+      "reduction_vs_rules": 0.3801641042153435
+    },
+    {
+      "assumption": "false_positive",
+      "value": 50.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 50.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4257.110397021897,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.17183159627259226
+    },
+    {
+      "assumption": "false_positive",
+      "value": 50.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3967.332630950499,
+      "reviews_per_day": 16.85,
+      "block_rate": 0.008077402588280743,
+      "reduction_vs_rules": 0.22820429220524352
+    },
+    {
+      "assumption": "false_positive",
+      "value": 50.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3207.545540746984,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.017822964406749898,
+      "reduction_vs_rules": 0.37601151423705237
+    },
+    {
+      "assumption": "false_positive",
+      "value": 55.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 55.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4269.4898944669785,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.16942331749147055
+    },
+    {
+      "assumption": "false_positive",
+      "value": 55.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3969.834869795782,
+      "reviews_per_day": 17.0,
+      "block_rate": 0.008024723875748476,
+      "reduction_vs_rules": 0.22771751245161242
+    },
+    {
+      "assumption": "false_positive",
+      "value": 55.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3251.8883211294315,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0165937944476637,
+      "reduction_vs_rules": 0.3673851723710164
+    },
+    {
+      "assumption": "false_positive",
+      "value": 60.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 60.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4281.8693919120615,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1670150387103485
+    },
+    {
+      "assumption": "false_positive",
+      "value": 60.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3972.214191645156,
+      "reviews_per_day": 17.25,
+      "block_rate": 0.007936926021528033,
+      "reduction_vs_rules": 0.22725464468587908
+    },
+    {
+      "assumption": "false_positive",
+      "value": 60.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3270.564241689933,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.015592898909550651,
+      "reduction_vs_rules": 0.3637520020098366
+    },
+    {
+      "assumption": "false_positive",
+      "value": 65.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 65.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4294.248889357144,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.16460675992922646
+    },
+    {
+      "assumption": "false_positive",
+      "value": 65.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3975.4539324658904,
+      "reviews_per_day": 17.4,
+      "block_rate": 0.007884247308995769,
+      "reduction_vs_rules": 0.22662439300486215
+    },
+    {
+      "assumption": "false_positive",
+      "value": 65.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3299.7350085163916,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0147500395090344,
+      "reduction_vs_rules": 0.35807718854597326
+    },
+    {
+      "assumption": "false_positive",
+      "value": 70.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 70.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4306.6283868022265,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.16219848114810453
+    },
+    {
+      "assumption": "false_positive",
+      "value": 70.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3978.6409945740925,
+      "reviews_per_day": 17.45,
+      "block_rate": 0.00786668773815168,
+      "reduction_vs_rules": 0.2260043893186584
+    },
+    {
+      "assumption": "false_positive",
+      "value": 70.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3347.463818504276,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.013959858821050414,
+      "reduction_vs_rules": 0.34879213631732386
+    },
+    {
+      "assumption": "false_positive",
+      "value": 75.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 75.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4319.007884247309,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1597902023669825
+    },
+    {
+      "assumption": "false_positive",
+      "value": 75.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3981.880735394827,
+      "reviews_per_day": 17.6,
+      "block_rate": 0.007814009025619413,
+      "reduction_vs_rules": 0.22537413763764136
+    },
+    {
+      "assumption": "false_positive",
+      "value": 75.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3336.6515829953114,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.013345273841507313,
+      "reduction_vs_rules": 0.35089552358875753
+    },
+    {
+      "assumption": "false_positive",
+      "value": 80.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 80.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4331.387381692391,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.15738192358586078
+    },
+    {
+      "assumption": "false_positive",
+      "value": 80.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3983.7947286168323,
+      "reviews_per_day": 17.8,
+      "block_rate": 0.007743770742243059,
+      "reduction_vs_rules": 0.22500179382609198
+    },
+    {
+      "assumption": "false_positive",
+      "value": 80.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3355.745122829198,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.012976522853781454,
+      "reduction_vs_rules": 0.3471811105406962
+    },
+    {
+      "assumption": "false_positive",
+      "value": 85.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 85.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4343.766879137474,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.15497364480473874
+    },
+    {
+      "assumption": "false_positive",
+      "value": 85.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3986.893992870814,
+      "reviews_per_day": 17.85,
+      "block_rate": 0.007726211171398971,
+      "reduction_vs_rules": 0.2243988701312437
+    },
+    {
+      "assumption": "false_positive",
+      "value": 85.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3359.195560940491,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.012555093153523328,
+      "reduction_vs_rules": 0.3465098702964242
+    },
+    {
+      "assumption": "false_positive",
+      "value": 90.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 90.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4356.1463765825565,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1525653660236167
+    },
+    {
+      "assumption": "false_positive",
+      "value": 90.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3988.518253173892,
+      "reviews_per_day": 18.0,
+      "block_rate": 0.007673532458866705,
+      "reduction_vs_rules": 0.22408289029116746
+    },
+    {
+      "assumption": "false_positive",
+      "value": 90.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3383.3224112802686,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.012186342165797467,
+      "reduction_vs_rules": 0.3418162886719398
+    },
+    {
+      "assumption": "false_positive",
+      "value": 95.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 95.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4368.525874027639,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.15015708724249488
+    },
+    {
+      "assumption": "false_positive",
+      "value": 95.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3991.5823982861857,
+      "reviews_per_day": 18.15,
+      "block_rate": 0.00762085374633444,
+      "reduction_vs_rules": 0.22348679859286136
+    },
+    {
+      "assumption": "false_positive",
+      "value": 95.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3385.2579676552705,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.011835150748915696,
+      "reduction_vs_rules": 0.34143975001451354
+    },
+    {
+      "assumption": "false_positive",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "false_positive",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4380.9053714727215,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.14774880846137284
+    },
+    {
+      "assumption": "false_positive",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3992.943265026602,
+      "reviews_per_day": 18.3,
+      "block_rate": 0.007568175033802174,
+      "reduction_vs_rules": 0.22322205872685164
+    },
+    {
+      "assumption": "false_positive",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3392.3233594970934,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.011677114611318899,
+      "reduction_vs_rules": 0.34006526503816803
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 15.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 4838.718765913361,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 15.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 3958.6854905266114,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.18187320196953694
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 15.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3744.6279302533844,
+      "reviews_per_day": 13.85,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.22611168133336523
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 15.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2201.0060580519416,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05308258266167975,
+      "reduction_vs_rules": 0.5451262690534819
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 24.4444444444,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5123.632558174493,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 24.4444444444,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4158.689002439839,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.18833191974220242
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 24.4444444444,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3935.1693152343464,
+      "reviews_per_day": 14.15,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23195715724071875
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 24.4444444444,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2338.664867785577,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05575163742998121,
+      "reduction_vs_rules": 0.5435533596072659
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 25.0,
+      "is_base": true,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 25.0,
+      "is_base": true,
+      "policy": "naive",
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.188689547740446
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 25.0,
+      "is_base": true,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3945.7694779539584,
+      "reviews_per_day": 14.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23239913808214818
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 25.0,
+      "is_base": true,
+      "policy": "ev",
+      "usd_per_1000": 2343.1792656587477,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05585699485504574,
+      "reduction_vs_rules": 0.5441633288520558
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 33.8888888889,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5408.546350438641,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 33.8888888889,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4358.692514355183,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.1941101671428429
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 33.8888888889,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4128.248538165957,
+      "reviews_per_day": 14.55,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23671754466315142
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 33.8888888889,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2453.5673126639153,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0582275369189977,
+      "reduction_vs_rules": 0.5463536496336159
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 43.3333333333,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5693.460142699773,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 43.3333333333,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4558.696026268412,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.19931010106154334
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 43.3333333333,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4310.444532241611,
+      "reviews_per_day": 14.85,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.24291302227371914
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 43.3333333333,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2591.426024454194,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.06117754482080458,
+      "reduction_vs_rules": 0.5448416324162815
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 52.7777777778,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5978.373934963923,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 52.7777777778,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4758.699538183758,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.20401440425916173
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 52.7777777778,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4484.379848636956,
+      "reviews_per_day": 15.35,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.24989973905604856
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 52.7777777778,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2722.240324188983,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.06409243358092329,
+      "reduction_vs_rules": 0.5446520485665454
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 62.2222222222,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 6263.2877272250535,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 62.2222222222,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4958.703050096985,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.20829071470840188
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 62.2222222222,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4659.543995504297,
+      "reviews_per_day": 15.9,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.25605461565331833
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 62.2222222222,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2817.0131287055265,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.06702488191188608,
+      "reduction_vs_rules": 0.5502341180238892
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 71.6666666667,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 6548.201519489203,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 71.6666666667,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 5158.706562012329,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.2121948986055735
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 71.6666666667,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4843.677770169307,
+      "reviews_per_day": 16.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.2603041070508866
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 71.6666666667,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2929.29407013333,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.06962369839681118,
+      "reduction_vs_rules": 0.5526567010170708
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 81.1111111111,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 6833.115311750334,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 81.1111111111,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 5358.710073925557,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.21577350455206956
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 81.1111111111,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 5035.634120977413,
+      "reviews_per_day": 16.3,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.26305442082646313
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 81.1111111111,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3047.0776015966185,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.07234543187764492,
+      "reduction_vs_rules": 0.5540719770443775
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 90.5555555556,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 7118.029104014483,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 90.5555555556,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 5558.713585840903,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.21906562833441423
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 90.5555555556,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 5222.636932460939,
+      "reviews_per_day": 16.6,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.2662804750945126
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 90.5555555556,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3138.4096589351175,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.07519008235438726,
+      "reduction_vs_rules": 0.5590900777344262
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 7402.942896275615,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 5758.717097754131,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.22210434708995064
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 5409.844474881033,
+      "reviews_per_day": 16.85,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.2692305545673329
+    },
+    {
+      "assumption": "chargeback_fee",
+      "value": 100.0,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 3228.1987919015264,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.07822788811041458,
+      "reduction_vs_rules": 0.5639303399833575
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.005,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 5279.795062248678,
+      "reviews_per_day": 13.75,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.005,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.21011064525483447
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.005,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 4003.6265957260007,
+      "reviews_per_day": 12.2,
+      "block_rate": 0.009271453405678766,
+      "reduction_vs_rules": 0.24170795484989027
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.005,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2392.486540588948,
+      "reviews_per_day": 13.75,
+      "block_rate": 0.06080879383307872,
+      "reduction_vs_rules": 0.5468599609678824
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.01,
+      "is_base": true,
+      "policy": "rules",
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.01,
+      "is_base": true,
+      "policy": "naive",
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.188689547740446
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.01,
+      "is_base": true,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3945.7694779539584,
+      "reviews_per_day": 14.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23239913808214818
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.01,
+      "is_base": true,
+      "policy": "ev",
+      "usd_per_1000": 2343.1792656587477,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05585699485504574,
+      "reduction_vs_rules": 0.5441633288520558
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.02,
+      "is_base": false,
+      "policy": "rules",
+      "usd_per_1000": 4880.636312858038,
+      "reviews_per_day": 56.5,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.02,
+      "is_base": false,
+      "policy": "naive",
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.14551020654432756
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.02,
+      "is_base": false,
+      "policy": "ev_uncalibrated",
+      "usd_per_1000": 3945.7694779539584,
+      "reviews_per_day": 14.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.19154609665161337
+    },
+    {
+      "assumption": "review_capacity",
+      "value": 0.02,
+      "is_base": false,
+      "policy": "ev",
+      "usd_per_1000": 2244.959806142338,
+      "reviews_per_day": 56.5,
+      "block_rate": 0.04630458831586156,
+      "reduction_vs_rules": 0.5400272295995523
+    }
+  ]
+}
