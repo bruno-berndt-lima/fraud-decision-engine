@@ -204,6 +204,64 @@ reason.
 the rules engine counts as a win; below 5% is inside the noise of the cost assumptions
 and is not claimed.
 
+### Rehearsal result
+
+Record: `reports/metrics/policy_val_cal.json`. Platt probabilities out-of-fold, review
+capacity 1% of daily volume, cost matrix version 1. Nothing below changed the policy.
+
+| row | USD per 1,000 | reviews / day | block rate | vs rules |
+|---|---:|---:|---:|---:|
+| rules | 5,140 | 27.95 | 0% | — |
+| naive, 0.5 | 4,170 | 0 | 1.28% | −18.9% |
+| EV, uncalibrated | 3,946 | 14.25 | 0.90% | −23.2% |
+| **EV** | **2,343** | 27.95 | 5.59% | **−54.4%** |
+
+All three model rows clear the 15% bar. A reduction that large was taken apart before
+being read, against two references that are not rows of §4 — allowing every
+transaction, and an oracle that blocks exactly the fraud:
+
+| | total | fraud allowed | false positives | review | blocked | fraud among blocked | fraud USD stopped |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| allow everything | 5,362 | 5,362 | 0 | 0 | 0 | — | 0% |
+| rules | 5,140 | 5,100 | 0 | 40 | 0 | — | 5.0% |
+| naive, 0.5 | 4,170 | 4,133 | 37 | 0 | 731 | 80.7% | 21.2% |
+| EV, uncalibrated | 3,946 | 3,918 | 14 | 14 | 512 | 89.6% | 25.7% |
+| EV | 2,343 | 1,725 | 575 | 43 | 3,181 | 31.4% | 69.8% |
+| oracle | 0 | 0 | 0 | 0 | 1,796 | 100% | 100% |
+
+USD per 1,000 transactions throughout. Nothing points to leakage: the probabilities are
+out-of-fold from a booster that never stopped on this slice, the amount is known at
+authorisation, fraud and legitimate tickets have similar means ($145 and $138), the saving
+appears in every amount band, and review volume matches capacity exactly.
+
+**What the rehearsal supports.**
+
+- **Calibration is worth about $1,600 per 1,000 transactions.** The uncalibrated
+  booster's probabilities are so extreme that almost nothing is worth reviewing and
+  blocking is timid.
+- **The per-transaction threshold is worth 35 points over a fixed 0.5 cut**, on the
+  same model and the same probabilities.
+
+**What the headline has to be read with.**
+
+- **Most of the margin is the ability to block.** The rules engine saves 4% against
+  allowing everything, because §3 lets it review 28 transactions a day and nothing else.
+  A fixed cut that only blocks already takes 19% off it. That is the incumbent this
+  project set out to measure against — a rules engine cannot price a transaction — but
+  "54% less than the rules" means "a policy that can decline, against one that cannot",
+  and is reported that way.
+- **The saving is bought with declined customers.** The EV policy blocks 5.6% of
+  transactions, and 69% of what it blocks is legitimate: roughly 2,180 good customers in
+  57,000 transactions, 4.0% of legitimate purchases. At $15 each that is affordable; the
+  $15 is the lowest-confidence number in the cost matrix, and a decline rate that high
+  is one a merchant would question. §5 measures how the margin responds when it moves,
+  and the headline is not stated without it.
+
+**A note on §3.** The rules score persisted in Phase 03 is total points plus an amount
+tiebreaker held below one point, so it has far more than a handful of distinct values —
+1,042 on this slice. It is still the engine's own score, and the policy is unchanged:
+the highest scores are reviewed, with remaining ties prorated.
+
 ## 5. Sensitivity
 
 On `VAL-CAL`, out-of-fold probabilities. Never on test — a sweep on test is a threshold
