@@ -1,0 +1,44 @@
+{
+  "name": "policy_val_cal",
+  "created": "2026-09-15T18:16:44+00:00",
+  "git_revision": "ef434968b0cd66dedfa6ec09505c5ac622a8b82d",
+  "split": "val_cal",
+  "rows": 56949,
+  "positives": 1796,
+  "days": 20,
+  "probabilities": "platt, out-of-fold",
+  "review_capacity": 0.01,
+  "cost_matrix_version": 1,
+  "costs": {
+    "chargeback_fee": 25.0,
+    "false_positive": 15.0,
+    "review": 1.5,
+    "review_friction": 3.0
+  },
+  "policies": {
+    "rules": {
+      "usd_per_1000": 5140.392193014802,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    "naive": {
+      "usd_per_1000": 4170.453914906319,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.012836046287028745,
+      "reduction_vs_rules": 0.188689547740446
+    },
+    "ev_uncalibrated": {
+      "usd_per_1000": 3945.7694779539584,
+      "reviews_per_day": 14.25,
+      "block_rate": 0.008990500272173348,
+      "reduction_vs_rules": 0.23239913808214818
+    },
+    "ev": {
+      "usd_per_1000": 2343.1792656587477,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05585699485504574,
+      "reduction_vs_rules": 0.5441633288520558
+    }
+  }
+}
