@@ -62,6 +62,53 @@ booster** — `model.txt`, `categories.parquet` and `medians.parquet` become fou
 artifacts, and serving without the fourth returns uncalibrated probabilities with no
 error.
 
+### Result
+
+**Platt.** Isotonic had the lower out-of-fold Brier score in folds 0 and 2 and the
+higher in folds 1 and 3, so the rule goes to Platt. Record:
+`reports/metrics/calibration.json`; diagram: `reports/figures/reliability_val_cal.png`.
+
+| fold | days | positives | Platt Brier | isotonic Brier |
+|---|---|---:|---:|---:|
+| 0 | 141–145 | 462 | 0.024905 | **0.024833** |
+| 1 | 146–150 | 398 | **0.021330** | 0.021430 |
+| 2 | 151–155 | 558 | 0.018246 | **0.018214** |
+| 3 | 156–160 | 378 | **0.018187** | 0.018352 |
+
+**The margin is negligible either way.** Pooled out-of-fold, Platt is marginally ahead
+on Brier and log-loss and isotonic marginally ahead on ECE. The rule was written for
+exactly this case: without a consistent win, the simpler method that preserves the
+ranking ships.
+
+| pooled over `VAL-CAL` | Brier | log-loss | ECE |
+|---|---:|---:|---:|
+| constant base rate, 3.15% | 0.0305 | 0.140 | — |
+| uncalibrated | 0.0232 | 0.263 | 0.0210 |
+| Platt, out-of-fold | 0.0205 | 0.087 | 0.0018 |
+| isotonic, out-of-fold | 0.0205 | 0.089 | 0.0014 |
+
+The first row is a reference, not a run: the scores a model predicting the slice's
+fraud rate for every transaction would get.
+
+**The booster is heavily overconfident.** Its log-loss is worse than the constant
+predictor's: it ranks well, but the fraud it scores near zero costs more than its
+ranking earns. The shipped calibrator is `a = 0.298`, `b = 0.756` — the booster's
+log-odds are roughly 3.4 times too extreme. On the diagram, uncalibrated scores near
+1e-10 correspond to an observed fraud rate near 0.2%.
+
+**Two consequences carried forward.**
+
+- **Calibrated probabilities rarely fall below about 0.2%.** The §2 threshold falls
+  with amount, so very large transactions will clear it almost regardless of score.
+  That is the policy doing what it was registered to do, and it is noted here so the
+  block rate in §4 is read with it in mind.
+- **Base-rate drift inside `VAL-CAL` already moves calibration.** Fold 0 has the
+  highest fraud rate of the four and roughly two to two-and-a-half times the ECE of the
+  others under both methods: a calibrator fitted on other days underestimates it. The
+  shipped calibrator carries `VAL-CAL`'s base rate forward. Nothing here can correct
+  that without a later slice; the reliability diagram on test (§7) measures how much it
+  costs, and it is a limitation of the headline rather than a defect to fix.
+
 ## 2. The expected-value policy
 
 For each transaction, with calibrated probability `p` and `amount` in USD, the expected
