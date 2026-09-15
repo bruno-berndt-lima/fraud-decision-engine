@@ -16,6 +16,7 @@ from fraud_engine.evaluation.plots import (
     plot_pr_curve,
     plot_recall_at_capacity,
     plot_reliability,
+    plot_sensitivity,
     save_figure,
 )
 
@@ -246,3 +247,41 @@ def test_reliability_leaves_out_bins_with_no_fraud_and_says_so():
     series = [line for line in axes.lines if line.get_color() == SERIES_COLOURS[0]]
     assert len(series[0].get_xdata()) == 2
     assert any("1 bins with no fraud" in text.get_text() for text in axes.texts)
+
+
+# ---- plot_sensitivity ---------------------------------------------------------
+
+
+@pytest.fixture
+def sweep_points() -> pd.DataFrame:
+    values = np.arange(5.0, 105.0, 5.0)
+    return pd.DataFrame(
+        {
+            "value": values,
+            "rules_usd": np.full(len(values), 5_000.0),
+            "ev_usd": 2_000 + 20 * values,
+            "reduction": 1 - (2_000 + 20 * values) / 5_000,
+        }
+    )
+
+
+def test_sensitivity_has_a_dollar_panel_and_a_margin_panel(sweep_points):
+    figure = plot_sensitivity(sweep_points, base=15.0, bars=(0.15, 0.05), xlabel="FP cost")
+
+    top, bottom = figure.axes
+    assert top.get_shared_x_axes().joined(top, bottom)
+    assert len([line for line in top.lines if line.get_color() in SERIES_COLOURS]) == 2
+
+
+def test_sensitivity_marks_the_headline_value_on_both_panels(sweep_points):
+    figure = plot_sensitivity(sweep_points, base=15.0, bars=(0.15, 0.05), xlabel="FP cost")
+
+    for axes in figure.axes:
+        assert any(np.allclose(line.get_xdata(), 15.0) for line in axes.lines)
+
+
+def test_sensitivity_draws_the_reading_rule_bars(sweep_points):
+    _, bottom = plot_sensitivity(sweep_points, base=15.0, bars=(0.15, 0.05), xlabel="FP cost").axes
+
+    for bar in (0.15, 0.05):
+        assert any(np.allclose(line.get_ydata(), bar) for line in bottom.lines)

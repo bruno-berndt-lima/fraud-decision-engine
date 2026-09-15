@@ -89,6 +89,9 @@ paths:
   # The four rows of decision-policy.md §4 on VAL-CAL, before the test touch.
   # Tracked: a model that does not beat the rules has to be found out here.
   rehearsal: reports/metrics/policy_val_cal.json
+  # Every §4 row at every point of each one-at-a-time cost sweep, with a verdict
+  # per assumption. Tracked: it is what the headline is stated with.
+  sensitivity: reports/metrics/sensitivity_val_cal.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review

@@ -50,6 +50,12 @@ def _new_axes(figsize=(7.0, 4.5)):
     """A styled figure and axes: recessive chrome, no chartjunk."""
     figure, axes = plt.subplots(figsize=figsize, dpi=150)
     figure.patch.set_facecolor(SURFACE)
+    _style_axes(axes)
+    return figure, axes
+
+
+def _style_axes(axes):
+    """The chrome `_new_axes` applies, for figures with more than one panel."""
     axes.set_facecolor(SURFACE)
 
     axes.grid(True, color=GRIDLINE, linewidth=1, linestyle="-")
@@ -61,7 +67,6 @@ def _new_axes(figsize=(7.0, 4.5)):
         axes.spines[side].set_linewidth(1)
 
     axes.tick_params(colors=INK_MUTED, labelsize=9, length=0)
-    return figure, axes
 
 
 def _check_series(scores: Mapping[str, pd.Series]) -> None:
@@ -345,6 +350,112 @@ def plot_reliability(
             fontsize=8,
             color=INK_MUTED,
         )
+
+    figure.tight_layout()
+    return figure
+
+
+def plot_sensitivity(
+    points: pd.DataFrame,
+    *,
+    base: float,
+    bars: Sequence[float],
+    xlabel: str,
+    title: str = "Sensitivity",
+) -> plt.Figure:
+    """USD per 1,000 for rules and EV across one assumption, and the margin between them.
+
+    Two panels on one axis rather than one panel with a second y-scale: the top reads
+    in dollars, the bottom in the unit the reading rule is stated in, and neither
+    scale can be stretched to make the other look better.
+
+    Args:
+        points: One row per swept value, with `value`, `rules_usd`, `ev_usd` and
+            `reduction` (EV against rules, as a fraction).
+        base: The value the headline was computed at, marked on both panels.
+        bars: Reduction thresholds from the reading rule, drawn as reference lines.
+        xlabel: What was swept, with its unit.
+        title: Figure title.
+
+    Returns:
+        The figure, unsaved. Use `save_figure`.
+    """
+    points = points.sort_values("value")
+    figure, (top, bottom) = plt.subplots(
+        2, 1, figsize=(7.0, 6.5), dpi=150, sharex=True, height_ratios=(3, 2)
+    )
+    figure.patch.set_facecolor(SURFACE)
+
+    for axes in (top, bottom):
+        _style_axes(axes)
+        axes.axvline(base, color=AXIS, linewidth=1)
+
+    for colour, column, label in (
+        (SERIES_COLOURS[0], "rules_usd", "rules engine"),
+        (SERIES_COLOURS[1], "ev_usd", "EV policy"),
+    ):
+        top.plot(
+            points["value"], points[column], color=colour, linewidth=2, marker="o", markersize=3
+        )
+        top.annotate(
+            label,
+            xy=(points["value"].iloc[-1], points[column].iloc[-1]),
+            xytext=(6, 0),
+            textcoords="offset points",
+            va="center",
+            ha="left",
+            fontsize=9,
+            color=INK_MUTED,
+        )
+
+    # At the foot of the panel: the rules line runs flat along the top.
+    top.annotate(
+        f"headline at {base:g}",
+        xy=(base, 0.0),
+        xycoords=("data", "axes fraction"),
+        xytext=(4, 6),
+        textcoords="offset points",
+        ha="left",
+        va="bottom",
+        fontsize=8,
+        color=INK_MUTED,
+    )
+    top.set_ylim(0, None)
+    top.set_ylabel("USD lost per 1,000 transactions", color=INK_MUTED, fontsize=9)
+    top.set_title(title, color=INK, fontsize=11, loc="left", pad=12)
+
+    bottom.plot(
+        points["value"],
+        points["reduction"],
+        color=SERIES_COLOURS[1],
+        linewidth=2,
+        marker="o",
+        markersize=3,
+    )
+    for bar in bars:
+        bottom.axhline(bar, color=AXIS, linewidth=1, linestyle="--")
+        bottom.annotate(
+            f"{bar:.0%}",
+            xy=(1.0, bar),
+            xycoords=("axes fraction", "data"),
+            xytext=(4, 0),
+            textcoords="offset points",
+            va="center",
+            ha="left",
+            fontsize=8,
+            color=INK_MUTED,
+        )
+    bottom.axhline(0, color=INK_MUTED, linewidth=1)
+    bottom.set_ylim(
+        min(0.0, float(points["reduction"].min()) * 1.1),
+        max(float(points["reduction"].max()) * 1.15, max(bars) * 1.3),
+    )
+    bottom.yaxis.set_major_formatter(lambda value, _: f"{value:.0%}")
+    bottom.set_ylabel("EV reduction vs rules", color=INK_MUTED, fontsize=9)
+    bottom.set_xlabel(xlabel, color=INK_MUTED, fontsize=9)
+
+    span = points["value"].iloc[-1] - points["value"].iloc[0]
+    top.set_xlim(points["value"].iloc[0], points["value"].iloc[-1] + span * 0.18)
 
     figure.tight_layout()
     return figure
