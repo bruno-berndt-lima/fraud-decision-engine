@@ -92,6 +92,9 @@ paths:
   # Every §4 row at every point of each one-at-a-time cost sweep, with a verdict
   # per assumption. Tracked: it is what the headline is stated with.
   sensitivity: reports/metrics/sensitivity_val_cal.json
+  # E1's and E3's arms in USD on VAL-CAL, with a paired day-bootstrap interval on
+  # each difference. Tracked: it closes what experiments.md records as owed.
+  usd_halves: reports/metrics/usd_halves.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -468,3 +471,19 @@ calibration:
   # that reached real scores would tie them and flatten the ranking it exists
   # to preserve.
   score_clip: 1.0e-15
+
+# ------------------------------------------------------------------------------
+# Phase 06 — the USD halves E1 and E3 owe
+# ------------------------------------------------------------------------------
+# Registered in docs/decision-policy.md §6.
+usd_halves:
+  # Resamples of VAL-CAL's twenty days, drawn with replacement and shared by an
+  # arm and its reference, so the interval is on the paired difference.
+  bootstrap_resamples: 2000
+
+  # The central share of resampled differences reported. An interval containing
+  # zero reads as "not shown to differ in USD".
+  interval: 0.95
+
+  # Fixed so the interval is a rerunnable number rather than a draw.
+  seed: 0

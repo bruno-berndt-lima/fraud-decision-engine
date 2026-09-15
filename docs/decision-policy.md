@@ -361,6 +361,35 @@ each arm is refitted.
 
 Neither arm is ever scored on test.
 
+**Method, registered before the run.**
+
+- **The arms are Phase 05's, on Phase 05's instrument.** E1's three training windows
+  (`purged`, `recent`, `unpurged`) from the matrices `make purge` built, and E3's `full`
+  and `velocity`-removed arms on the shipped matrices, all on the untuned configuration.
+  That instrument samples nothing, so a refit returns identical digits: **each refit's
+  VAL-FIT scores must equal the predictions Phase 05 recorded, exactly, or the stage
+  stops.** A USD figure is never attached to a fit other than the one behind the PR-AUC.
+- **The untuned instrument is not the shipped model.** These figures compare arms with
+  each other; none of them is comparable to the §4 headline, which is the tuned booster.
+- **Each arm is costed under the EV policy** of §2, at the version-1 costs and 1% review
+  capacity, with the arm's own out-of-fold Platt probabilities. The rules engine's
+  rehearsal cost is reported beside them for scale.
+- **The difference is the arm minus its reference,** in USD per 1,000 transactions:
+  `recent` and `unpurged` against `purged`; `velocity`-removed against `full`. Positive
+  means the arm costs more.
+- **Each difference carries a paired day-bootstrap interval:** VAL-CAL's twenty days
+  resampled with replacement, 2,000 times, the same days for the arm and its reference;
+  the central 95% is reported. **An interval containing zero reads as "not shown to
+  differ in USD".** The interval captures which days VAL-CAL happened to hold. It does
+  not capture how a refit would move, which E4 found dominates the metric bar — so an
+  interval excluding zero is necessary for a difference to be read, not sufficient for
+  it to be believed.
+- **Expected readings, carried from `experiments.md`.** E1: the unpurged arms cost less,
+  since they are handed recency and labels production does not have; the size of that
+  saving is what the purge costs in dollars. E3: if the interval for removing the
+  velocity family contains zero, the reported result is *the live-entity store cannot be
+  shown to pay for itself in USD either*, not that velocity is worthless.
+
 ## 7. The test touch
 
 Before it, on a clean tree and committed: this document, the calibrator, the policy
