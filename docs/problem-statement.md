@@ -195,9 +195,9 @@ false-positive cost is **approximately fixed**. Therefore the break-even
 probability is not a constant:
 
 ```
-block when   p(fraud) × (amount + chargeback_fee)  >  cost_of_false_positive
+block when   p(fraud) × (amount + chargeback_fee)  >  (1 − p(fraud)) × cost_of_false_positive
 
-           ⇒   p* = cost_of_false_positive / (amount + chargeback_fee)
+           ⇒   p* = cost_of_false_positive / (amount + chargeback_fee + cost_of_false_positive)
 ```
 
 A $20 transaction and an $8,000 transaction should not face the same bar. This
