@@ -14,7 +14,7 @@ Results land back in this file as each phase closes.
 
 ## E1 — What the purge gap costs
 
-**Status:** complete. Phase 05; the USD half owed by Phase 06.
+**Status:** complete. The metric half in Phase 05, the USD half in Phase 06.
 
 **Question.** How much of the model's apparent performance comes from the
 label-maturity purge being absent? Equivalently: what is methodological honesty
@@ -219,6 +219,41 @@ model or the data. That recency dominates volume this sharply says the
 distribution near the boundary is moving fast, which is the shape E5 should
 expect to find.
 
+### Result — Phase 06, the USD half
+
+Method registered in `decision-policy.md` §6: each arm refitted on the untuned
+instrument, its VAL-FIT scores required to equal the Phase 05 record exactly, then
+calibrated out-of-fold with Platt on `VAL-CAL` and costed under the EV policy at the
+version-1 costs and 1% capacity. Record: `reports/metrics/usd_halves.json`.
+
+| arm | `TRAIN` | `VAL-FIT` PR-AUC | `VAL-CAL` USD per 1,000 | vs `purged` | 95% day-bootstrap interval |
+|---|---|---:|---:|---:|---|
+| `purged` | 1–90 | 0.52820 | 2,569 | — | — |
+| `recent` | 31–120 | 0.67345 | 2,289 | **−280** | [−438, −124] |
+| `unpurged` | 1–120 | 0.65043 | 2,214 | **−355** | [−460, −257] |
+
+Every refit reproduced its record to the digit. `purged` costs exactly what E3's `full`
+arm costs, through a different set of matrices — the rebuilt split is the shipped one
+in dollars as well as in PR-AUC.
+
+**The registered reading holds.** Both unpurged arms cost less, and both intervals sit
+well clear of zero. **An evaluation without the purge would have claimed $280 to $355
+more saving per 1,000 transactions** — 11% to 14% of what the honest arm costs, on the
+same days and the same policy.
+
+**Smaller in dollars than in PR-AUC, and in the direction the result above predicts.**
+On `VAL-FIT` the arms gained about a quarter of PR-AUC; on `VAL-CAL` the saving is
+about an eighth of cost. `VAL-FIT` begins the day after the unpurged windows end, and
+`VAL-CAL` three weeks later — if what the missing labels carry is the identities active
+near the boundary, it should fade with distance from it, and it does.
+
+**The order of the two unpurged arms is not read.** `recent` leads on PR-AUC and
+`unpurged` on cost, with intervals that overlap almost entirely; neither interval sees
+how a refit would move.
+
+**Not comparable to the headline.** These are untuned boosters. The §4 figure is the
+tuned model's, and nothing here adjusts it.
+
 ---
 
 ## E2 — Class weighting versus doing nothing
@@ -405,7 +440,7 @@ experiment. It says what each arm did. It does not choose.
 
 ## E3 — Servable features versus entity history
 
-**Status:** the metric half answered in Phase 05; the USD half owed by Phase 06.
+**Status:** complete. The metric half in Phase 05, the USD half in Phase 06.
 
 Committed in `problem-statement.md` §3.4. A scoring request carries the
 transaction and its immediate attributes, not the card's history, so velocity and
@@ -480,6 +515,40 @@ that the metric half is settled and the economic half is not.
 timestamp rather than three rolling windows — a far smaller store, close to
 tier 2 in cost. Nothing here tests that arm. Its width is 3, its bar already
 exists, and running it would be a new arm rather than a re-reading of this one.
+
+### Result — Phase 06, the USD half
+
+Method as E1's USD half, registered in `decision-policy.md` §6. Record:
+`reports/metrics/usd_halves.json`.
+
+| arm | features | best iteration | `VAL-FIT` PR-AUC | `VAL-CAL` USD per 1,000 | vs `full` | 95% day-bootstrap interval |
+|---|---:|---:|---:|---:|---:|---|
+| `full` | 349 | 561 | 0.52820 | 2,569 | — | — |
+| velocity removed | 345 | 283 | 0.53074 | 2,467 | **−102** | [−171, −29] |
+
+**The store cannot be shown to pay for itself in USD either.** Removing the four
+velocity columns did not raise the cost; it lowered it by $102 per 1,000, and the
+day-bootstrap interval excludes zero on that side.
+
+**The sign is not read, for the reason registered before the run.** The interval
+captures which days `VAL-CAL` held, not how a refit would move — and the two arms
+stopped at 561 and 283 rounds, the early-stopping unfairness E4 found dominates this
+instrument's bar. On PR-AUC the same pair moved +0.0025 against a bar of 0.016. §6
+registered an interval clear of zero as necessary for a difference to be read, not
+sufficient for it to be believed, and this is the case that distinction was written
+for.
+
+**What this closes.** The registered position was that the metric half was settled and
+the economic half was not: a delta inside the bar could still move money at the
+reviewed band. At this capacity and this cost matrix it does not move it in the store's
+favour. The feature store stays what `features.md` classifies it as — expensive to
+serve, possible to build, and with no measured return — and the cheaper
+`vel_recency_card1` fallback above remains untested.
+
+**A USD bar that includes refit variation is possible and was not run.** Costing the
+ablation floor's width-4 draws would give one. It is proposed here after the result
+was seen, so if it is ever run it is recorded as a follow-up, not as part of this
+registration.
 
 ---
 

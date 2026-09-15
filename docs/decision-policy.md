@@ -390,6 +390,30 @@ Neither arm is ever scored on test.
   velocity family contains zero, the reported result is *the live-entity store cannot be
   shown to pay for itself in USD either*, not that velocity is worthless.
 
+### Result
+
+Record: `reports/metrics/usd_halves.json`; the full readings are in `experiments.md`
+under E1 and E3. **Every refit reproduced its Phase 05 VAL-FIT scores to the digit**,
+and the clip reached no score on the untuned instrument.
+
+| experiment | arm | USD per 1,000 | vs reference | 95% interval | read |
+|---|---|---:|---:|---|---|
+| E1 | `purged` (reference) | 2,569 | — | — | — |
+| E1 | `recent` | 2,289 | −280 | [−438, −124] | yes |
+| E1 | `unpurged` | 2,214 | −355 | [−460, −257] | yes |
+| E3 | `full` (reference) | 2,569 | — | — | — |
+| E3 | velocity removed | 2,467 | −102 | [−171, −29] | sign not read |
+
+The rules engine's rehearsal cost, for scale: 5,140.
+
+- **E1: the purge costs $280 to $355 per 1,000 in claimed saving.** The registered
+  direction holds and both intervals are clear of zero.
+- **E3: the store cannot be shown to pay for itself in USD.** The measured difference
+  runs against it, but the arms stopped at 561 and 283 rounds, and the interval does
+  not see refit variation; the registered rule does not let that sign be read.
+
+Nothing here changes the served model, the policy, or any figure in §1–§5.
+
 ## 7. The test touch
 
 Before it, on a clean tree and committed: this document, the calibrator, the policy
