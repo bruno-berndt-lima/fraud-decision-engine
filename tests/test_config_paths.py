@@ -28,6 +28,7 @@ PATH_PAIRS = [
     ("SEED_SPREAD", "paths.seed_spread"),
     ("IMBALANCE", "paths.imbalance"),
     ("TUNING", "paths.tuning"),
+    ("CALIBRATOR", "paths.calibrator"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment

@@ -7,25 +7,36 @@ fitted on, and every out-of-fold figure would flatter it without a symptom.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import mlflow
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 from scipy.special import expit
 from sklearn.isotonic import IsotonicRegression
 
+from fraud_engine.evaluation import reliability
+from fraud_engine.models import calibrate as calibration_stage
 from fraud_engine.models.calibrate import (
     METHODS,
+    apply_calibrator,
     apply_isotonic,
     apply_platt,
     assign_folds,
     calibrate,
     calibration_metrics,
+    check_clip,
     cross_fit,
     expected_calibration_error,
+    fit_calibrator,
     fit_isotonic,
     fit_platt,
     logit,
     reliability_bins,
+    select_method,
 )
 
 CLIP = 1e-15
@@ -280,3 +291,129 @@ def test_per_fold_metrics_are_those_of_the_out_of_fold_probabilities(folded, met
     row = per_fold.set_index("fold").loc[2]
 
     assert {name: row[name] for name in expected} == pytest.approx(expected)
+
+
+def briers(values: list[float]) -> pd.DataFrame:
+    return pd.DataFrame({"fold": range(len(values)), "brier": values})
+
+
+def test_isotonic_is_selected_only_when_it_wins_every_fold():
+    platt = briers([0.030, 0.030, 0.030, 0.030])
+
+    assert select_method({"platt": platt, "isotonic": briers([0.029] * 4)}) == "isotonic"
+    assert select_method({"platt": platt, "isotonic": briers([0.020] * 3 + [0.031])}) == "platt"
+
+
+def test_a_tie_goes_to_platt():
+    table = briers([0.030] * 4)
+
+    assert select_method({"platt": table, "isotonic": table.copy()}) == "platt"
+
+
+def test_selection_refuses_tables_over_different_folds():
+    with pytest.raises(ValueError, match="folds differ"):
+        select_method({"platt": briers([0.03] * 4), "isotonic": briers([0.02] * 3)})
+
+
+def test_a_clip_that_reaches_real_scores_is_refused():
+    with pytest.raises(ValueError, match="reaches 2 scores"):
+        check_clip(np.array([1e-9, 0.5, 1 - 1e-9]), 1e-7)
+
+
+def test_a_clip_below_every_score_passes():
+    check_clip(np.array([1e-13, 0.5, 1 - 1e-13]), CLIP)
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_a_calibrator_survives_a_json_round_trip(method):
+    """What ships is the JSON, so the JSON must reproduce the fit exactly."""
+    score, y = calibrated_sample(5_000)
+    fitted = fit_calibrator(method, score, y, CLIP)
+    loaded = json.loads(json.dumps(fitted))
+
+    assert np.array_equal(apply_calibrator(loaded, score), apply_calibrator(fitted, score))
+
+
+def test_a_calibrator_naming_an_unknown_method_is_refused():
+    with pytest.raises(ValueError, match="unknown calibration method"):
+        apply_calibrator({"method": "beta"}, np.array([0.5]))
+
+
+# ---- the stage, end to end on synthetic predictions ---------------------------
+
+
+@pytest.fixture
+def stage_config(tmp_path: Path) -> Path:
+    """A config whose every path is under `tmp_path`, over four folds of fake VAL-CAL."""
+    rng = np.random.default_rng(0)
+    day = np.repeat(np.arange(141, 161), 500)
+    score = expit(rng.normal(-5, 2, size=len(day)))
+    y = rng.binomial(1, expit(0.5 * logit(score, CLIP) + 0.5))
+
+    predictions = tmp_path / "predictions"
+    predictions.mkdir()
+    pd.DataFrame(
+        {
+            "TransactionID": np.arange(len(day)),
+            "split": "val_cal",
+            "day": day,
+            "isFraud": y,
+            "score": score,
+        }
+    ).to_parquet(predictions / "lightgbm_tuned.parquet")
+
+    cost_matrix = tmp_path / "cost_matrix.yaml"
+    cost_matrix.write_text("version: 1\n")
+
+    config = {
+        "paths": {
+            "predictions_dir": str(predictions),
+            "calibrator": str(tmp_path / "models" / "calibrator.json"),
+            "calibration": str(tmp_path / "calibration.json"),
+            "figures_dir": str(tmp_path / "figures"),
+            "cost_matrix": str(cost_matrix),
+        },
+        "splits": {"val_cal_start": 141, "test_start": 161},
+        "tracking": {"store": str(tmp_path / "mlruns"), "experiment_name": "test-calibration"},
+        "model": {"tuned": {"num_leaves": 31}},
+        "calibration": {"n_folds": 4, "ece_bins": 10, "score_clip": CLIP},
+    }
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(config))
+    return path
+
+
+def test_the_stage_ships_what_its_record_selected(stage_config):
+    calibration_stage.main(stage_config)
+    config = yaml.safe_load(stage_config.read_text())
+    paths = config["paths"]
+
+    record = json.loads(Path(paths["calibration"]).read_text())
+    calibrator = json.loads(Path(paths["calibrator"]).read_text())
+
+    assert calibrator["method"] == record["selected"]
+    assert calibrator["fitted_on"] == "val_cal"
+    assert record["rows"] == 10_000
+    assert set(record["per_fold"]) == {"uncalibrated", *METHODS}
+    assert all(len(rows) == 4 for rows in record["per_fold"].values())
+
+    out_of_fold = pd.read_parquet(Path(paths["predictions_dir"]) / "calibration.parquet")
+    assert len(out_of_fold) == 10_000
+    assert out_of_fold[list(METHODS)].notna().all().all()
+
+
+def test_the_stage_is_a_tracked_run(stage_config):
+    calibration_stage.main(stage_config)
+
+    [run] = mlflow.search_runs(experiment_names=["test-calibration"], output_format="list")
+
+    assert run.data.params["selected"] in METHODS
+    assert "platt.brier" in run.data.metrics
+
+
+def test_the_diagram_is_drawn_from_the_stage_output(stage_config):
+    calibration_stage.main(stage_config)
+    reliability.main(stage_config)
+
+    figures_dir = Path(yaml.safe_load(stage_config.read_text())["paths"]["figures_dir"])
+    assert (figures_dir / reliability.FIGURE).stat().st_size > 0

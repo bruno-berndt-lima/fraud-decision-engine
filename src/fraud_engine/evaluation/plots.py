@@ -281,6 +281,75 @@ def plot_recall_at_capacity(
     return figure
 
 
+def plot_reliability(
+    tables: Mapping[str, pd.DataFrame],
+    title: str = "Reliability",
+) -> plt.Figure:
+    """Mean predicted probability against observed fraud rate, one point per bin.
+
+    **Log axes on both sides.** At a 3% base rate almost every bin's probability is
+    small, and on linear axes the whole diagram collapses into the corner where the
+    policy's large-amount thresholds live.
+
+    A bin with no fraud has no place on a log axis. It is left out and counted in a
+    note rather than drawn at an arbitrary floor, which would picture a rate that
+    was never observed.
+
+    Args:
+        tables: `{label: calibrate.reliability_bins output}`. At most three.
+        title: Figure title.
+
+    Returns:
+        The figure, unsaved. Use `save_figure`.
+
+    Raises:
+        ValueError: If there are no series, or more than the palette validates.
+    """
+    _check_series(tables)
+    figure, axes = _new_axes(figsize=(6.0, 6.0))
+
+    drawn = [table[table["fraud_rate"] > 0] for table in tables.values()]
+    hidden = sum(len(table) for table in tables.values()) - sum(len(table) for table in drawn)
+    low = min(min(t["mean_probability"].min(), t["fraud_rate"].min()) for t in drawn) / 2
+
+    axes.plot([low, 1], [low, 1], color=AXIS, linewidth=1, linestyle="--")
+
+    for colour, (label, table) in zip(SERIES_COLOURS, tables.items(), strict=False):
+        kept = table[table["fraud_rate"] > 0]
+        axes.plot(
+            kept["mean_probability"],
+            kept["fraud_rate"],
+            color=colour,
+            linewidth=2,
+            marker="o",
+            markersize=4,
+            label=label,
+        )
+
+    axes.set_xscale("log")
+    axes.set_yscale("log")
+    axes.set_xlim(low, 1)
+    axes.set_ylim(low, 1)
+    axes.set_xlabel("Mean predicted probability", color=INK_MUTED, fontsize=9)
+    axes.set_ylabel("Observed fraud rate", color=INK_MUTED, fontsize=9)
+    axes.set_title(title, color=INK, fontsize=11, loc="left", pad=12)
+    axes.legend(frameon=False, fontsize=9, labelcolor=INK_MUTED, loc="upper left")
+
+    if hidden:
+        axes.annotate(
+            f"{hidden} bins with no fraud not shown",
+            xy=(0.99, 0.01),
+            xycoords="axes fraction",
+            ha="right",
+            va="bottom",
+            fontsize=8,
+            color=INK_MUTED,
+        )
+
+    figure.tight_layout()
+    return figure
+
+
 def save_figure(figure: plt.Figure, path: Path | str) -> Path:
     """Write a figure and release it.
 

@@ -79,6 +79,13 @@ paths:
   # The fill values, written only when model.impute is on. Same tier-2 role as
   # the vocabulary: a model trained on filled data is served wrong without them.
   medians: models/medians.parquet
+  # Plain JSON, not a pickle: a Platt fit is two numbers and an isotonic fit a
+  # list of breakpoints. Ships with the model — serving without it returns
+  # uncalibrated probabilities and raises nothing.
+  calibrator: models/calibrator.json
+  # Both methods per fold, the rule and what it selected. Tracked: the
+  # selection is a decision, and this is its evidence.
+  calibration: reports/metrics/calibration.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review

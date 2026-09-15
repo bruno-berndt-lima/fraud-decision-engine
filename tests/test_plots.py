@@ -15,6 +15,7 @@ from fraud_engine.evaluation.plots import (
     SERIES_COLOURS,
     plot_pr_curve,
     plot_recall_at_capacity,
+    plot_reliability,
     save_figure,
 )
 
@@ -209,3 +210,39 @@ def test_save_figure_closes_the_figure(data, tmp_path):
     save_figure(figure, tmp_path / "pr.png")
 
     assert not plt.fignum_exists(figure.number)
+
+
+# ---- plot_reliability ---------------------------------------------------------
+
+
+def reliability_table(rates: list[float]) -> pd.DataFrame:
+    probabilities = np.geomspace(1e-4, 0.5, len(rates))
+    return pd.DataFrame({"rows": 100, "mean_probability": probabilities, "fraud_rate": rates})
+
+
+def test_reliability_draws_the_diagonal_and_one_line_per_series():
+    tables = {
+        "a": reliability_table([0.001, 0.01, 0.1]),
+        "b": reliability_table([0.002, 0.02, 0.2]),
+    }
+    axes = plot_reliability(tables).axes[0]
+
+    # Two series plus perfect calibration.
+    assert len(axes.lines) == 3
+    diagonal = axes.lines[0]
+    assert np.array_equal(diagonal.get_xdata(), diagonal.get_ydata())
+
+
+def test_reliability_is_log_scaled_on_both_axes():
+    axes = plot_reliability({"a": reliability_table([0.001, 0.01, 0.1])}).axes[0]
+
+    assert axes.get_xscale() == "log"
+    assert axes.get_yscale() == "log"
+
+
+def test_reliability_leaves_out_bins_with_no_fraud_and_says_so():
+    axes = plot_reliability({"a": reliability_table([0.0, 0.01, 0.1])}).axes[0]
+
+    series = [line for line in axes.lines if line.get_color() == SERIES_COLOURS[0]]
+    assert len(series[0].get_xdata()) == 2
+    assert any("1 bins with no fraud" in text.get_text() for text in axes.texts)

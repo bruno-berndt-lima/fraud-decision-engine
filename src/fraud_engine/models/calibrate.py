@@ -7,6 +7,13 @@ between Platt and isotonic are registered in `docs/decision-policy.md` §1.
 
 from __future__ import annotations
 
+import json
+import logging
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from pathlib import Path
+
+import mlflow
 import numpy as np
 import pandas as pd
 from scipy.special import expit
@@ -14,7 +21,20 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, log_loss
 
+from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
+from fraud_engine.evaluation.report import git_revision
+from fraud_engine.evaluation.tracking import configure_tracking, tracked_run
+from fraud_engine.models.train import LABEL, run_name
+
+log = logging.getLogger(__name__)
+
 METHODS = ("platt", "isotonic")
+
+SPLIT = "val_cal"
+
+# The out-of-fold probabilities, written to predictions_dir under this name. The
+# reliability diagram is drawn from that file, never recomputed.
+OUT_OF_FOLD = "calibration"
 
 
 def assign_folds(day: pd.Series, n_folds: int) -> pd.Series:
@@ -119,7 +139,7 @@ def fit_isotonic(score: np.ndarray, y: np.ndarray) -> pd.DataFrame:
     return pd.DataFrame({"score": model.X_thresholds_, "probability": model.y_thresholds_})
 
 
-def apply_isotonic(score: np.ndarray, table: pd.DataFrame) -> np.ndarray:
+def apply_isotonic(score: np.ndarray, table: Mapping) -> np.ndarray:
     """Calibrated probabilities from fitted breakpoints.
 
     Linear between breakpoints and flat beyond them, which is what `predict` does
@@ -129,19 +149,44 @@ def apply_isotonic(score: np.ndarray, table: pd.DataFrame) -> np.ndarray:
     return np.interp(np.asarray(score, dtype="float64"), table["score"], table["probability"])
 
 
-def calibrate(
-    method: str, fit_score: np.ndarray, fit_y: np.ndarray, score: np.ndarray, clip: float
-) -> np.ndarray:
-    """Fit `method` on one set of rows and apply it to another.
+def fit_calibrator(method: str, score: np.ndarray, y: np.ndarray, clip: float) -> dict:
+    """A fitted calibrator as plain data: what ships, and what `apply_calibrator` reads.
 
     Raises:
         ValueError: If `method` is not one of `METHODS`.
     """
     if method == "platt":
-        return apply_platt(score, *fit_platt(fit_score, fit_y, clip), clip)
+        a, b = fit_platt(score, y, clip)
+        return {"method": "platt", "a": a, "b": b, "clip": clip}
     if method == "isotonic":
-        return apply_isotonic(score, fit_isotonic(fit_score, fit_y))
+        table = fit_isotonic(score, y)
+        return {
+            "method": "isotonic",
+            "score": table["score"].tolist(),
+            "probability": table["probability"].tolist(),
+        }
     raise ValueError(f"unknown calibration method {method!r}; expected one of {METHODS}")
+
+
+def apply_calibrator(calibrator: Mapping, score: np.ndarray) -> np.ndarray:
+    """Calibrated probabilities from the output of `fit_calibrator`.
+
+    Raises:
+        ValueError: If the calibrator names a method this module cannot apply.
+    """
+    method = calibrator.get("method")
+    if method == "platt":
+        return apply_platt(score, calibrator["a"], calibrator["b"], calibrator["clip"])
+    if method == "isotonic":
+        return apply_isotonic(score, calibrator)
+    raise ValueError(f"unknown calibration method {method!r}; expected one of {METHODS}")
+
+
+def calibrate(
+    method: str, fit_score: np.ndarray, fit_y: np.ndarray, score: np.ndarray, clip: float
+) -> np.ndarray:
+    """Fit `method` on one set of rows and apply it to another."""
+    return apply_calibrator(fit_calibrator(method, fit_score, fit_y, clip), score)
 
 
 def reliability_bins(y: np.ndarray, p: np.ndarray, bins: int) -> pd.DataFrame:
@@ -195,6 +240,23 @@ def calibration_metrics(y: np.ndarray, p: np.ndarray, bins: int) -> dict[str, fl
     }
 
 
+def fold_metrics(y: np.ndarray, p: np.ndarray, fold: np.ndarray, bins: int) -> pd.DataFrame:
+    """One row per fold: `fold`, `rows`, `positives` and its `calibration_metrics`."""
+    y, p, fold = np.asarray(y), np.asarray(p), np.asarray(fold)
+
+    return pd.DataFrame(
+        [
+            {
+                "fold": int(k),
+                "rows": int((fold == k).sum()),
+                "positives": int(y[fold == k].sum()),
+                **calibration_metrics(y[fold == k], p[fold == k], bins),
+            }
+            for k in np.unique(fold)
+        ]
+    )
+
+
 def cross_fit(
     score: np.ndarray, y: np.ndarray, fold: np.ndarray, method: str, clip: float, bins: int
 ) -> tuple[np.ndarray, pd.DataFrame]:
@@ -209,27 +271,174 @@ def cross_fit(
         bins: ECE bins.
 
     Returns:
-        `(probabilities, per_fold)`. `probabilities` is aligned to the input;
-        `per_fold` has one row per fold with `fold`, `rows`, `positives` and
-        the `calibration_metrics` of that fold's out-of-fold probabilities.
+        `(probabilities, per_fold)`: probabilities aligned to the input, and
+        `fold_metrics` of them.
     """
     score = np.asarray(score, dtype="float64")
     y = np.asarray(y)
     fold = np.asarray(fold)
 
     probabilities = np.full(len(score), np.nan)
-    per_fold = []
 
     for k in np.unique(fold):
         held = fold == k
         probabilities[held] = calibrate(method, score[~held], y[~held], score[held], clip)
-        per_fold.append(
-            {
-                "fold": int(k),
-                "rows": int(held.sum()),
-                "positives": int(y[held].sum()),
-                **calibration_metrics(y[held], probabilities[held], bins),
-            }
+
+    return probabilities, fold_metrics(y, probabilities, fold, bins)
+
+
+def select_method(per_fold: Mapping[str, pd.DataFrame]) -> str:
+    """The rule registered in `decision-policy.md` §1.
+
+    Isotonic only if its out-of-fold Brier score is lower than Platt's in every
+    fold. Compared within each fold, never across folds: a fold's Brier score
+    moves with its own base rate.
+
+    Args:
+        per_fold: `{method: cross_fit's per_fold}` for both methods.
+
+    Returns:
+        `"isotonic"` or `"platt"`.
+
+    Raises:
+        ValueError: If the two tables do not cover the same folds.
+    """
+    platt = per_fold["platt"].set_index("fold")["brier"]
+    isotonic = per_fold["isotonic"].set_index("fold")["brier"]
+
+    if not platt.index.equals(isotonic.index):
+        raise ValueError(
+            f"folds differ: platt {platt.index.tolist()}, isotonic {isotonic.index.tolist()}"
         )
 
-    return probabilities, pd.DataFrame(per_fold)
+    return "isotonic" if (isotonic < platt).all() else "platt"
+
+
+def check_clip(score: np.ndarray, clip: float) -> None:
+    """Refuse a clip that reaches a real score.
+
+    The clip exists to keep logit finite at exactly 0 or 1. One that reaches real
+    scores ties them, and Platt is then fitted on a flattened ranking with no error.
+
+    Raises:
+        ValueError: If any score lies outside `[clip, 1 - clip]`.
+    """
+    reached = int(((score < clip) | (score > 1 - clip)).sum())
+    if reached:
+        raise ValueError(
+            f"score_clip={clip:g} reaches {reached} scores; lower it below every score "
+            "the booster produces"
+        )
+
+
+def load_split_scores(predictions_dir: Path | str, name: str) -> pd.DataFrame:
+    """One run's predictions on VAL-CAL, as `make train` wrote them.
+
+    Raises:
+        ValueError: If the run holds no VAL-CAL rows.
+    """
+    frame = pd.read_parquet(Path(predictions_dir) / f"{name}.parquet")
+    rows = frame[frame["split"] == SPLIT].reset_index(drop=True)
+
+    if rows.empty:
+        raise ValueError(f"predictions for {name!r} hold no {SPLIT!r} rows")
+
+    return rows
+
+
+def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
+    """Compare both methods out-of-fold, apply the rule, and ship the one it picks.
+
+    Wiring only. Invoked by `make calibrate` as `python -m fraud_engine.models.calibrate`.
+
+    Writes the calibrator beside the model, the tracked record, and the out-of-fold
+    probabilities the reliability diagram is drawn from. The shipped calibrator is
+    refitted on all of VAL-CAL; every reported metric is out-of-fold.
+
+    Args:
+        config_path: Path to `config.yaml`.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = load_config(config_path)
+    paths, cal_cfg = config["paths"], config["calibration"]
+    clip, bins = cal_cfg["score_clip"], cal_cfg["ece_bins"]
+
+    configure_tracking(config["tracking"])
+
+    model = run_name(config["model"])
+    frame = load_split_scores(paths["predictions_dir"], model)
+    frame["fold"] = assign_folds(frame["day"], cal_cfg["n_folds"])
+
+    score = frame["score"].to_numpy(dtype="float64")
+    y = frame[LABEL].to_numpy()
+    fold = frame["fold"].to_numpy()
+    check_clip(score, clip)
+
+    params = {"model": model, "n_folds": cal_cfg["n_folds"], "ece_bins": bins, "score_clip": clip}
+
+    with tracked_run("calibration", params, config_path):
+        probabilities = {"uncalibrated": score}
+        per_fold = {"uncalibrated": fold_metrics(y, score, fold, bins)}
+
+        for method in METHODS:
+            probabilities[method], per_fold[method] = cross_fit(score, y, fold, method, clip, bins)
+
+        selected = select_method(per_fold)
+        pooled = {name: calibration_metrics(y, p, bins) for name, p in probabilities.items()}
+
+        for name, metrics in pooled.items():
+            log.info("%-12s %s", name, "  ".join(f"{k}={v:.5f}" for k, v in metrics.items()))
+        log.info("selected: %s", selected)
+
+        calibrator = {
+            **fit_calibrator(selected, score, y, clip),
+            "model": model,
+            "fitted_on": SPLIT,
+            "git_revision": git_revision(),
+        }
+        calibrator_path = Path(paths["calibrator"])
+        calibrator_path.parent.mkdir(parents=True, exist_ok=True)
+        calibrator_path.write_text(json.dumps(calibrator, indent=2) + "\n")
+
+        mlflow.log_param("selected", selected)
+        mlflow.log_metrics(
+            {
+                f"{name}.{metric}": value
+                for name, metrics in pooled.items()
+                for metric, value in metrics.items()
+            }
+        )
+        mlflow.log_artifact(calibrator_path)
+
+    out_of_fold = frame[["TransactionID", "day", "fold", LABEL, "score"]].assign(
+        platt=probabilities["platt"], isotonic=probabilities["isotonic"]
+    )
+    out_of_fold_path = Path(paths["predictions_dir"]) / f"{OUT_OF_FOLD}.parquet"
+    out_of_fold.to_parquet(out_of_fold_path, index=False)
+
+    record = {
+        "name": "calibration",
+        "created": datetime.now(UTC).isoformat(timespec="seconds"),
+        "git_revision": git_revision(),
+        "model": model,
+        "split": SPLIT,
+        "rows": len(frame),
+        "positives": int(y.sum()),
+        "n_folds": cal_cfg["n_folds"],
+        "ece_bins": bins,
+        "score_clip": clip,
+        "rule": "isotonic only if its out-of-fold Brier score beats Platt's in every fold",
+        "selected": selected,
+        "pooled_out_of_fold": pooled,
+        "per_fold": {name: table.to_dict("records") for name, table in per_fold.items()},
+    }
+    record_path = Path(paths["calibration"])
+    record_path.write_text(json.dumps(record, indent=2) + "\n")
+
+    for path in (calibrator_path, out_of_fold_path, record_path):
+        log.info("wrote %s", path)
+
+
+if __name__ == "__main__":
+    main()
