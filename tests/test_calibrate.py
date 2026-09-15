@@ -11,8 +11,22 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy.special import expit
+from sklearn.isotonic import IsotonicRegression
 
-from fraud_engine.models.calibrate import apply_platt, assign_folds, fit_platt, logit
+from fraud_engine.models.calibrate import (
+    METHODS,
+    apply_isotonic,
+    apply_platt,
+    assign_folds,
+    calibrate,
+    calibration_metrics,
+    cross_fit,
+    expected_calibration_error,
+    fit_isotonic,
+    fit_platt,
+    logit,
+    reliability_bins,
+)
 
 CLIP = 1e-15
 
@@ -135,3 +149,134 @@ def test_a_reversed_score_is_refused():
 
     with pytest.raises(ValueError, match="reverse the ranking"):
         fit_platt(1 - score, y, CLIP)
+
+
+def calibrated_sample(size: int, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    score = expit(rng.normal(-3, 2, size=size))
+    return score, rng.binomial(1, score)
+
+
+def test_isotonic_breakpoints_reproduce_predict():
+    score, y = calibrated_sample(5_000)
+    new = np.r_[0.0, np.linspace(0, 1, 1_001), 1.0]
+
+    model = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip").fit(score, y)
+
+    assert np.allclose(apply_isotonic(new, fit_isotonic(score, y)), model.predict(new))
+
+
+def test_isotonic_is_bounded_and_non_decreasing_beyond_its_range():
+    score, y = calibrated_sample(5_000)
+    table = fit_isotonic(score, y)
+    new = np.linspace(-0.5, 1.5, 2_001)
+
+    p = apply_isotonic(new, table)
+
+    assert np.isfinite(p).all()
+    assert ((p >= 0) & (p <= 1)).all()
+    assert (np.diff(p) >= 0).all()
+
+
+def test_isotonic_fits_a_shape_platt_cannot():
+    """A step in the true probability: no sigmoid of the logit bends that sharply."""
+    rng = np.random.default_rng(0)
+    score = rng.uniform(0, 1, size=100_000)
+    truth = np.where(score < 0.5, 0.02, 0.6)
+    y = rng.binomial(1, truth)
+
+    platt = calibrate("platt", score, y, score, CLIP)
+    isotonic = calibrate("isotonic", score, y, score, CLIP)
+
+    assert np.mean((isotonic - truth) ** 2) < np.mean((platt - truth) ** 2) / 10
+
+
+def test_an_unknown_method_is_refused():
+    score, y = calibrated_sample(1_000)
+
+    with pytest.raises(ValueError, match="unknown calibration method"):
+        calibrate("beta", score, y, score, CLIP)
+
+
+def test_ece_is_zero_when_every_bin_matches_its_rate():
+    y = np.r_[np.zeros(90), np.ones(10), np.zeros(50), np.ones(50)]
+    p = np.r_[np.full(100, 0.1), np.full(100, 0.5)]
+
+    assert expected_calibration_error(y, p, bins=10) == pytest.approx(0)
+
+
+def test_ece_is_the_row_weighted_gap():
+    y = np.r_[np.zeros(70), np.ones(30), np.zeros(300)]
+    p = np.r_[np.full(100, 0.1), np.full(300, 0.1)]
+
+    # One tied value, so one bin: predicted 0.1 against a rate of 30 / 400.
+    assert expected_calibration_error(y, p, bins=10) == pytest.approx(abs(0.1 - 30 / 400))
+
+
+def test_tied_probabilities_never_split_across_bins():
+    p = np.r_[np.full(500, 0.01), np.linspace(0.02, 0.9, 500)]
+    y = np.zeros_like(p)
+
+    table = reliability_bins(y, p, bins=10)
+
+    assert table["rows"].iloc[0] == 500
+    assert table["rows"].sum() == len(p)
+
+
+def test_a_single_probability_is_one_bin_not_an_error():
+    table = reliability_bins(np.r_[0, 1, 0, 0], np.full(4, 0.25), bins=10)
+
+    assert len(table) == 1
+    assert table["rows"].iloc[0] == 4
+
+
+def test_log_loss_is_finite_when_isotonic_predicts_zero():
+    metrics = calibration_metrics(np.array([1, 0, 0]), np.array([0.0, 0.0, 1.0]), bins=2)
+
+    assert np.isfinite(list(metrics.values())).all()
+
+
+@pytest.fixture
+def folded() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    score, y = calibrated_sample(40_000)
+    fold = np.repeat(np.arange(4), 10_000)
+    return score, y, fold
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_every_row_is_predicted_exactly_once(folded, method):
+    score, y, fold = folded
+
+    probabilities, per_fold = cross_fit(score, y, fold, method, CLIP, bins=10)
+
+    assert np.isfinite(probabilities).all()
+    assert per_fold["fold"].tolist() == [0, 1, 2, 3]
+    assert per_fold["rows"].sum() == len(score)
+    assert per_fold["positives"].sum() == y.sum()
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_a_folds_own_labels_never_reach_its_predictions(folded, method):
+    """The leak this function exists to prevent: flip every label in fold 0 and
+    its out-of-fold probabilities must not move."""
+    score, y, fold = folded
+    flipped = np.where(fold == 0, 1 - y, y)
+
+    before, _ = cross_fit(score, y, fold, method, CLIP, bins=10)
+    after, _ = cross_fit(score, flipped, fold, method, CLIP, bins=10)
+
+    assert np.array_equal(before[fold == 0], after[fold == 0])
+    assert not np.array_equal(before[fold != 0], after[fold != 0])
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_per_fold_metrics_are_those_of_the_out_of_fold_probabilities(folded, method):
+    score, y, fold = folded
+
+    probabilities, per_fold = cross_fit(score, y, fold, method, CLIP, bins=10)
+
+    held = fold == 2
+    expected = calibration_metrics(y[held], probabilities[held], bins=10)
+    row = per_fold.set_index("fold").loc[2]
+
+    assert {name: row[name] for name in expected} == pytest.approx(expected)
