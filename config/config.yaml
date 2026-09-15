@@ -433,3 +433,22 @@ model:
     bagging_freq: 1
     min_data_per_group: 68
     cat_smooth: 52.55527169883299
+
+# ------------------------------------------------------------------------------
+# Phase 06 — calibration
+# ------------------------------------------------------------------------------
+# Method, folds and selection rule are registered in docs/decision-policy.md §1.
+calibration:
+  # Contiguous blocks of VAL-CAL days. Must divide the slice's days evenly, or
+  # one fold would be scored on less data than the others without saying so.
+  n_folds: 4
+
+  # Quantile bins for expected calibration error. At a 3% base rate, equal-width
+  # bins would put nearly every transaction in the first one.
+  ece_bins: 10
+
+  # Keeps logit finite at a score of exactly 0 or 1. A numerical guard, not a
+  # modelling choice: set below every score the booster produces, because a clip
+  # that reached real scores would tie them and flatten the ranking it exists
+  # to preserve.
+  score_clip: 1.0e-15
