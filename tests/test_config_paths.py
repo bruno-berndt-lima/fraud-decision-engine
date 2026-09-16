@@ -37,6 +37,8 @@ PATH_PAIRS = [
     ("SENSITIVITY", "paths.sensitivity"),
     ("USD_HALVES", "paths.usd_halves"),
     ("HEADLINE", "paths.headline"),
+    ("EXPLAIN_DIR", "paths.explain_dir"),
+    ("SHAP_GLOBAL", "paths.shap_global"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment

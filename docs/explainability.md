@@ -77,6 +77,13 @@ something new attached to a model, and Phase 06 registered that rule for this ca
 code reads that file. A figure that could be redrawn from a model is a figure that can
 disagree with the record beside it, which is why `evaluation/figures.py` exists at all.
 
+**One sample per split, for the ranking as well as the plot** — amended from the original
+registration, which said the ranking would run over every row. Exact TreeSHAP on a
+booster this size costs enough per row that whole splits are hours of compute, and the
+cost was measured before any contribution was read. What the width buys is the top of the
+ranking and the §4 tier shares, which the large contributors carry; **the tail of the
+ranking is not read**, and no claim in this phase may rest on it.
+
 ### Result
 
 *Pending.*
@@ -97,9 +104,12 @@ percentage of anything.** The tempting sentence — "the amount accounted for 40
 decision" — is not true in any space this model computes in. Contributions are reported
 as signed log-odds, and ranked; the text a customer sees is ordinal.
 
-**Additivity is asserted, not assumed.** A test checks that contributions plus the base
-value reproduce the raw margin exactly on every row of a sample. It is the one property
-the whole phase rests on, and it is cheap to check.
+**Additivity is asserted, not assumed.** Every run checks that contributions plus the
+base value reproduce the raw margin on every row explained, and records how far the
+worst row sat from it. Not *exactly*: TreeSHAP's unwind step divides by subset weights
+and loses digits doing it, so bit equality is false on a correct implementation. The
+check is sized to catch a decomposition of the wrong model rather than to certify
+precision, and the measured deviation is reported so the headroom is visible.
 
 ### Result
 

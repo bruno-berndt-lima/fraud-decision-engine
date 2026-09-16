@@ -510,9 +510,13 @@ explain:
   # is a decay signal recorded for Phase 09, never a reason to change a feature.
   splits: [val_cal, test]
 
-  # The beeswarm only. The ranking is measured over every row of each split —
-  # sampling a ranking to draw a picture would report the picture.
-  sample_rows: 5000
+  # One sample, serving the ranking and the beeswarm alike. The registration said
+  # the ranking would be measured over every row; TreeSHAP on this booster turned
+  # out to cost enough per row that whole splits are hours of compute, and the
+  # amendment was made before any contribution existed rather than after reading
+  # one. The tail of the ranking is not read at this width — the tier shares are
+  # carried by the large contributors and do not depend on it.
+  sample_rows: 10000
 
   # Fixed so the figure is a rerunnable object rather than a draw. Same value as
   # model.seed and usd_halves.seed: nothing here varies it deliberately.

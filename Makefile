@@ -59,6 +59,8 @@ REHEARSAL   := $(REPORTS_DIR)/metrics/policy_val_cal.json
 SENSITIVITY := $(REPORTS_DIR)/metrics/sensitivity_val_cal.json
 USD_HALVES  := $(REPORTS_DIR)/metrics/usd_halves.json
 HEADLINE    := $(REPORTS_DIR)/metrics/policy_test.json
+EXPLAIN_DIR := $(DATA_DIR)/explain
+SHAP_GLOBAL := $(REPORTS_DIR)/metrics/shap_global.json
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -360,6 +362,18 @@ $(HEADLINE): $(MODEL) $(CALIBRATOR) $(BASELINES) $(FEATURES) $(SPLITS) $(INTERIM
              src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
 	$(RUN) python -m fraud_engine.evaluation.headline
 
+# Phase 07. Explains the shipped booster and changes nothing about it, so it hangs
+# off $(MODEL) rather than off anything the headline produced. $(SHAP_GLOBAL) stands
+# for the pair, per the single-sentinel note above: the same run writes one
+# contributions parquet per explained split under $(EXPLAIN_DIR).
+$(SHAP_GLOBAL): $(MODEL) $(FEATURES) $(call sections,load splits model explain) \
+                src/fraud_engine/explain/contributions.py \
+                src/fraud_engine/features/registry.py \
+                src/fraud_engine/models/train.py \
+                src/fraud_engine/evaluation/reproduce.py \
+                src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.explain.contributions
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -368,7 +382,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -388,6 +402,7 @@ rehearsal: $(REHEARSAL) ## Cost rules, naive and EV policies on VAL-CAL, before 
 sensitivity: $(SENSITIVITY) ## Sweep each cost assumption and chart the false-positive cost
 usd-halves: $(USD_HALVES) ## E1 and E3 in USD: refit, verify, calibrate and cost each arm
 headline:  $(HEADLINE)   ## The one test touch: rules, naive and EV in USD, frozen policy
+explain:   $(SHAP_GLOBAL) ## Contributions for the shipped booster, and the global ranking
 
 # ==============================================================================
 # Housekeeping
