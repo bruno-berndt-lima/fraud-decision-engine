@@ -454,3 +454,65 @@ halves were read, and before any test row was scored.
 - **The reading rule is `problem-statement.md` §5, unchanged:** at least 15% against the
   rules engine is a win, below 5% is not claimed, and the §5 sensitivity is stated with
   whatever the test figure is.
+
+### Result — the headline
+
+Record: `reports/metrics/policy_test.json`; diagram: `reports/figures/reliability_test.png`.
+Test is days 161–182: 61,585 transactions, 2,277 fraudulent, a 3.70% base rate. Both
+proofs passed before a test row was scored — the reloaded booster and the refitted rules
+engine reproduced their VAL-CAL records exactly.
+
+**The EV policy loses $2,481 per 1,000 transactions where the rules engine loses $6,373:
+a 61.1% reduction, $3,892 saved per 1,000 transactions.**
+
+| row | USD per 1,000 | reviews / day | block rate | vs rules |
+|---|---:|---:|---:|---:|
+| allow everything | 6,618 | 0 | 0% | +3.8% |
+| rules | 6,373 | 27.45 | 0% | — |
+| naive, 0.5 | 5,155 | 0 | 1.77% | −19.1% |
+| EV, uncalibrated | 4,840 | 18.64 | 1.23% | −24.1% |
+| **EV** | **2,481** | 27.45 | 6.45% | **−61.1%** |
+
+**The margin is wider than the rehearsal's 54.4%, and the reason is the slice, not the
+model.** Test carries more fraud than `VAL-CAL` — 3.70% of transactions and 4.16% of
+dollars, against 3.15% and 3.3% — so allowing everything costs $6,618 here against
+$5,362 there. The rules engine tracks almost all of that increase, because it prevents
+almost nothing: it stops 4.2% of fraud dollars. The EV policy does not, because it
+blocks: it stops 75.2%. The more fraud a period holds, the further apart a policy that
+prices each transaction and an engine that reviews 1% of volume must be.
+
+**Calibration held, which was the registered risk.** The calibrator was fitted on a
+window with a 3.15% base rate and applied twenty days later to one with 3.70%.
+
+| | `VAL-CAL`, out-of-fold | test, shipped calibrator |
+|---|---:|---:|
+| ECE | 0.00184 | 0.00164 |
+| Brier | 0.0205 | 0.0240 |
+| log-loss | 0.087 | 0.101 |
+
+The ECE did not degrade. Brier and log-loss rose, as they must when the base rate does.
+The direct check: the mean calibrated probability on test is 3.74% against an observed
+3.70%, and in the eight upper bins the observed rate sits between 0.90 and 1.08 times
+the predicted one. This is a measurement over 22 days, not a guarantee — Phase 09 owns
+drift and the recalibration cadence.
+
+**The model did not decay either.** 71 days separate the end of training from the start
+of test, and PR-AUC moved from 0.52145 on `VAL-CAL` to 0.51498. Within the review
+budget the model catches 22.1% of fraud against the rules engine's 5.0%; the engine has
+8 of 22 days where its capacity cut lands inside a block of tied scores, which the
+policy's prorating settles deterministically.
+
+**What the headline is stated with.**
+
+- **The saving is bought with declined customers.** The EV policy blocks 6.45% of
+  transactions and 67% of what it blocks is legitimate — 2,654 good customers, 4.5% of
+  legitimate purchases. At $15 each the arithmetic closes, and $15 is the
+  lowest-confidence number in the cost matrix.
+- **The rules engine does not block, by registration (§3).** Part of the margin is that
+  structural difference, not model quality.
+- **The sensitivity behind the figure was measured on `VAL-CAL` and never on test**, as
+  registered. There the margin ranged from 34% to 69% as the false-positive cost moved
+  from $100 to $5. The headline travels with that range.
+
+With this, Phase 06's definition of done is complete: reliability diagram, EV policy,
+sensitivity analysis, and the final test table in USD.
