@@ -36,6 +36,7 @@ PATH_PAIRS = [
     ("REHEARSAL", "paths.rehearsal"),
     ("SENSITIVITY", "paths.sensitivity"),
     ("USD_HALVES", "paths.usd_halves"),
+    ("HEADLINE", "paths.headline"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment

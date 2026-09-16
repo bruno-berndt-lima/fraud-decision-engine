@@ -427,3 +427,30 @@ Then one run, recorded with a `git_revision` that carries no `-dirty`:
 
 After it, no calibrator, cost, threshold, capacity or feature changes. A disappointing
 number is written about, not worked on.
+
+**Registered before the touch** — decided after the rehearsal, sensitivity and USD
+halves were read, and before any test row was scored.
+
+- **Frozen.** The tuned booster (`model.txt`, recorded at `ad820df`) with its category
+  vocabulary and medians; the Platt calibrator fitted on `VAL-CAL` (`d97e0a2`), applied
+  unchanged; cost matrix version 1; review capacity 1% of daily volume, floored per day;
+  the `cost.py` policies — exact break-even, prorated ties, a rules engine that only
+  reviews, a naive cut at 0.5; the Phase 03 rules and weights, constants fitted on train.
+- **Proven before use.** The reloaded booster must reproduce its recorded `VAL-CAL`
+  scores exactly, and the rules engine, refitted on train, its own. Either failing stops
+  the stage before a test row is scored.
+- **Once, structurally.** The stage refuses a dirty tree and refuses to run if its record
+  exists. A second touch requires deleting a tracked file in a commit that says why.
+- **Allowing everything is reported beside the four rows**, as a reference and not a
+  policy. The rehearsal could only be read against it — it is what showed how little the
+  rules engine saves and where the margin comes from — and the test figure is read the
+  same way.
+- **Calibration metrics on test** — Brier, log-loss and ECE, uncalibrated and calibrated —
+  beside the diagram. Fold 0 of `VAL-CAL` showed base-rate drift moving calibration
+  within the slice; this is where that is measured on data after it.
+- **PR-AUC and recall at capacity on test, for the model and the rules engine,** in the
+  same run, so no later stage needs to score test for them. They are measurement and
+  are not part of the headline.
+- **The reading rule is `problem-statement.md` §5, unchanged:** at least 15% against the
+  rules engine is a win, below 5% is not claimed, and the §5 sensitivity is stated with
+  whatever the test figure is.

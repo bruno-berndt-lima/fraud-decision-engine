@@ -58,6 +58,7 @@ RELIABILITY := $(REPORTS_DIR)/figures/reliability_val_cal.png
 REHEARSAL   := $(REPORTS_DIR)/metrics/policy_val_cal.json
 SENSITIVITY := $(REPORTS_DIR)/metrics/sensitivity_val_cal.json
 USD_HALVES  := $(REPORTS_DIR)/metrics/usd_halves.json
+HEADLINE    := $(REPORTS_DIR)/metrics/policy_test.json
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -344,6 +345,21 @@ $(USD_HALVES): $(PURGE) $(ABLATION) $(FEATURES) $(CALIBRATOR) $(BASELINES) $(INT
                src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.models.usd_halves
 
+# The one touch of test. If any prerequisite changes after it has run, make will
+# try again and the stage will refuse: the record's existence is the guard.
+$(HEADLINE): $(MODEL) $(CALIBRATOR) $(BASELINES) $(FEATURES) $(SPLITS) $(INTERIM) $(COST_MATRIX) \
+             $(call sections,load splits baselines model calibration) \
+             src/fraud_engine/evaluation/headline.py \
+             src/fraud_engine/evaluation/policy.py \
+             src/fraud_engine/evaluation/cost.py \
+             src/fraud_engine/evaluation/reproduce.py \
+             src/fraud_engine/evaluation/plots.py \
+             src/fraud_engine/models/rules.py \
+             src/fraud_engine/models/calibrate.py \
+             src/fraud_engine/models/train.py \
+             src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+	$(RUN) python -m fraud_engine.evaluation.headline
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -352,7 +368,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -371,6 +387,7 @@ calibrate: $(CALIBRATOR) $(RELIABILITY) ## Fit the calibrator on VAL-CAL and dra
 rehearsal: $(REHEARSAL) ## Cost rules, naive and EV policies on VAL-CAL, before the test touch
 sensitivity: $(SENSITIVITY) ## Sweep each cost assumption and chart the false-positive cost
 usd-halves: $(USD_HALVES) ## E1 and E3 in USD: refit, verify, calibrate and cost each arm
+headline:  $(HEADLINE)   ## The one test touch: rules, naive and EV in USD, frozen policy
 
 # ==============================================================================
 # Housekeeping
