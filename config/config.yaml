@@ -98,6 +98,14 @@ paths:
   # The test touch: the four §4 rows, calibration and model metrics on test,
   # measured once. Tracked, and its existence is what stops a second touch.
   headline: reports/metrics/policy_test.json
+  # One contributions parquet per explained split: a column per model feature,
+  # plus the base value they are additive around. Gitignored with the rest of
+  # data/ — derived, rebuildable, and far larger than the matrices it explains.
+  explain_dir: data/explain
+  # The global ranking and the share of contribution falling in each serving
+  # tier. Tracked: docs/explainability.md section 4 is a deliverable, and the
+  # tier shares are what the write-up is built on.
+  shap_global: reports/metrics/shap_global.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -490,3 +498,26 @@ usd_halves:
 
   # Fixed so the interval is a rerunnable number rather than a draw.
   seed: 0
+
+# ------------------------------------------------------------------------------
+# Phase 07 — explainability
+# ------------------------------------------------------------------------------
+# Registered in docs/explainability.md. Nothing here can move a decision: the
+# model, the calibrator and the policy were frozen before this section existed.
+explain:
+  # VAL-CAL as well as test, because the second scoring pass is the whole cost of
+  # a comparison nothing else in the project provides. A difference between them
+  # is a decay signal recorded for Phase 09, never a reason to change a feature.
+  splits: [val_cal, test]
+
+  # The beeswarm only. The ranking is measured over every row of each split —
+  # sampling a ranking to draw a picture would report the picture.
+  sample_rows: 5000
+
+  # Fixed so the figure is a rerunnable object rather than a draw. Same value as
+  # model.seed and usd_halves.seed: nothing here varies it deliberately.
+  seed: 0
+
+  # Contributors per reason code. Committed before the ranking existed, so it
+  # cannot be widened later until one of them reads well.
+  top_k: 3
