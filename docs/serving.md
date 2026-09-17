@@ -71,6 +71,37 @@ shipped median. An unseen browser version is a level the model has mass on rathe
 null it was never fitted against — `train.fit_categories` was written for exactly the
 request that has now arrived.
 
+**What happens when a field does not arrive**, registered before the schema rather than
+after it, because the schema is where this stops being behaviour and becomes policy.
+
+**Four fields are required**, and a request without one is a 422: `TransactionDT`,
+`TransactionAmt`, `ProductCD` and `has_identity`. Three of them are also refused *null* —
+the amount prices the decision, the timestamp places it in the day and the week, and a
+null `has_identity` would be read as `True` by the coercion that types it, which is a
+claim about the transaction rather than an absence. `ProductCD` may be null, because null
+is a level the vocabulary holds.
+
+**Everything else may be omitted, and an omitted field is a null.** This is not a
+concession to callers. The booster was fitted on a matrix where the inherited columns are
+null on most rows, and the V block's presence flags encode nullness as signal — so a field
+that did not arrive is a value the model has mass on, not a hole punched in the matrix. A
+request carrying the transaction and nothing else is scored, and scored honestly.
+
+**The risk that creates is named rather than hedged.** A caller whose integration quietly
+stops sending half the inherited block would get plausible scores and no error, and the
+model's own measurements say those columns are where nearly all its signal lives. Two
+things guard it, and only together:
+
+- **Unknown fields are refused.** If a field may be omitted, a *misspelled* field is an
+  omitted one — `C13` sent as `C_13` would read as absent and be scored as null. Rejecting
+  a name the contract does not have turns a caller's typo into a 422 instead of a
+  confident wrong number. Permissive omission and permissive naming cannot both be
+  safe; this contract picks the one that keeps the failure visible.
+- **The response says what it was given.** Beside §2's declaration of which tier-3 inputs
+  arrived, the response carries how much of the inherited block did. A consumer can then
+  tell a fully-populated decision from a partial one without inferring it from the score,
+  and a monitor can watch that share move.
+
 **Registered.** No feature may be added, dropped or redefined to make this contract
 tidier. If a column is awkward to serve, that is a finding for the write-up, not a
 licence to change the model.
