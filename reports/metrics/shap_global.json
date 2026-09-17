@@ -1,0 +1,4234 @@
+{
+  "name": "shap_global",
+  "created": "2026-09-17T15:04:35+00:00",
+  "git_revision": "a4b4e64f9ab4504860490b5fc395c52b3e8d5505",
+  "model": "lightgbm_tuned",
+  "features": 349,
+  "keys": [
+    "TransactionID",
+    "TransactionDT",
+    "isFraud",
+    "day"
+  ],
+  "additivity_tolerance": 0.01,
+  "splits": {
+    "val_cal": {
+      "rows": 10000,
+      "sampled": true,
+      "of": 56949,
+      "base_value": -17.298190899382394,
+      "additivity_deviation_relative": 4.328977033608739e-05,
+      "tier_shares": {
+        "tier_0": 0.5536233777013781,
+        "tier_1": 0.25564238493370334,
+        "tier_2": 0.14969658793771984,
+        "tier_3": 0.041037649427198564
+      },
+      "ranking": [
+        {
+          "feature": "C13",
+          "tier": "tier_0",
+          "mean_abs": 0.8157003935236483,
+          "mean_signed": -0.10901321887683746
+        },
+        {
+          "feature": "C1",
+          "tier": "tier_0",
+          "mean_abs": 0.5203402044185848,
+          "mean_signed": 0.0017890929941753193
+        },
+        {
+          "feature": "freq_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.45975716564884545,
+          "mean_signed": 0.06718953415770489
+        },
+        {
+          "feature": "C14",
+          "tier": "tier_0",
+          "mean_abs": 0.38157841918670626,
+          "mean_signed": -0.01844016697552413
+        },
+        {
+          "feature": "amt_mean_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.34593407950903593,
+          "mean_signed": -0.015463460213196655
+        },
+        {
+          "feature": "amt_z_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.3111769772891692,
+          "mean_signed": -0.02259484221421024
+        },
+        {
+          "feature": "D1",
+          "tier": "tier_0",
+          "mean_abs": 0.31024128074438573,
+          "mean_signed": -0.11667886792271571
+        },
+        {
+          "feature": "card1",
+          "tier": "tier_1",
+          "mean_abs": 0.2972417532596166,
+          "mean_signed": -0.018726487028231698
+        },
+        {
+          "feature": "TransactionAmt",
+          "tier": "tier_1",
+          "mean_abs": 0.2867496226182189,
+          "mean_signed": -0.00045601380468219627
+        },
+        {
+          "feature": "vel_n7d_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.2833632848532298,
+          "mean_signed": -0.016432347215385973
+        },
+        {
+          "feature": "C2",
+          "tier": "tier_0",
+          "mean_abs": 0.27850129701052023,
+          "mean_signed": 0.003340931534712744
+        },
+        {
+          "feature": "M5",
+          "tier": "tier_1",
+          "mean_abs": 0.2695175295079313,
+          "mean_signed": -0.026010960747953567
+        },
+        {
+          "feature": "C11",
+          "tier": "tier_0",
+          "mean_abs": 0.2686332969846375,
+          "mean_signed": 0.09872091867807765
+        },
+        {
+          "feature": "card6",
+          "tier": "tier_1",
+          "mean_abs": 0.2682965798841055,
+          "mean_signed": -0.029426316958241945
+        },
+        {
+          "feature": "P_emaildomain",
+          "tier": "tier_1",
+          "mean_abs": 0.26361686586560756,
+          "mean_signed": 0.01208639483352511
+        },
+        {
+          "feature": "freq_card2",
+          "tier": "tier_2",
+          "mean_abs": 0.24408169039709637,
+          "mean_signed": -0.008052788390291317
+        },
+        {
+          "feature": "M4",
+          "tier": "tier_1",
+          "mean_abs": 0.24312161853391653,
+          "mean_signed": -0.01673442409619973
+        },
+        {
+          "feature": "addr1",
+          "tier": "tier_1",
+          "mean_abs": 0.23977643501709295,
+          "mean_signed": -0.0035963108882918846
+        },
+        {
+          "feature": "card2",
+          "tier": "tier_1",
+          "mean_abs": 0.22694704070502397,
+          "mean_signed": 0.010263360769449689
+        },
+        {
+          "feature": "hour",
+          "tier": "tier_1",
+          "mean_abs": 0.2240621164392705,
+          "mean_signed": 0.004992165920612629
+        },
+        {
+          "feature": "vb_V69",
+          "tier": "tier_0",
+          "mean_abs": 0.22195303330277652,
+          "mean_signed": -0.030727788396164597
+        },
+        {
+          "feature": "dist1",
+          "tier": "tier_1",
+          "mean_abs": 0.21205359317833794,
+          "mean_signed": -0.020528195837283637
+        },
+        {
+          "feature": "amt_absz_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.20858361554289623,
+          "mean_signed": 0.002459177048334945
+        },
+        {
+          "feature": "C6",
+          "tier": "tier_0",
+          "mean_abs": 0.20217395749552353,
+          "mean_signed": 0.04297582985887625
+        },
+        {
+          "feature": "D15",
+          "tier": "tier_0",
+          "mean_abs": 0.20212107490880407,
+          "mean_signed": -0.003895486802630886
+        },
+        {
+          "feature": "D2",
+          "tier": "tier_0",
+          "mean_abs": 0.19701601993147544,
+          "mean_signed": -0.042515097807676795
+        },
+        {
+          "feature": "D4",
+          "tier": "tier_0",
+          "mean_abs": 0.1950146094956641,
+          "mean_signed": -0.05473979904682076
+        },
+        {
+          "feature": "amt_absz_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.18836142713022347,
+          "mean_signed": -0.0014493059418817067
+        },
+        {
+          "feature": "amt_mean_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.1841190898912421,
+          "mean_signed": 0.010065292318796862
+        },
+        {
+          "feature": "vel_n24h_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.18252415832361704,
+          "mean_signed": 0.06259081595264047
+        },
+        {
+          "feature": "amt_whole_dollar",
+          "tier": "tier_1",
+          "mean_abs": 0.18131565489572143,
+          "mean_signed": -0.00849927118135397
+        },
+        {
+          "feature": "C5",
+          "tier": "tier_0",
+          "mean_abs": 0.1796608292687443,
+          "mean_signed": -0.030488125863773335
+        },
+        {
+          "feature": "freq_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.17444342130639656,
+          "mean_signed": 0.010391841380002733
+        },
+        {
+          "feature": "D10",
+          "tier": "tier_0",
+          "mean_abs": 0.17176172666820336,
+          "mean_signed": 0.017042712333408747
+        },
+        {
+          "feature": "vel_recency_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.16654538462890936,
+          "mean_signed": 0.002539346984461596
+        },
+        {
+          "feature": "M6",
+          "tier": "tier_1",
+          "mean_abs": 0.16379680765578075,
+          "mean_signed": -0.025168697132429755
+        },
+        {
+          "feature": "M3",
+          "tier": "tier_1",
+          "mean_abs": 0.15621841494931327,
+          "mean_signed": -0.044023373903448855
+        },
+        {
+          "feature": "amt_z_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.15607921235604713,
+          "mean_signed": 0.005879356700658016
+        },
+        {
+          "feature": "vb_V307",
+          "tier": "tier_0",
+          "mean_abs": 0.15199755127160863,
+          "mean_signed": 0.014266815075688728
+        },
+        {
+          "feature": "C9",
+          "tier": "tier_0",
+          "mean_abs": 0.14918519888191617,
+          "mean_signed": 0.07108773097216359
+        },
+        {
+          "feature": "id_31",
+          "tier": "tier_1",
+          "mean_abs": 0.14553718433708418,
+          "mean_signed": 0.07482773038438482
+        },
+        {
+          "feature": "D11",
+          "tier": "tier_0",
+          "mean_abs": 0.13070737091835885,
+          "mean_signed": -0.0561326879518982
+        },
+        {
+          "feature": "C10",
+          "tier": "tier_0",
+          "mean_abs": 0.12259837867630025,
+          "mean_signed": -0.02148755000606756
+        },
+        {
+          "feature": "D8",
+          "tier": "tier_0",
+          "mean_abs": 0.11825955542846012,
+          "mean_signed": 0.03677215412045268
+        },
+        {
+          "feature": "weekday",
+          "tier": "tier_1",
+          "mean_abs": 0.1165041013942197,
+          "mean_signed": 0.003024412345051374
+        },
+        {
+          "feature": "R_emaildomain",
+          "tier": "tier_1",
+          "mean_abs": 0.11244222318345377,
+          "mean_signed": 0.023263412306835308
+        },
+        {
+          "feature": "vb_V310",
+          "tier": "tier_0",
+          "mean_abs": 0.11086310644737248,
+          "mean_signed": 0.007505974023681593
+        },
+        {
+          "feature": "card5",
+          "tier": "tier_1",
+          "mean_abs": 0.10743977576931765,
+          "mean_signed": 0.001247925413053903
+        },
+        {
+          "feature": "vb_V82",
+          "tier": "tier_0",
+          "mean_abs": 0.1044993089479555,
+          "mean_signed": -0.051504818379923496
+        },
+        {
+          "feature": "vb_V130",
+          "tier": "tier_0",
+          "mean_abs": 0.10409779130906395,
+          "mean_signed": -0.004599794853280122
+        },
+        {
+          "feature": "D3",
+          "tier": "tier_0",
+          "mean_abs": 0.09806400440801302,
+          "mean_signed": -0.011114657909252467
+        },
+        {
+          "feature": "DeviceInfo",
+          "tier": "tier_1",
+          "mean_abs": 0.09416189402764617,
+          "mean_signed": 0.013844821937547118
+        },
+        {
+          "feature": "vb_V90",
+          "tier": "tier_0",
+          "mean_abs": 0.09145472630069824,
+          "mean_signed": -0.011816249101451287
+        },
+        {
+          "feature": "vb_V48",
+          "tier": "tier_0",
+          "mean_abs": 0.08966231188804337,
+          "mean_signed": -0.011829466237322336
+        },
+        {
+          "feature": "vb_V53",
+          "tier": "tier_0",
+          "mean_abs": 0.08792130447401562,
+          "mean_signed": 0.026029641033494432
+        },
+        {
+          "feature": "id_20",
+          "tier": "tier_0",
+          "mean_abs": 0.08702072616167071,
+          "mean_signed": 0.0016241965957540152
+        },
+        {
+          "feature": "M7",
+          "tier": "tier_1",
+          "mean_abs": 0.08613267801523707,
+          "mean_signed": -0.04140814531299957
+        },
+        {
+          "feature": "vb_V318",
+          "tier": "tier_0",
+          "mean_abs": 0.08596173252717974,
+          "mean_signed": -0.020851393347879017
+        },
+        {
+          "feature": "id_02",
+          "tier": "tier_0",
+          "mean_abs": 0.08250406039046053,
+          "mean_signed": 0.014366807152781585
+        },
+        {
+          "feature": "freq_card5",
+          "tier": "tier_2",
+          "mean_abs": 0.07851881790407314,
+          "mean_signed": -0.0017023166318254944
+        },
+        {
+          "feature": "vb_V258",
+          "tier": "tier_0",
+          "mean_abs": 0.07535871603758455,
+          "mean_signed": -0.020816907537134208
+        },
+        {
+          "feature": "vb_V285",
+          "tier": "tier_0",
+          "mean_abs": 0.07480462345549595,
+          "mean_signed": -0.0014807245035553854
+        },
+        {
+          "feature": "id_30",
+          "tier": "tier_1",
+          "mean_abs": 0.0744484665507803,
+          "mean_signed": 0.022399298139661725
+        },
+        {
+          "feature": "vb_V127",
+          "tier": "tier_0",
+          "mean_abs": 0.07307538064366555,
+          "mean_signed": -0.006560649413075842
+        },
+        {
+          "feature": "D5",
+          "tier": "tier_0",
+          "mean_abs": 0.07095972649103544,
+          "mean_signed": 0.00035656990179919277
+        },
+        {
+          "feature": "vb_V29",
+          "tier": "tier_0",
+          "mean_abs": 0.06977252952169358,
+          "mean_signed": -0.007667953721356481
+        },
+        {
+          "feature": "M9",
+          "tier": "tier_1",
+          "mean_abs": 0.06734173355633372,
+          "mean_signed": -0.026590316313177823
+        },
+        {
+          "feature": "vb_present_V53",
+          "tier": "tier_0",
+          "mean_abs": 0.06719973358895309,
+          "mean_signed": 0.025019521021207785
+        },
+        {
+          "feature": "C8",
+          "tier": "tier_0",
+          "mean_abs": 0.06567617493865785,
+          "mean_signed": 0.05826246331127704
+        },
+        {
+          "feature": "vb_V313",
+          "tier": "tier_0",
+          "mean_abs": 0.06458199322828247,
+          "mean_signed": -0.0029541023073422464
+        },
+        {
+          "feature": "ProductCD",
+          "tier": "tier_1",
+          "mean_abs": 0.06336664958841927,
+          "mean_signed": 0.019416733957196827
+        },
+        {
+          "feature": "id_19",
+          "tier": "tier_0",
+          "mean_abs": 0.06257231078427279,
+          "mean_signed": 9.294621188096424e-06
+        },
+        {
+          "feature": "id_13",
+          "tier": "tier_0",
+          "mean_abs": 0.06256779416438567,
+          "mean_signed": -0.011951441226389874
+        },
+        {
+          "feature": "vb_V99",
+          "tier": "tier_0",
+          "mean_abs": 0.060969836762297815,
+          "mean_signed": 0.005657418088053673
+        },
+        {
+          "feature": "freq_card3",
+          "tier": "tier_2",
+          "mean_abs": 0.06070472647696972,
+          "mean_signed": 0.016469644528036672
+        },
+        {
+          "feature": "M8",
+          "tier": "tier_1",
+          "mean_abs": 0.05759165178397035,
+          "mean_signed": -0.029312982799416375
+        },
+        {
+          "feature": "id_05",
+          "tier": "tier_0",
+          "mean_abs": 0.05345737686309684,
+          "mean_signed": -0.001762645464815247
+        },
+        {
+          "feature": "vb_V83",
+          "tier": "tier_0",
+          "mean_abs": 0.050503821036281815,
+          "mean_signed": 0.03016995716880233
+        },
+        {
+          "feature": "vb_V283",
+          "tier": "tier_0",
+          "mean_abs": 0.04747019516990788,
+          "mean_signed": -0.006019880384062804
+        },
+        {
+          "feature": "vb_V312",
+          "tier": "tier_0",
+          "mean_abs": 0.047286692043010684,
+          "mean_signed": 0.0006773334845296853
+        },
+        {
+          "feature": "D13",
+          "tier": "tier_0",
+          "mean_abs": 0.04386120166983145,
+          "mean_signed": -0.0027262441565895183
+        },
+        {
+          "feature": "id_33",
+          "tier": "tier_1",
+          "mean_abs": 0.04374382958817555,
+          "mean_signed": 0.011993179562280526
+        },
+        {
+          "feature": "freq_DeviceInfo",
+          "tier": "tier_2",
+          "mean_abs": 0.043725495338205876,
+          "mean_signed": 0.010762871390392675
+        },
+        {
+          "feature": "vb_V57",
+          "tier": "tier_0",
+          "mean_abs": 0.043513445652444714,
+          "mean_signed": 0.0016744781319490297
+        },
+        {
+          "feature": "vb_present_V12",
+          "tier": "tier_0",
+          "mean_abs": 0.043386595429634266,
+          "mean_signed": 0.00903687161122043
+        },
+        {
+          "feature": "vel_n1h_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.04216027007109204,
+          "mean_signed": -0.013568537614954952
+        },
+        {
+          "feature": "vb_V35",
+          "tier": "tier_0",
+          "mean_abs": 0.041429867689358926,
+          "mean_signed": -0.004622417188193435
+        },
+        {
+          "feature": "C12",
+          "tier": "tier_0",
+          "mean_abs": 0.04121905756170473,
+          "mean_signed": -0.011074139615721759
+        },
+        {
+          "feature": "id_01",
+          "tier": "tier_0",
+          "mean_abs": 0.04102853736446375,
+          "mean_signed": -0.001967755505124172
+        },
+        {
+          "feature": "vb_V75",
+          "tier": "tier_0",
+          "mean_abs": 0.040012606258277184,
+          "mean_signed": -0.0009209983263835107
+        },
+        {
+          "feature": "vb_V189",
+          "tier": "tier_0",
+          "mean_abs": 0.039686743181118075,
+          "mean_signed": -0.00590811890973523
+        },
+        {
+          "feature": "vb_V281",
+          "tier": "tier_0",
+          "mean_abs": 0.03932502360583513,
+          "mean_signed": 0.006412930199530479
+        },
+        {
+          "feature": "vb_V62",
+          "tier": "tier_0",
+          "mean_abs": 0.03922977825487974,
+          "mean_signed": 0.008687129413515215
+        },
+        {
+          "feature": "vb_V314",
+          "tier": "tier_0",
+          "mean_abs": 0.03798906410879201,
+          "mean_signed": -0.011740905719734296
+        },
+        {
+          "feature": "vb_V133",
+          "tier": "tier_0",
+          "mean_abs": 0.03790285480731919,
+          "mean_signed": -0.004174963244361206
+        },
+        {
+          "feature": "D9",
+          "tier": "tier_0",
+          "mean_abs": 0.03695429732996864,
+          "mean_signed": -0.011698423867150438
+        },
+        {
+          "feature": "id_14",
+          "tier": "tier_1",
+          "mean_abs": 0.03680274016798786,
+          "mean_signed": 0.013805247680168841
+        },
+        {
+          "feature": "vb_V131",
+          "tier": "tier_0",
+          "mean_abs": 0.03631637139155614,
+          "mean_signed": 0.006039776443868052
+        },
+        {
+          "feature": "vb_V10",
+          "tier": "tier_0",
+          "mean_abs": 0.03629914442521634,
+          "mean_signed": -0.013066107393796263
+        },
+        {
+          "feature": "vb_V164",
+          "tier": "tier_0",
+          "mean_abs": 0.036210080548439764,
+          "mean_signed": 0.0335026899010676
+        },
+        {
+          "feature": "id_38",
+          "tier": "tier_0",
+          "mean_abs": 0.036016020826199605,
+          "mean_signed": -0.004824622609607519
+        },
+        {
+          "feature": "vb_V12",
+          "tier": "tier_0",
+          "mean_abs": 0.035383214466119105,
+          "mean_signed": 0.0023959803893371994
+        },
+        {
+          "feature": "vb_V38",
+          "tier": "tier_0",
+          "mean_abs": 0.032228013171732496,
+          "mean_signed": 0.0037155321355990282
+        },
+        {
+          "feature": "dist2",
+          "tier": "tier_1",
+          "mean_abs": 0.03211918677002208,
+          "mean_signed": 0.01004489405045949
+        },
+        {
+          "feature": "id_06",
+          "tier": "tier_0",
+          "mean_abs": 0.03205984073907777,
+          "mean_signed": -0.004908518780481218
+        },
+        {
+          "feature": "vb_V56",
+          "tier": "tier_0",
+          "mean_abs": 0.031935131062091435,
+          "mean_signed": -0.005573634388284306
+        },
+        {
+          "feature": "vb_V145",
+          "tier": "tier_0",
+          "mean_abs": 0.030432130011862183,
+          "mean_signed": 0.026575854216740386
+        },
+        {
+          "feature": "vb_V102",
+          "tier": "tier_0",
+          "mean_abs": 0.03041418289693655,
+          "mean_signed": -0.005496404017075785
+        },
+        {
+          "feature": "vb_V308",
+          "tier": "tier_0",
+          "mean_abs": 0.030075850193757338,
+          "mean_signed": -0.007107853588061711
+        },
+        {
+          "feature": "id_17",
+          "tier": "tier_0",
+          "mean_abs": 0.029990048997132493,
+          "mean_signed": 0.0029457456446557047
+        },
+        {
+          "feature": "vb_V55",
+          "tier": "tier_0",
+          "mean_abs": 0.029967016946939304,
+          "mean_signed": -0.00012394099297336188
+        },
+        {
+          "feature": "id_16",
+          "tier": "tier_0",
+          "mean_abs": 0.028891444036687437,
+          "mean_signed": -0.009752409326161204
+        },
+        {
+          "feature": "vb_V87",
+          "tier": "tier_0",
+          "mean_abs": 0.02829155507681266,
+          "mean_signed": 0.0004650523388161683
+        },
+        {
+          "feature": "vb_present_V1",
+          "tier": "tier_0",
+          "mean_abs": 0.02705253298628374,
+          "mean_signed": 0.019116872351901435
+        },
+        {
+          "feature": "C3",
+          "tier": "tier_0",
+          "mean_abs": 0.026945716247653045,
+          "mean_signed": 0.0038117128844573976
+        },
+        {
+          "feature": "id_34",
+          "tier": "tier_0",
+          "mean_abs": 0.026688361977035936,
+          "mean_signed": 0.010234889561016192
+        },
+        {
+          "feature": "vb_V143",
+          "tier": "tier_0",
+          "mean_abs": 0.026545857771594586,
+          "mean_signed": 0.02064604189551602
+        },
+        {
+          "feature": "vb_V128",
+          "tier": "tier_0",
+          "mean_abs": 0.025115357050548567,
+          "mean_signed": 0.0010096444326392646
+        },
+        {
+          "feature": "id_37",
+          "tier": "tier_0",
+          "mean_abs": 0.02509464421772637,
+          "mean_signed": -0.007339572235783849
+        },
+        {
+          "feature": "amt_round_band_product",
+          "tier": "tier_1",
+          "mean_abs": 0.02508503884246778,
+          "mean_signed": -0.012228825223673898
+        },
+        {
+          "feature": "C4",
+          "tier": "tier_0",
+          "mean_abs": 0.024824126482527888,
+          "mean_signed": 0.0010424494663193442
+        },
+        {
+          "feature": "vb_V136",
+          "tier": "tier_0",
+          "mean_abs": 0.024748390429334823,
+          "mean_signed": 0.0003464775369558484
+        },
+        {
+          "feature": "D6",
+          "tier": "tier_0",
+          "mean_abs": 0.024512356864192866,
+          "mean_signed": -0.0007734172036914568
+        },
+        {
+          "feature": "vb_V124",
+          "tier": "tier_0",
+          "mean_abs": 0.02442182480497646,
+          "mean_signed": -0.0008716598606210147
+        },
+        {
+          "feature": "vb_V20",
+          "tier": "tier_0",
+          "mean_abs": 0.024343734921323783,
+          "mean_signed": 0.0055849368454953165
+        },
+        {
+          "feature": "vb_V139",
+          "tier": "tier_0",
+          "mean_abs": 0.023526617475832488,
+          "mean_signed": 0.007011105534153297
+        },
+        {
+          "feature": "vb_V61",
+          "tier": "tier_0",
+          "mean_abs": 0.023383709113428085,
+          "mean_signed": -0.001603151482145272
+        },
+        {
+          "feature": "vb_V277",
+          "tier": "tier_0",
+          "mean_abs": 0.023116091044840064,
+          "mean_signed": 0.00017261067987595357
+        },
+        {
+          "feature": "vb_V19",
+          "tier": "tier_0",
+          "mean_abs": 0.023048228333299507,
+          "mean_signed": 0.000627524814727756
+        },
+        {
+          "feature": "vb_V309",
+          "tier": "tier_0",
+          "mean_abs": 0.022100587063387994,
+          "mean_signed": -0.0026524078413151142
+        },
+        {
+          "feature": "vb_V78",
+          "tier": "tier_0",
+          "mean_abs": 0.02105916699194959,
+          "mean_signed": 0.002960922835865131
+        },
+        {
+          "feature": "DeviceType",
+          "tier": "tier_1",
+          "mean_abs": 0.02041113370894863,
+          "mean_signed": -0.007468205901026838
+        },
+        {
+          "feature": "vb_V67",
+          "tier": "tier_0",
+          "mean_abs": 0.02039963678989002,
+          "mean_signed": 0.0016308904795979413
+        },
+        {
+          "feature": "vb_V7",
+          "tier": "tier_0",
+          "mean_abs": 0.02014717252774122,
+          "mean_signed": 0.008138687151677215
+        },
+        {
+          "feature": "vb_V66",
+          "tier": "tier_0",
+          "mean_abs": 0.019911677195352074,
+          "mean_signed": -0.0025384865832237752
+        },
+        {
+          "feature": "vb_V44",
+          "tier": "tier_0",
+          "mean_abs": 0.019898836118229405,
+          "mean_signed": -0.004152207164349154
+        },
+        {
+          "feature": "M2",
+          "tier": "tier_1",
+          "mean_abs": 0.01985244009242324,
+          "mean_signed": 0.003048198293230709
+        },
+        {
+          "feature": "vb_V47",
+          "tier": "tier_0",
+          "mean_abs": 0.01963785113896646,
+          "mean_signed": -0.0012400456296624337
+        },
+        {
+          "feature": "vb_V96",
+          "tier": "tier_0",
+          "mean_abs": 0.018795357836368966,
+          "mean_signed": 0.0037012140992005046
+        },
+        {
+          "feature": "vb_V316",
+          "tier": "tier_0",
+          "mean_abs": 0.018222785107783305,
+          "mean_signed": 0.0035022448055612053
+        },
+        {
+          "feature": "vb_V17",
+          "tier": "tier_0",
+          "mean_abs": 0.018170944381472796,
+          "mean_signed": -0.0024395470697096133
+        },
+        {
+          "feature": "card3",
+          "tier": "tier_1",
+          "mean_abs": 0.01732347118486154,
+          "mean_signed": -0.003515276274214058
+        },
+        {
+          "feature": "vb_V261",
+          "tier": "tier_0",
+          "mean_abs": 0.017048749521940236,
+          "mean_signed": -0.0018037307610700385
+        },
+        {
+          "feature": "vb_V257",
+          "tier": "tier_0",
+          "mean_abs": 0.016760728061242444,
+          "mean_signed": -0.0012829875980317654
+        },
+        {
+          "feature": "vb_V126",
+          "tier": "tier_0",
+          "mean_abs": 0.01672436975261859,
+          "mean_signed": -0.0016209077664777465
+        },
+        {
+          "feature": "vb_V291",
+          "tier": "tier_0",
+          "mean_abs": 0.016641990845625936,
+          "mean_signed": -0.00017889889226014018
+        },
+        {
+          "feature": "card4",
+          "tier": "tier_1",
+          "mean_abs": 0.01600968648154215,
+          "mean_signed": 0.0008435073488065536
+        },
+        {
+          "feature": "vb_V264",
+          "tier": "tier_0",
+          "mean_abs": 0.015979884481884907,
+          "mean_signed": -0.0011055459473049984
+        },
+        {
+          "feature": "id_28",
+          "tier": "tier_0",
+          "mean_abs": 0.015762937439010475,
+          "mean_signed": -0.000851707041141555
+        },
+        {
+          "feature": "vb_V77",
+          "tier": "tier_0",
+          "mean_abs": 0.015696770957852057,
+          "mean_signed": 0.0006743290350247817
+        },
+        {
+          "feature": "vb_V296",
+          "tier": "tier_0",
+          "mean_abs": 0.015470571928942247,
+          "mean_signed": 0.0008117037486862881
+        },
+        {
+          "feature": "id_09",
+          "tier": "tier_0",
+          "mean_abs": 0.015414531208553114,
+          "mean_signed": -0.006241112387695512
+        },
+        {
+          "feature": "D14",
+          "tier": "tier_0",
+          "mean_abs": 0.015334958218483742,
+          "mean_signed": 0.0011688521969437904
+        },
+        {
+          "feature": "amt_round_band",
+          "tier": "tier_1",
+          "mean_abs": 0.014865759306315911,
+          "mean_signed": 0.006015057091946488
+        },
+        {
+          "feature": "id_12",
+          "tier": "tier_0",
+          "mean_abs": 0.01426813237492406,
+          "mean_signed": -0.007313222105243429
+        },
+        {
+          "feature": "vb_V2",
+          "tier": "tier_0",
+          "mean_abs": 0.014184096785203673,
+          "mean_signed": -0.007942885019297899
+        },
+        {
+          "feature": "vb_V221",
+          "tier": "tier_0",
+          "mean_abs": 0.013632448907589767,
+          "mean_signed": 0.002861240293365333
+        },
+        {
+          "feature": "vb_V64",
+          "tier": "tier_0",
+          "mean_abs": 0.013436609004987714,
+          "mean_signed": 0.00047431953771834924
+        },
+        {
+          "feature": "D12",
+          "tier": "tier_0",
+          "mean_abs": 0.013268458126995704,
+          "mean_signed": -0.004887578956051446
+        },
+        {
+          "feature": "vb_V332",
+          "tier": "tier_0",
+          "mean_abs": 0.013115968150991324,
+          "mean_signed": 0.004526542815325391
+        },
+        {
+          "feature": "vb_V268",
+          "tier": "tier_0",
+          "mean_abs": 0.013001355031077634,
+          "mean_signed": 0.003330105107737009
+        },
+        {
+          "feature": "vb_V59",
+          "tier": "tier_0",
+          "mean_abs": 0.012982700780514313,
+          "mean_signed": -0.00028162907160954125
+        },
+        {
+          "feature": "vb_V50",
+          "tier": "tier_0",
+          "mean_abs": 0.012841199624895702,
+          "mean_signed": 0.006555139015483168
+        },
+        {
+          "feature": "vb_V79",
+          "tier": "tier_0",
+          "mean_abs": 0.012481496048084387,
+          "mean_signed": 0.004045258522822287
+        },
+        {
+          "feature": "vb_V24",
+          "tier": "tier_0",
+          "mean_abs": 0.011864240429698296,
+          "mean_signed": 0.0001873436228435727
+        },
+        {
+          "feature": "vb_V26",
+          "tier": "tier_0",
+          "mean_abs": 0.011775587118292456,
+          "mean_signed": 0.0037678418800113547
+        },
+        {
+          "feature": "vb_V25",
+          "tier": "tier_0",
+          "mean_abs": 0.011549980706607647,
+          "mean_signed": -0.0010957093815153103
+        },
+        {
+          "feature": "vb_V23",
+          "tier": "tier_0",
+          "mean_abs": 0.011454899634760736,
+          "mean_signed": -0.0008164958451322369
+        },
+        {
+          "feature": "vb_V282",
+          "tier": "tier_0",
+          "mean_abs": 0.011387467901377528,
+          "mean_signed": -0.003305092222432166
+        },
+        {
+          "feature": "vb_V266",
+          "tier": "tier_0",
+          "mean_abs": 0.011380640109785328,
+          "mean_signed": 0.004031722616953046
+        },
+        {
+          "feature": "vb_V200",
+          "tier": "tier_0",
+          "mean_abs": 0.011294446446458765,
+          "mean_signed": -0.0019995370392815077
+        },
+        {
+          "feature": "vb_V8",
+          "tier": "tier_0",
+          "mean_abs": 0.011034305239031605,
+          "mean_signed": -0.006063014491889491
+        },
+        {
+          "feature": "vb_present_V35",
+          "tier": "tier_0",
+          "mean_abs": 0.010996567872824794,
+          "mean_signed": -0.00022677777401848256
+        },
+        {
+          "feature": "vb_V206",
+          "tier": "tier_0",
+          "mean_abs": 0.010715371277586481,
+          "mean_signed": 0.0038675295584394563
+        },
+        {
+          "feature": "vb_V86",
+          "tier": "tier_0",
+          "mean_abs": 0.010611985775943342,
+          "mean_signed": -0.00038433692287195284
+        },
+        {
+          "feature": "vb_V4",
+          "tier": "tier_0",
+          "mean_abs": 0.010498896654482672,
+          "mean_signed": -0.004648239415365688
+        },
+        {
+          "feature": "vb_V148",
+          "tier": "tier_0",
+          "mean_abs": 0.010484100742679395,
+          "mean_signed": -0.001002952676501036
+        },
+        {
+          "feature": "vb_V3",
+          "tier": "tier_0",
+          "mean_abs": 0.010396251921680704,
+          "mean_signed": 0.004518327137536459
+        },
+        {
+          "feature": "id_29",
+          "tier": "tier_0",
+          "mean_abs": 0.010026142730241107,
+          "mean_signed": -0.0026480335122374523
+        },
+        {
+          "feature": "vb_V37",
+          "tier": "tier_0",
+          "mean_abs": 0.009814890052338581,
+          "mean_signed": 0.002802123091399507
+        },
+        {
+          "feature": "vb_V323",
+          "tier": "tier_0",
+          "mean_abs": 0.009740678163080333,
+          "mean_signed": 0.0034424285509542757
+        },
+        {
+          "feature": "vb_V338",
+          "tier": "tier_0",
+          "mean_abs": 0.00964986976816868,
+          "mean_signed": -1.353781684234612e-05
+        },
+        {
+          "feature": "vb_present_V75",
+          "tier": "tier_0",
+          "mean_abs": 0.009579241966739888,
+          "mean_signed": -0.004513580263951662
+        },
+        {
+          "feature": "M1",
+          "tier": "tier_1",
+          "mean_abs": 0.009531255247461491,
+          "mean_signed": -0.0011130227115316816
+        },
+        {
+          "feature": "vb_V135",
+          "tier": "tier_0",
+          "mean_abs": 0.009353372498291112,
+          "mean_signed": -0.00016973361399137736
+        },
+        {
+          "feature": "vb_V129",
+          "tier": "tier_0",
+          "mean_abs": 0.009342028406168075,
+          "mean_signed": -0.00015667176405930822
+        },
+        {
+          "feature": "id_15",
+          "tier": "tier_0",
+          "mean_abs": 0.009233043657855097,
+          "mean_signed": 0.0029786393534200475
+        },
+        {
+          "feature": "vb_V276",
+          "tier": "tier_0",
+          "mean_abs": 0.009128002174022863,
+          "mean_signed": -0.0020553946532958912
+        },
+        {
+          "feature": "vb_V306",
+          "tier": "tier_0",
+          "mean_abs": 0.00895721117582621,
+          "mean_signed": 0.0004962130394464853
+        },
+        {
+          "feature": "vb_V109",
+          "tier": "tier_0",
+          "mean_abs": 0.008734594372397507,
+          "mean_signed": 0.0025292904389649625
+        },
+        {
+          "feature": "vb_V242",
+          "tier": "tier_0",
+          "mean_abs": 0.008613261105157654,
+          "mean_signed": -0.0015720711549220953
+        },
+        {
+          "feature": "vb_V273",
+          "tier": "tier_0",
+          "mean_abs": 0.00845233207218114,
+          "mean_signed": -0.0033253206927059543
+        },
+        {
+          "feature": "vb_V51",
+          "tier": "tier_0",
+          "mean_abs": 0.00836030330387364,
+          "mean_signed": 0.007230684295719834
+        },
+        {
+          "feature": "vb_V158",
+          "tier": "tier_0",
+          "mean_abs": 0.008048527780936303,
+          "mean_signed": 0.0016005215202546015
+        },
+        {
+          "feature": "D7",
+          "tier": "tier_0",
+          "mean_abs": 0.007916655215268447,
+          "mean_signed": 0.00014827533567698457
+        },
+        {
+          "feature": "vb_V289",
+          "tier": "tier_0",
+          "mean_abs": 0.007789794560940497,
+          "mean_signed": -0.0016978242416973654
+        },
+        {
+          "feature": "vb_V208",
+          "tier": "tier_0",
+          "mean_abs": 0.0075849531823492765,
+          "mean_signed": -0.000656368665182177
+        },
+        {
+          "feature": "vb_V233",
+          "tier": "tier_0",
+          "mean_abs": 0.007526696629049202,
+          "mean_signed": 0.0009357751207248505
+        },
+        {
+          "feature": "vb_V46",
+          "tier": "tier_0",
+          "mean_abs": 0.007428483686963189,
+          "mean_signed": 0.001567342271529578
+        },
+        {
+          "feature": "vb_V226",
+          "tier": "tier_0",
+          "mean_abs": 0.0070073233466471565,
+          "mean_signed": 0.000747266768171971
+        },
+        {
+          "feature": "vb_V234",
+          "tier": "tier_0",
+          "mean_abs": 0.006985280777946364,
+          "mean_signed": -0.0002829553815495146
+        },
+        {
+          "feature": "vb_V293",
+          "tier": "tier_0",
+          "mean_abs": 0.00681001885365873,
+          "mean_signed": 6.416858153665446e-05
+        },
+        {
+          "feature": "vb_V287",
+          "tier": "tier_0",
+          "mean_abs": 0.006690224774467279,
+          "mean_signed": -0.0008532408802345559
+        },
+        {
+          "feature": "vb_V108",
+          "tier": "tier_0",
+          "mean_abs": 0.006659702068185475,
+          "mean_signed": 0.0011867726380810396
+        },
+        {
+          "feature": "vb_V134",
+          "tier": "tier_0",
+          "mean_abs": 0.006584521049357913,
+          "mean_signed": -5.900720208465413e-05
+        },
+        {
+          "feature": "vb_V198",
+          "tier": "tier_0",
+          "mean_abs": 0.006543245328762541,
+          "mean_signed": -0.002646057324690428
+        },
+        {
+          "feature": "vb_V255",
+          "tier": "tier_0",
+          "mean_abs": 0.0065286752931008225,
+          "mean_signed": -0.002984055050642926
+        },
+        {
+          "feature": "vb_V188",
+          "tier": "tier_0",
+          "mean_abs": 0.0064968878782760186,
+          "mean_signed": -0.0010926637841541587
+        },
+        {
+          "feature": "vb_V166",
+          "tier": "tier_0",
+          "mean_abs": 0.006150091868119078,
+          "mean_signed": 0.003933950273093559
+        },
+        {
+          "feature": "id_36",
+          "tier": "tier_0",
+          "mean_abs": 0.006128461000079417,
+          "mean_signed": -0.0017585000842764017
+        },
+        {
+          "feature": "vb_V161",
+          "tier": "tier_0",
+          "mean_abs": 0.006060644769975222,
+          "mean_signed": -0.00288478428969165
+        },
+        {
+          "feature": "vb_V15",
+          "tier": "tier_0",
+          "mean_abs": 0.005956239376551886,
+          "mean_signed": -0.002587817495887293
+        },
+        {
+          "feature": "vb_V298",
+          "tier": "tier_0",
+          "mean_abs": 0.005919160823343261,
+          "mean_signed": -7.210114689153521e-05
+        },
+        {
+          "feature": "vb_V42",
+          "tier": "tier_0",
+          "mean_abs": 0.0058824808952977784,
+          "mean_signed": 0.0013439242634247098
+        },
+        {
+          "feature": "vb_V116",
+          "tier": "tier_0",
+          "mean_abs": 0.005841470398803945,
+          "mean_signed": -0.0016461879986371863
+        },
+        {
+          "feature": "vb_V215",
+          "tier": "tier_0",
+          "mean_abs": 0.0058391931045048105,
+          "mean_signed": -0.0005863837661667962
+        },
+        {
+          "feature": "id_11",
+          "tier": "tier_0",
+          "mean_abs": 0.005833259505968508,
+          "mean_signed": -0.0018842024747492698
+        },
+        {
+          "feature": "id_32",
+          "tier": "tier_1",
+          "mean_abs": 0.005763249257672259,
+          "mean_signed": 0.004072193317735609
+        },
+        {
+          "feature": "vb_V286",
+          "tier": "tier_0",
+          "mean_abs": 0.005762675801819525,
+          "mean_signed": 0.00042152748662171557
+        },
+        {
+          "feature": "vb_V280",
+          "tier": "tier_0",
+          "mean_abs": 0.005679075999350488,
+          "mean_signed": 9.317338115230297e-05
+        },
+        {
+          "feature": "vb_V6",
+          "tier": "tier_0",
+          "mean_abs": 0.005512540384129049,
+          "mean_signed": -0.0022469061263955675
+        },
+        {
+          "feature": "vb_V169",
+          "tier": "tier_0",
+          "mean_abs": 0.005307663894607062,
+          "mean_signed": 0.0013523038767356067
+        },
+        {
+          "feature": "vb_V212",
+          "tier": "tier_0",
+          "mean_abs": 0.0052992995966114715,
+          "mean_signed": -0.0011163054039008424
+        },
+        {
+          "feature": "id_26",
+          "tier": "tier_0",
+          "mean_abs": 0.005287797714471894,
+          "mean_signed": 0.001353832176848807
+        },
+        {
+          "feature": "id_18",
+          "tier": "tier_0",
+          "mean_abs": 0.0052765607016398795,
+          "mean_signed": 0.00034917450568649707
+        },
+        {
+          "feature": "vb_V84",
+          "tier": "tier_0",
+          "mean_abs": 0.005260292143769342,
+          "mean_signed": -0.0009372123271044583
+        },
+        {
+          "feature": "vb_V217",
+          "tier": "tier_0",
+          "mean_abs": 0.005244433622238564,
+          "mean_signed": 0.0008633055298256343
+        },
+        {
+          "feature": "vb_V270",
+          "tier": "tier_0",
+          "mean_abs": 0.005224262343033288,
+          "mean_signed": -0.0013412645768598945
+        },
+        {
+          "feature": "vb_V300",
+          "tier": "tier_0",
+          "mean_abs": 0.005184178425379635,
+          "mean_signed": -0.00011145144724919975
+        },
+        {
+          "feature": "C7",
+          "tier": "tier_0",
+          "mean_abs": 0.005114636617800063,
+          "mean_signed": -0.002955837102729141
+        },
+        {
+          "feature": "vb_V250",
+          "tier": "tier_0",
+          "mean_abs": 0.004879133895440194,
+          "mean_signed": -0.0005716197022334349
+        },
+        {
+          "feature": "vb_V184",
+          "tier": "tier_0",
+          "mean_abs": 0.00466647192445328,
+          "mean_signed": 0.00011208384230822374
+        },
+        {
+          "feature": "vb_V39",
+          "tier": "tier_0",
+          "mean_abs": 0.00455656897923015,
+          "mean_signed": 0.002258968195331402
+        },
+        {
+          "feature": "vb_V299",
+          "tier": "tier_0",
+          "mean_abs": 0.0043698157090988265,
+          "mean_signed": -8.290650009488453e-05
+        },
+        {
+          "feature": "vb_V319",
+          "tier": "tier_0",
+          "mean_abs": 0.004347607326635189,
+          "mean_signed": 0.0004699554375717319
+        },
+        {
+          "feature": "vb_V275",
+          "tier": "tier_0",
+          "mean_abs": 0.004144106924417192,
+          "mean_signed": -0.0014597472407158014
+        },
+        {
+          "feature": "vb_V265",
+          "tier": "tier_0",
+          "mean_abs": 0.004054131160523527,
+          "mean_signed": 0.0008285747210432208
+        },
+        {
+          "feature": "vb_V80",
+          "tier": "tier_0",
+          "mean_abs": 0.00404757788488241,
+          "mean_signed": -0.0006692394375370026
+        },
+        {
+          "feature": "vb_V260",
+          "tier": "tier_0",
+          "mean_abs": 0.003812700285944095,
+          "mean_signed": 0.00024166708376872393
+        },
+        {
+          "feature": "vb_V170",
+          "tier": "tier_0",
+          "mean_abs": 0.003783931309700558,
+          "mean_signed": 4.079864811237907e-05
+        },
+        {
+          "feature": "vb_V302",
+          "tier": "tier_0",
+          "mean_abs": 0.003765051792324325,
+          "mean_signed": 0.0006269408428113393
+        },
+        {
+          "feature": "vb_V125",
+          "tier": "tier_0",
+          "mean_abs": 0.0036917787878388473,
+          "mean_signed": 0.0002675221917522444
+        },
+        {
+          "feature": "id_08",
+          "tier": "tier_0",
+          "mean_abs": 0.0036539099866377094,
+          "mean_signed": -0.0002978885941796455
+        },
+        {
+          "feature": "vb_V290",
+          "tier": "tier_0",
+          "mean_abs": 0.003557611397124036,
+          "mean_signed": 0.000503101870806484
+        },
+        {
+          "feature": "id_03",
+          "tier": "tier_0",
+          "mean_abs": 0.0035040320541479884,
+          "mean_signed": -0.0006702245752957785
+        },
+        {
+          "feature": "vb_V214",
+          "tier": "tier_0",
+          "mean_abs": 0.0034979629210098984,
+          "mean_signed": -0.0010671010280906567
+        },
+        {
+          "feature": "vb_V279",
+          "tier": "tier_0",
+          "mean_abs": 0.003465400849222621,
+          "mean_signed": -0.0002607540877985191
+        },
+        {
+          "feature": "vb_V262",
+          "tier": "tier_0",
+          "mean_abs": 0.0034441285952934273,
+          "mean_signed": -0.000481550709765804
+        },
+        {
+          "feature": "id_23",
+          "tier": "tier_2",
+          "mean_abs": 0.003432903134681645,
+          "mean_signed": 0.0007057315589685451
+        },
+        {
+          "feature": "id_35",
+          "tier": "tier_0",
+          "mean_abs": 0.0033249656877547594,
+          "mean_signed": -0.0009810753944582977
+        },
+        {
+          "feature": "id_21",
+          "tier": "tier_0",
+          "mean_abs": 0.003324001984571938,
+          "mean_signed": 0.000356769942033422
+        },
+        {
+          "feature": "vb_V100",
+          "tier": "tier_0",
+          "mean_abs": 0.003321248282644001,
+          "mean_signed": -0.0002103139993937473
+        },
+        {
+          "feature": "vb_V101",
+          "tier": "tier_0",
+          "mean_abs": 0.003242080125168181,
+          "mean_signed": 0.00039352460268829757
+        },
+        {
+          "feature": "vb_V213",
+          "tier": "tier_0",
+          "mean_abs": 0.00318013760483883,
+          "mean_signed": 0.0003310049707587341
+        },
+        {
+          "feature": "vb_V97",
+          "tier": "tier_0",
+          "mean_abs": 0.0031639744325023408,
+          "mean_signed": -0.0003766120751415252
+        },
+        {
+          "feature": "vb_V106",
+          "tier": "tier_0",
+          "mean_abs": 0.0031609735460673615,
+          "mean_signed": 0.00038104129527009373
+        },
+        {
+          "feature": "vb_V218",
+          "tier": "tier_0",
+          "mean_abs": 0.00302798964458209,
+          "mean_signed": 0.000480767704856434
+        },
+        {
+          "feature": "vb_V132",
+          "tier": "tier_0",
+          "mean_abs": 0.0030163854193608675,
+          "mean_signed": 0.0006282849753482337
+        },
+        {
+          "feature": "vb_V219",
+          "tier": "tier_0",
+          "mean_abs": 0.002982856430414455,
+          "mean_signed": 0.0004289936785368685
+        },
+        {
+          "feature": "vb_V324",
+          "tier": "tier_0",
+          "mean_abs": 0.0029811657974443016,
+          "mean_signed": 0.0010469616349312605
+        },
+        {
+          "feature": "id_07",
+          "tier": "tier_0",
+          "mean_abs": 0.0029002461037451258,
+          "mean_signed": 0.00015452486217711978
+        },
+        {
+          "feature": "vb_V115",
+          "tier": "tier_0",
+          "mean_abs": 0.002898863794368651,
+          "mean_signed": -0.000363139020578292
+        },
+        {
+          "feature": "vb_V146",
+          "tier": "tier_0",
+          "mean_abs": 0.002881687290612633,
+          "mean_signed": -0.0003528325903835736
+        },
+        {
+          "feature": "vb_V202",
+          "tier": "tier_0",
+          "mean_abs": 0.002842241786069373,
+          "mean_signed": -0.0004044829827641002
+        },
+        {
+          "feature": "vb_V104",
+          "tier": "tier_0",
+          "mean_abs": 0.0028253664393957808,
+          "mean_signed": -0.00033538739894935427
+        },
+        {
+          "feature": "vb_V288",
+          "tier": "tier_0",
+          "mean_abs": 0.0028219111856909495,
+          "mean_signed": 0.00037924719198919
+        },
+        {
+          "feature": "id_04",
+          "tier": "tier_0",
+          "mean_abs": 0.002818202759436375,
+          "mean_signed": -0.0009996936530517998
+        },
+        {
+          "feature": "vb_V263",
+          "tier": "tier_0",
+          "mean_abs": 0.0027298295982570325,
+          "mean_signed": -0.0006490711975951698
+        },
+        {
+          "feature": "vb_V235",
+          "tier": "tier_0",
+          "mean_abs": 0.0027162873504354163,
+          "mean_signed": -0.00025833171638360526
+        },
+        {
+          "feature": "vb_V32",
+          "tier": "tier_0",
+          "mean_abs": 0.0027051577482204697,
+          "mean_signed": 0.0008322995011549441
+        },
+        {
+          "feature": "vb_V168",
+          "tier": "tier_0",
+          "mean_abs": 0.0026599551700935637,
+          "mean_signed": 0.00019889934148946395
+        },
+        {
+          "feature": "vb_V238",
+          "tier": "tier_0",
+          "mean_abs": 0.002651309991822015,
+          "mean_signed": -0.0008034084525400738
+        },
+        {
+          "feature": "vb_V246",
+          "tier": "tier_0",
+          "mean_abs": 0.0025867174020000037,
+          "mean_signed": -0.0003024777098288331
+        },
+        {
+          "feature": "vb_V209",
+          "tier": "tier_0",
+          "mean_abs": 0.002582160811577873,
+          "mean_signed": 0.0005434847564018239
+        },
+        {
+          "feature": "vb_V297",
+          "tier": "tier_0",
+          "mean_abs": 0.002539085092071018,
+          "mean_signed": -9.318295841838783e-05
+        },
+        {
+          "feature": "vb_V141",
+          "tier": "tier_0",
+          "mean_abs": 0.0024026418830731533,
+          "mean_signed": -0.00010110818544465034
+        },
+        {
+          "feature": "vb_V232",
+          "tier": "tier_0",
+          "mean_abs": 0.0023223827289838763,
+          "mean_signed": 0.000443705780847624
+        },
+        {
+          "feature": "vb_V327",
+          "tier": "tier_0",
+          "mean_abs": 0.0023074331634970885,
+          "mean_signed": -0.00010510193289798795
+        },
+        {
+          "feature": "vb_V142",
+          "tier": "tier_0",
+          "mean_abs": 0.002261761762040673,
+          "mean_signed": 0.0009322763220857411
+        },
+        {
+          "feature": "vb_V223",
+          "tier": "tier_0",
+          "mean_abs": 0.00218167396325575,
+          "mean_signed": 0.0009569366694876476
+        },
+        {
+          "feature": "vb_V220",
+          "tier": "tier_0",
+          "mean_abs": 0.002139035599363095,
+          "mean_signed": 0.0009797718735959189
+        },
+        {
+          "feature": "vb_V326",
+          "tier": "tier_0",
+          "mean_abs": 0.002037752717608022,
+          "mean_signed": 0.0006751477044512622
+        },
+        {
+          "feature": "vb_present_V167",
+          "tier": "tier_0",
+          "mean_abs": 0.0019845057777133236,
+          "mean_signed": 0.0006172587132650388
+        },
+        {
+          "feature": "vb_V123",
+          "tier": "tier_0",
+          "mean_abs": 0.001980524693402713,
+          "mean_signed": -0.00014762308974046093
+        },
+        {
+          "feature": "vb_V180",
+          "tier": "tier_0",
+          "mean_abs": 0.0019061838593075894,
+          "mean_signed": -0.00019405557878972293
+        },
+        {
+          "feature": "vb_V205",
+          "tier": "tier_0",
+          "mean_abs": 0.0018653435320926122,
+          "mean_signed": 0.0006634620862034635
+        },
+        {
+          "feature": "freq_addr2",
+          "tier": "tier_2",
+          "mean_abs": 0.001853045264491324,
+          "mean_signed": 0.000102008207630058
+        },
+        {
+          "feature": "vb_V105",
+          "tier": "tier_0",
+          "mean_abs": 0.001743618438473902,
+          "mean_signed": -8.94890151016943e-05
+        },
+        {
+          "feature": "addr2",
+          "tier": "tier_1",
+          "mean_abs": 0.0017210128730962833,
+          "mean_signed": 0.0004101521965653861
+        },
+        {
+          "feature": "vb_V236",
+          "tier": "tier_0",
+          "mean_abs": 0.0017197372648867755,
+          "mean_signed": 0.00025818895733154695
+        },
+        {
+          "feature": "vb_V95",
+          "tier": "tier_0",
+          "mean_abs": 0.0017171795260780577,
+          "mean_signed": -5.7477717326821246e-05
+        },
+        {
+          "feature": "vb_V172",
+          "tier": "tier_0",
+          "mean_abs": 0.0016615919308978486,
+          "mean_signed": 0.000729201790460029
+        },
+        {
+          "feature": "vb_V98",
+          "tier": "tier_0",
+          "mean_abs": 0.0015688923649590165,
+          "mean_signed": -0.0002380400600323386
+        },
+        {
+          "feature": "vb_V237",
+          "tier": "tier_0",
+          "mean_abs": 0.0015628790070967,
+          "mean_signed": -0.00024168946763740494
+        },
+        {
+          "feature": "vb_V177",
+          "tier": "tier_0",
+          "mean_abs": 0.001554589731957171,
+          "mean_signed": 0.0002851316035936394
+        },
+        {
+          "feature": "vb_V103",
+          "tier": "tier_0",
+          "mean_abs": 0.0015087243301409872,
+          "mean_signed": 0.00014382456555301194
+        },
+        {
+          "feature": "id_10",
+          "tier": "tier_0",
+          "mean_abs": 0.0015082432284103287,
+          "mean_signed": -0.00039093507282551387
+        },
+        {
+          "feature": "has_identity",
+          "tier": "tier_1",
+          "mean_abs": 0.001441349913304545,
+          "mean_signed": 0.0006011749044219962
+        },
+        {
+          "feature": "vb_V167",
+          "tier": "tier_0",
+          "mean_abs": 0.0013786523109517157,
+          "mean_signed": 7.157291572452064e-05
+        },
+        {
+          "feature": "vb_V284",
+          "tier": "tier_0",
+          "mean_abs": 0.0013285134819984597,
+          "mean_signed": -0.00010544110021685671
+        },
+        {
+          "feature": "vb_V121",
+          "tier": "tier_0",
+          "mean_abs": 0.0012875326790206666,
+          "mean_signed": -0.0003891911528494896
+        },
+        {
+          "feature": "vb_V249",
+          "tier": "tier_0",
+          "mean_abs": 0.0012684647183052362,
+          "mean_signed": -0.00035410420849711687
+        },
+        {
+          "feature": "vb_V211",
+          "tier": "tier_0",
+          "mean_abs": 0.0012309909021100032,
+          "mean_signed": -0.00020967414793452943
+        },
+        {
+          "feature": "id_25",
+          "tier": "tier_0",
+          "mean_abs": 0.0012069171390199647,
+          "mean_signed": 0.0004127790723432443
+        },
+        {
+          "feature": "vb_V329",
+          "tier": "tier_0",
+          "mean_abs": 0.0011827853488929328,
+          "mean_signed": -8.3575190743481e-05
+        },
+        {
+          "feature": "vb_V252",
+          "tier": "tier_0",
+          "mean_abs": 0.0011795806805940635,
+          "mean_signed": -0.00044733291041398936
+        },
+        {
+          "feature": "id_24",
+          "tier": "tier_0",
+          "mean_abs": 0.001114194901408498,
+          "mean_signed": 0.00023061679961755915
+        },
+        {
+          "feature": "vb_V182",
+          "tier": "tier_0",
+          "mean_abs": 0.0010782194009546957,
+          "mean_signed": -0.0002952467097840209
+        },
+        {
+          "feature": "vb_V334",
+          "tier": "tier_0",
+          "mean_abs": 0.00106302460981407,
+          "mean_signed": -0.0004267302649008287
+        },
+        {
+          "feature": "vb_V247",
+          "tier": "tier_0",
+          "mean_abs": 0.0010361087743534286,
+          "mean_signed": -0.00025418012342556795
+        },
+        {
+          "feature": "vb_V194",
+          "tier": "tier_0",
+          "mean_abs": 0.0008335720436668032,
+          "mean_signed": 1.669715007122649e-05
+        },
+        {
+          "feature": "vb_V227",
+          "tier": "tier_0",
+          "mean_abs": 0.0008162581302555877,
+          "mean_signed": 7.847142210746876e-05
+        },
+        {
+          "feature": "vb_V337",
+          "tier": "tier_0",
+          "mean_abs": 0.000803943687976366,
+          "mean_signed": -5.6728248971395126e-05
+        },
+        {
+          "feature": "vb_V331",
+          "tier": "tier_0",
+          "mean_abs": 0.0007997406373795305,
+          "mean_signed": -0.00042783686715306253
+        },
+        {
+          "feature": "vb_V9",
+          "tier": "tier_0",
+          "mean_abs": 0.0007936833281731896,
+          "mean_signed": -0.00015059206827708444
+        },
+        {
+          "feature": "vb_V228",
+          "tier": "tier_0",
+          "mean_abs": 0.000760704647763079,
+          "mean_signed": -0.0001538771315592103
+        },
+        {
+          "feature": "vb_V114",
+          "tier": "tier_0",
+          "mean_abs": 0.0007054662993383971,
+          "mean_signed": -0.00012767542961244748
+        },
+        {
+          "feature": "vb_V183",
+          "tier": "tier_0",
+          "mean_abs": 0.0006162048647492443,
+          "mean_signed": -3.1901244848839715e-05
+        },
+        {
+          "feature": "vb_V173",
+          "tier": "tier_0",
+          "mean_abs": 0.000565518105311463,
+          "mean_signed": 0.0002925615303303073
+        },
+        {
+          "feature": "vb_V118",
+          "tier": "tier_0",
+          "mean_abs": 0.0005534649883196951,
+          "mean_signed": -0.0001482384366673461
+        },
+        {
+          "feature": "vb_V110",
+          "tier": "tier_0",
+          "mean_abs": 0.0004445007659437378,
+          "mean_signed": 0.00010335262375058438
+        },
+        {
+          "feature": "vb_V328",
+          "tier": "tier_0",
+          "mean_abs": 0.00043370524338763757,
+          "mean_signed": -1.5201168229235915e-05
+        },
+        {
+          "feature": "vb_V322",
+          "tier": "tier_0",
+          "mean_abs": 0.00042609344870987915,
+          "mean_signed": 0.00011228153723161356
+        },
+        {
+          "feature": "vb_V190",
+          "tier": "tier_0",
+          "mean_abs": 0.0004184622897043675,
+          "mean_signed": -0.0001322459384781298
+        },
+        {
+          "feature": "vb_V175",
+          "tier": "tier_0",
+          "mean_abs": 0.00036761694001934944,
+          "mean_signed": 3.6520336329526264e-05
+        },
+        {
+          "feature": "vb_V174",
+          "tier": "tier_0",
+          "mean_abs": 0.00033489375107451417,
+          "mean_signed": -4.819078536101584e-05
+        },
+        {
+          "feature": "vb_V181",
+          "tier": "tier_0",
+          "mean_abs": 0.000267237810256781,
+          "mean_signed": -6.245312330552227e-05
+        },
+        {
+          "feature": "id_27",
+          "tier": "tier_0",
+          "mean_abs": 0.0002604612776336356,
+          "mean_signed": 9.800446572403881e-05
+        },
+        {
+          "feature": "vb_V138",
+          "tier": "tier_0",
+          "mean_abs": 0.00016608792311887516,
+          "mean_signed": -3.704344779708276e-06
+        },
+        {
+          "feature": "vb_V112",
+          "tier": "tier_0",
+          "mean_abs": 0.0001634128842290036,
+          "mean_signed": -2.5785935512201723e-05
+        },
+        {
+          "feature": "vb_V122",
+          "tier": "tier_0",
+          "mean_abs": 9.051069092466272e-05,
+          "mean_signed": -3.650531732541951e-05
+        },
+        {
+          "feature": "vb_V111",
+          "tier": "tier_0",
+          "mean_abs": 7.953522685060429e-05,
+          "mean_signed": 2.7077848584539434e-05
+        },
+        {
+          "feature": "vb_V119",
+          "tier": "tier_0",
+          "mean_abs": 5.975346821738858e-05,
+          "mean_signed": -4.572731298583611e-06
+        },
+        {
+          "feature": "vb_V120",
+          "tier": "tier_0",
+          "mean_abs": 5.8994660938845386e-05,
+          "mean_signed": -2.822906105896486e-05
+        },
+        {
+          "feature": "vb_V325",
+          "tier": "tier_0",
+          "mean_abs": 4.5418054252088334e-05,
+          "mean_signed": 2.642180829100526e-05
+        },
+        {
+          "feature": "vb_V240",
+          "tier": "tier_0",
+          "mean_abs": 3.899082554010995e-05,
+          "mean_signed": -2.1810653013367707e-05
+        },
+        {
+          "feature": "vb_V117",
+          "tier": "tier_0",
+          "mean_abs": 3.762970539895404e-06,
+          "mean_signed": 2.3278277918791203e-06
+        },
+        {
+          "feature": "vb_V65",
+          "tier": "tier_0",
+          "mean_abs": 8.706834517515994e-07,
+          "mean_signed": 4.391500662923012e-07
+        },
+        {
+          "feature": "vb_V14",
+          "tier": "tier_0",
+          "mean_abs": 6.469812050315571e-07,
+          "mean_signed": -5.684237654389424e-07
+        },
+        {
+          "feature": "vb_V27",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V41",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V1",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V68",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V88",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V89",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V107",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V241",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "id_22",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V305",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        }
+      ]
+    },
+    "test": {
+      "rows": 10000,
+      "sampled": true,
+      "of": 61585,
+      "base_value": -17.298190899382394,
+      "additivity_deviation_relative": 3.306740628257397e-05,
+      "tier_shares": {
+        "tier_0": 0.5718863526582607,
+        "tier_1": 0.24530924975490084,
+        "tier_2": 0.14333648749889158,
+        "tier_3": 0.03946791008794689
+      },
+      "ranking": [
+        {
+          "feature": "C13",
+          "tier": "tier_0",
+          "mean_abs": 0.8563727434425434,
+          "mean_signed": -0.0751153738416417
+        },
+        {
+          "feature": "C1",
+          "tier": "tier_0",
+          "mean_abs": 0.5403549986671853,
+          "mean_signed": 0.01733588851597219
+        },
+        {
+          "feature": "freq_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.457265757810464,
+          "mean_signed": 0.09215877520884551
+        },
+        {
+          "feature": "C14",
+          "tier": "tier_0",
+          "mean_abs": 0.3855248700440704,
+          "mean_signed": 0.015451290376462172
+        },
+        {
+          "feature": "amt_mean_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.3610498650897532,
+          "mean_signed": 0.00013904398357901814
+        },
+        {
+          "feature": "amt_z_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.3121545956710462,
+          "mean_signed": -0.03151735333394282
+        },
+        {
+          "feature": "card1",
+          "tier": "tier_1",
+          "mean_abs": 0.3047627362542831,
+          "mean_signed": -0.02029785927965787
+        },
+        {
+          "feature": "D1",
+          "tier": "tier_0",
+          "mean_abs": 0.2994886384925859,
+          "mean_signed": -0.08774834998429244
+        },
+        {
+          "feature": "vel_n7d_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.287182629904541,
+          "mean_signed": -0.018910573387400053
+        },
+        {
+          "feature": "C11",
+          "tier": "tier_0",
+          "mean_abs": 0.280183943100403,
+          "mean_signed": 0.1025001349529457
+        },
+        {
+          "feature": "TransactionAmt",
+          "tier": "tier_1",
+          "mean_abs": 0.27942481515848455,
+          "mean_signed": 0.003116020291700259
+        },
+        {
+          "feature": "card6",
+          "tier": "tier_1",
+          "mean_abs": 0.2777960676612103,
+          "mean_signed": -0.015258334543257146
+        },
+        {
+          "feature": "C2",
+          "tier": "tier_0",
+          "mean_abs": 0.276200486229826,
+          "mean_signed": 0.002943178206620481
+        },
+        {
+          "feature": "M5",
+          "tier": "tier_1",
+          "mean_abs": 0.2685697947148395,
+          "mean_signed": -0.0220645699423153
+        },
+        {
+          "feature": "P_emaildomain",
+          "tier": "tier_1",
+          "mean_abs": 0.2583016658044245,
+          "mean_signed": 0.014065334124931524
+        },
+        {
+          "feature": "freq_card2",
+          "tier": "tier_2",
+          "mean_abs": 0.2518879588386307,
+          "mean_signed": -0.0005953548093458842
+        },
+        {
+          "feature": "M4",
+          "tier": "tier_1",
+          "mean_abs": 0.23918017575964715,
+          "mean_signed": -0.005149475052557899
+        },
+        {
+          "feature": "addr1",
+          "tier": "tier_1",
+          "mean_abs": 0.23785984300696705,
+          "mean_signed": 0.0021398616564415585
+        },
+        {
+          "feature": "card2",
+          "tier": "tier_1",
+          "mean_abs": 0.23460140476109428,
+          "mean_signed": 0.01681838783615827
+        },
+        {
+          "feature": "hour",
+          "tier": "tier_1",
+          "mean_abs": 0.22460797744975838,
+          "mean_signed": 0.007582729460038656
+        },
+        {
+          "feature": "dist1",
+          "tier": "tier_1",
+          "mean_abs": 0.21119750172830765,
+          "mean_signed": -0.009615734472201976
+        },
+        {
+          "feature": "vb_V69",
+          "tier": "tier_0",
+          "mean_abs": 0.20988128485175142,
+          "mean_signed": -0.006581499217234096
+        },
+        {
+          "feature": "amt_absz_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.2081519911405649,
+          "mean_signed": 0.003665869010495544
+        },
+        {
+          "feature": "D15",
+          "tier": "tier_0",
+          "mean_abs": 0.2071686420614071,
+          "mean_signed": 0.0051737380113639425
+        },
+        {
+          "feature": "C6",
+          "tier": "tier_0",
+          "mean_abs": 0.19211055313737996,
+          "mean_signed": 0.03408958784963795
+        },
+        {
+          "feature": "amt_mean_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.19195161822390705,
+          "mean_signed": 0.02399687347201466
+        },
+        {
+          "feature": "D2",
+          "tier": "tier_0",
+          "mean_abs": 0.19128077176799288,
+          "mean_signed": -0.025428283942138478
+        },
+        {
+          "feature": "D4",
+          "tier": "tier_0",
+          "mean_abs": 0.19014611730867065,
+          "mean_signed": -0.046789091289742846
+        },
+        {
+          "feature": "amt_absz_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.18253198474721422,
+          "mean_signed": 0.006434203358049258
+        },
+        {
+          "feature": "vel_recency_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.18078657032759632,
+          "mean_signed": 0.028753464053603347
+        },
+        {
+          "feature": "vb_V307",
+          "tier": "tier_0",
+          "mean_abs": 0.1780392136750881,
+          "mean_signed": 0.04799082763834466
+        },
+        {
+          "feature": "amt_whole_dollar",
+          "tier": "tier_1",
+          "mean_abs": 0.17483066658588825,
+          "mean_signed": 0.007011654302132768
+        },
+        {
+          "feature": "vel_n24h_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.1741881367558198,
+          "mean_signed": 0.07363485280568015
+        },
+        {
+          "feature": "C5",
+          "tier": "tier_0",
+          "mean_abs": 0.17342079505514124,
+          "mean_signed": -0.0079667962053818
+        },
+        {
+          "feature": "freq_addr1",
+          "tier": "tier_2",
+          "mean_abs": 0.17042546011872992,
+          "mean_signed": 0.00595316011596065
+        },
+        {
+          "feature": "D10",
+          "tier": "tier_0",
+          "mean_abs": 0.16895463258424348,
+          "mean_signed": 0.022168363898741286
+        },
+        {
+          "feature": "M6",
+          "tier": "tier_1",
+          "mean_abs": 0.1642819651733843,
+          "mean_signed": -0.02547290231781502
+        },
+        {
+          "feature": "id_31",
+          "tier": "tier_1",
+          "mean_abs": 0.1620708146895543,
+          "mean_signed": 0.11520673350777004
+        },
+        {
+          "feature": "M3",
+          "tier": "tier_1",
+          "mean_abs": 0.15328205316694962,
+          "mean_signed": -0.031319257478998296
+        },
+        {
+          "feature": "amt_z_card1",
+          "tier": "tier_2",
+          "mean_abs": 0.15299362540228179,
+          "mean_signed": 0.014574579688971271
+        },
+        {
+          "feature": "C9",
+          "tier": "tier_0",
+          "mean_abs": 0.14494595996687837,
+          "mean_signed": 0.06905115107420204
+        },
+        {
+          "feature": "C10",
+          "tier": "tier_0",
+          "mean_abs": 0.13994276275363485,
+          "mean_signed": 0.002376584509606326
+        },
+        {
+          "feature": "D8",
+          "tier": "tier_0",
+          "mean_abs": 0.13192617589687144,
+          "mean_signed": 0.03261157215478949
+        },
+        {
+          "feature": "D11",
+          "tier": "tier_0",
+          "mean_abs": 0.13065928517751088,
+          "mean_signed": -0.05395870472643431
+        },
+        {
+          "feature": "id_02",
+          "tier": "tier_0",
+          "mean_abs": 0.12398886805075854,
+          "mean_signed": 0.038223290272265266
+        },
+        {
+          "feature": "vb_V310",
+          "tier": "tier_0",
+          "mean_abs": 0.11822911020934139,
+          "mean_signed": -0.006399965730084144
+        },
+        {
+          "feature": "R_emaildomain",
+          "tier": "tier_1",
+          "mean_abs": 0.11781842663185771,
+          "mean_signed": 0.015620778217108557
+        },
+        {
+          "feature": "weekday",
+          "tier": "tier_1",
+          "mean_abs": 0.1171612475811135,
+          "mean_signed": 0.004003095399174484
+        },
+        {
+          "feature": "vb_V130",
+          "tier": "tier_0",
+          "mean_abs": 0.10767054505200772,
+          "mean_signed": -0.013572364916636874
+        },
+        {
+          "feature": "vb_V318",
+          "tier": "tier_0",
+          "mean_abs": 0.10537255725952113,
+          "mean_signed": 0.004692108182777921
+        },
+        {
+          "feature": "card5",
+          "tier": "tier_1",
+          "mean_abs": 0.10363674401235501,
+          "mean_signed": 0.004287958499587731
+        },
+        {
+          "feature": "DeviceInfo",
+          "tier": "tier_1",
+          "mean_abs": 0.10308951626000862,
+          "mean_signed": 0.0027847841950076383
+        },
+        {
+          "feature": "id_20",
+          "tier": "tier_0",
+          "mean_abs": 0.10242821072819432,
+          "mean_signed": -0.008454789907150052
+        },
+        {
+          "feature": "vb_V82",
+          "tier": "tier_0",
+          "mean_abs": 0.0968790333015824,
+          "mean_signed": -0.040483529332079146
+        },
+        {
+          "feature": "vb_V258",
+          "tier": "tier_0",
+          "mean_abs": 0.09594636295976842,
+          "mean_signed": 0.0026728755749450004
+        },
+        {
+          "feature": "D3",
+          "tier": "tier_0",
+          "mean_abs": 0.09459507219741309,
+          "mean_signed": -0.005151677150284547
+        },
+        {
+          "feature": "vb_V53",
+          "tier": "tier_0",
+          "mean_abs": 0.09161601128141644,
+          "mean_signed": 0.02319436926318564
+        },
+        {
+          "feature": "vb_V90",
+          "tier": "tier_0",
+          "mean_abs": 0.08828463089188844,
+          "mean_signed": -0.0022966444327618047
+        },
+        {
+          "feature": "vb_V48",
+          "tier": "tier_0",
+          "mean_abs": 0.08523971033611624,
+          "mean_signed": -0.0035710859807338807
+        },
+        {
+          "feature": "M7",
+          "tier": "tier_1",
+          "mean_abs": 0.08516023578778606,
+          "mean_signed": -0.04250972368741042
+        },
+        {
+          "feature": "C8",
+          "tier": "tier_0",
+          "mean_abs": 0.08373409481652391,
+          "mean_signed": 0.07577728101693108
+        },
+        {
+          "feature": "id_30",
+          "tier": "tier_1",
+          "mean_abs": 0.08107760190423481,
+          "mean_signed": 0.012554030631292299
+        },
+        {
+          "feature": "D13",
+          "tier": "tier_0",
+          "mean_abs": 0.0810515009910123,
+          "mean_signed": -0.04092441962953925
+        },
+        {
+          "feature": "vb_V127",
+          "tier": "tier_0",
+          "mean_abs": 0.07883830461268833,
+          "mean_signed": 0.0050372422526261534
+        },
+        {
+          "feature": "freq_card5",
+          "tier": "tier_2",
+          "mean_abs": 0.07670402947651135,
+          "mean_signed": -9.515142334222161e-05
+        },
+        {
+          "feature": "id_19",
+          "tier": "tier_0",
+          "mean_abs": 0.07521157871309271,
+          "mean_signed": -0.0113715281491914
+        },
+        {
+          "feature": "vb_V285",
+          "tier": "tier_0",
+          "mean_abs": 0.07416991881269024,
+          "mean_signed": -0.005843367672393244
+        },
+        {
+          "feature": "vb_present_V53",
+          "tier": "tier_0",
+          "mean_abs": 0.07197988669696069,
+          "mean_signed": 0.026569428883827503
+        },
+        {
+          "feature": "freq_card3",
+          "tier": "tier_2",
+          "mean_abs": 0.06994603019160725,
+          "mean_signed": 0.010524927701461191
+        },
+        {
+          "feature": "ProductCD",
+          "tier": "tier_1",
+          "mean_abs": 0.06963738105325545,
+          "mean_signed": 0.014928757424742712
+        },
+        {
+          "feature": "vb_V313",
+          "tier": "tier_0",
+          "mean_abs": 0.0689714178368671,
+          "mean_signed": -0.005226190063985131
+        },
+        {
+          "feature": "D5",
+          "tier": "tier_0",
+          "mean_abs": 0.06663755591256162,
+          "mean_signed": 0.0051465819413200175
+        },
+        {
+          "feature": "vb_V29",
+          "tier": "tier_0",
+          "mean_abs": 0.06536997273735781,
+          "mean_signed": 0.0006222197355909714
+        },
+        {
+          "feature": "M9",
+          "tier": "tier_1",
+          "mean_abs": 0.06393301580737393,
+          "mean_signed": -0.021588342525328194
+        },
+        {
+          "feature": "vb_V99",
+          "tier": "tier_0",
+          "mean_abs": 0.0621106521485312,
+          "mean_signed": -0.0005499981857891745
+        },
+        {
+          "feature": "vb_V312",
+          "tier": "tier_0",
+          "mean_abs": 0.06100017694489123,
+          "mean_signed": 0.016236336521904766
+        },
+        {
+          "feature": "id_13",
+          "tier": "tier_0",
+          "mean_abs": 0.06070841858584615,
+          "mean_signed": -0.0030427264690646204
+        },
+        {
+          "feature": "id_05",
+          "tier": "tier_0",
+          "mean_abs": 0.05768255106962503,
+          "mean_signed": -0.00212767102016456
+        },
+        {
+          "feature": "M8",
+          "tier": "tier_1",
+          "mean_abs": 0.05594118426690503,
+          "mean_signed": -0.027015378962588984
+        },
+        {
+          "feature": "vb_V283",
+          "tier": "tier_0",
+          "mean_abs": 0.05420482998088063,
+          "mean_signed": 8.411228909753055e-05
+        },
+        {
+          "feature": "vb_V164",
+          "tier": "tier_0",
+          "mean_abs": 0.05371612558088934,
+          "mean_signed": 0.014054481488564042
+        },
+        {
+          "feature": "id_33",
+          "tier": "tier_1",
+          "mean_abs": 0.052361607051687076,
+          "mean_signed": 0.016232641921613906
+        },
+        {
+          "feature": "vb_V314",
+          "tier": "tier_0",
+          "mean_abs": 0.05078145538127745,
+          "mean_signed": -0.024478597487470617
+        },
+        {
+          "feature": "vb_V83",
+          "tier": "tier_0",
+          "mean_abs": 0.050589614352400405,
+          "mean_signed": 0.031212873307242962
+        },
+        {
+          "feature": "freq_DeviceInfo",
+          "tier": "tier_2",
+          "mean_abs": 0.05019719630309121,
+          "mean_signed": 0.006427429008249567
+        },
+        {
+          "feature": "id_01",
+          "tier": "tier_0",
+          "mean_abs": 0.048473864692810266,
+          "mean_signed": 0.005992779108567789
+        },
+        {
+          "feature": "vb_V189",
+          "tier": "tier_0",
+          "mean_abs": 0.048311096076579005,
+          "mean_signed": 0.002418157986677457
+        },
+        {
+          "feature": "id_38",
+          "tier": "tier_0",
+          "mean_abs": 0.04795763740073975,
+          "mean_signed": -0.011863969078666547
+        },
+        {
+          "feature": "vb_V57",
+          "tier": "tier_0",
+          "mean_abs": 0.04741646242813116,
+          "mean_signed": -0.004251672973427709
+        },
+        {
+          "feature": "vb_V133",
+          "tier": "tier_0",
+          "mean_abs": 0.04684296838563766,
+          "mean_signed": 0.006501522961408513
+        },
+        {
+          "feature": "vb_V145",
+          "tier": "tier_0",
+          "mean_abs": 0.04507701822806072,
+          "mean_signed": 0.01174004698323834
+        },
+        {
+          "feature": "C12",
+          "tier": "tier_0",
+          "mean_abs": 0.04506834352217829,
+          "mean_signed": -0.010489901986614866
+        },
+        {
+          "feature": "vb_V281",
+          "tier": "tier_0",
+          "mean_abs": 0.044955173400522234,
+          "mean_signed": 0.008476059644793572
+        },
+        {
+          "feature": "vel_n1h_card1",
+          "tier": "tier_3",
+          "mean_abs": 0.04363992466878523,
+          "mean_signed": -0.01682876042527179
+        },
+        {
+          "feature": "vb_V102",
+          "tier": "tier_0",
+          "mean_abs": 0.04343134546850315,
+          "mean_signed": 0.009357307134018356
+        },
+        {
+          "feature": "vb_present_V12",
+          "tier": "tier_0",
+          "mean_abs": 0.042789423737145775,
+          "mean_signed": 0.00780681835702852
+        },
+        {
+          "feature": "vb_V131",
+          "tier": "tier_0",
+          "mean_abs": 0.042773963309166295,
+          "mean_signed": 0.013593706866096249
+        },
+        {
+          "feature": "D9",
+          "tier": "tier_0",
+          "mean_abs": 0.04258849522722523,
+          "mean_signed": -0.005663107161433121
+        },
+        {
+          "feature": "vb_V35",
+          "tier": "tier_0",
+          "mean_abs": 0.040598713818403895,
+          "mean_signed": -0.002702279939170529
+        },
+        {
+          "feature": "vb_V143",
+          "tier": "tier_0",
+          "mean_abs": 0.04057790083487207,
+          "mean_signed": 0.006901904952946562
+        },
+        {
+          "feature": "vb_V62",
+          "tier": "tier_0",
+          "mean_abs": 0.04019013554526788,
+          "mean_signed": 0.006671789460250021
+        },
+        {
+          "feature": "id_14",
+          "tier": "tier_1",
+          "mean_abs": 0.03983436559872104,
+          "mean_signed": 0.012118717742872579
+        },
+        {
+          "feature": "vb_V75",
+          "tier": "tier_0",
+          "mean_abs": 0.03814540570718632,
+          "mean_signed": -0.0016743465015202623
+        },
+        {
+          "feature": "id_06",
+          "tier": "tier_0",
+          "mean_abs": 0.03801744130969186,
+          "mean_signed": -0.007189534319317103
+        },
+        {
+          "feature": "C3",
+          "tier": "tier_0",
+          "mean_abs": 0.03715184842629663,
+          "mean_signed": -0.006561110468652839
+        },
+        {
+          "feature": "id_17",
+          "tier": "tier_0",
+          "mean_abs": 0.036701598386669074,
+          "mean_signed": 0.003966939451073493
+        },
+        {
+          "feature": "vb_V38",
+          "tier": "tier_0",
+          "mean_abs": 0.036613176874887673,
+          "mean_signed": 0.009714776180218782
+        },
+        {
+          "feature": "dist2",
+          "tier": "tier_1",
+          "mean_abs": 0.036560802388548856,
+          "mean_signed": 0.007337622714428565
+        },
+        {
+          "feature": "vb_V12",
+          "tier": "tier_0",
+          "mean_abs": 0.03638780831829017,
+          "mean_signed": 0.00073697745847497
+        },
+        {
+          "feature": "vb_V308",
+          "tier": "tier_0",
+          "mean_abs": 0.03613671413518797,
+          "mean_signed": -0.0006355506674001531
+        },
+        {
+          "feature": "vb_V56",
+          "tier": "tier_0",
+          "mean_abs": 0.03570094370843745,
+          "mean_signed": -0.009323641472183694
+        },
+        {
+          "feature": "vb_V87",
+          "tier": "tier_0",
+          "mean_abs": 0.03535815226307974,
+          "mean_signed": 0.006201995699036827
+        },
+        {
+          "feature": "vb_V55",
+          "tier": "tier_0",
+          "mean_abs": 0.03517174936673675,
+          "mean_signed": -0.005105901780163586
+        },
+        {
+          "feature": "vb_V136",
+          "tier": "tier_0",
+          "mean_abs": 0.034015441058760254,
+          "mean_signed": 0.010504507911516121
+        },
+        {
+          "feature": "D6",
+          "tier": "tier_0",
+          "mean_abs": 0.033798254885911976,
+          "mean_signed": -0.010200339338248094
+        },
+        {
+          "feature": "vb_V10",
+          "tier": "tier_0",
+          "mean_abs": 0.033482924913996445,
+          "mean_signed": -0.009565843796479217
+        },
+        {
+          "feature": "C4",
+          "tier": "tier_0",
+          "mean_abs": 0.03247903369564263,
+          "mean_signed": 0.007434400472847348
+        },
+        {
+          "feature": "vb_V277",
+          "tier": "tier_0",
+          "mean_abs": 0.031039729224479857,
+          "mean_signed": 0.007731744362662809
+        },
+        {
+          "feature": "id_16",
+          "tier": "tier_0",
+          "mean_abs": 0.03073059905505528,
+          "mean_signed": -0.007947550328445992
+        },
+        {
+          "feature": "vb_V128",
+          "tier": "tier_0",
+          "mean_abs": 0.0301700360913776,
+          "mean_signed": 0.007446258793812909
+        },
+        {
+          "feature": "amt_round_band_product",
+          "tier": "tier_1",
+          "mean_abs": 0.030012907292920745,
+          "mean_signed": -0.006183638572122077
+        },
+        {
+          "feature": "id_37",
+          "tier": "tier_0",
+          "mean_abs": 0.029697804423123232,
+          "mean_signed": -0.008615038155952312
+        },
+        {
+          "feature": "id_34",
+          "tier": "tier_0",
+          "mean_abs": 0.029091724333876082,
+          "mean_signed": 0.006427511633454429
+        },
+        {
+          "feature": "vb_V280",
+          "tier": "tier_0",
+          "mean_abs": 0.02893671117984174,
+          "mean_signed": -0.02250900806708805
+        },
+        {
+          "feature": "vb_V124",
+          "tier": "tier_0",
+          "mean_abs": 0.02735215463092949,
+          "mean_signed": -0.0025672318678680896
+        },
+        {
+          "feature": "vb_V139",
+          "tier": "tier_0",
+          "mean_abs": 0.027190376377516316,
+          "mean_signed": 0.002595404944856476
+        },
+        {
+          "feature": "DeviceType",
+          "tier": "tier_1",
+          "mean_abs": 0.026924245679202853,
+          "mean_signed": -0.00481799127747411
+        },
+        {
+          "feature": "vb_V44",
+          "tier": "tier_0",
+          "mean_abs": 0.026106773404583516,
+          "mean_signed": 0.0007951525466405621
+        },
+        {
+          "feature": "vb_V316",
+          "tier": "tier_0",
+          "mean_abs": 0.025847885343776373,
+          "mean_signed": 0.007245456058314874
+        },
+        {
+          "feature": "vb_present_V1",
+          "tier": "tier_0",
+          "mean_abs": 0.02584643242659611,
+          "mean_signed": 0.018202850131442065
+        },
+        {
+          "feature": "vb_V309",
+          "tier": "tier_0",
+          "mean_abs": 0.025400785012963972,
+          "mean_signed": 0.001290792283373537
+        },
+        {
+          "feature": "vb_V126",
+          "tier": "tier_0",
+          "mean_abs": 0.02525013152371177,
+          "mean_signed": -0.008185134264736394
+        },
+        {
+          "feature": "vb_V61",
+          "tier": "tier_0",
+          "mean_abs": 0.023803351671937277,
+          "mean_signed": -0.004095670269333469
+        },
+        {
+          "feature": "vb_V96",
+          "tier": "tier_0",
+          "mean_abs": 0.02362112433795564,
+          "mean_signed": 0.008505483395972643
+        },
+        {
+          "feature": "D14",
+          "tier": "tier_0",
+          "mean_abs": 0.02302485639925252,
+          "mean_signed": 0.006675117258328538
+        },
+        {
+          "feature": "vb_V261",
+          "tier": "tier_0",
+          "mean_abs": 0.022668882392761477,
+          "mean_signed": 0.0035593834017903724
+        },
+        {
+          "feature": "vb_V257",
+          "tier": "tier_0",
+          "mean_abs": 0.022418146348238688,
+          "mean_signed": 0.004602841172966766
+        },
+        {
+          "feature": "vb_V78",
+          "tier": "tier_0",
+          "mean_abs": 0.02218138465911356,
+          "mean_signed": 0.005300993105307797
+        },
+        {
+          "feature": "vb_V19",
+          "tier": "tier_0",
+          "mean_abs": 0.022108165656521846,
+          "mean_signed": 0.0005434307940117037
+        },
+        {
+          "feature": "vb_V20",
+          "tier": "tier_0",
+          "mean_abs": 0.0220004773586913,
+          "mean_signed": 0.00474205273059423
+        },
+        {
+          "feature": "vb_V264",
+          "tier": "tier_0",
+          "mean_abs": 0.0209804830515981,
+          "mean_signed": 0.0022741060764818796
+        },
+        {
+          "feature": "vb_V17",
+          "tier": "tier_0",
+          "mean_abs": 0.02093408047681457,
+          "mean_signed": 0.001541420996870617
+        },
+        {
+          "feature": "vb_V47",
+          "tier": "tier_0",
+          "mean_abs": 0.020511718751418075,
+          "mean_signed": -0.0004408140875685606
+        },
+        {
+          "feature": "vb_V67",
+          "tier": "tier_0",
+          "mean_abs": 0.020510644760796153,
+          "mean_signed": 0.0031170280507186723
+        },
+        {
+          "feature": "vb_V7",
+          "tier": "tier_0",
+          "mean_abs": 0.020235125533324665,
+          "mean_signed": 0.008881494474177775
+        },
+        {
+          "feature": "card3",
+          "tier": "tier_1",
+          "mean_abs": 0.019886877706456477,
+          "mean_signed": -0.003855873436578495
+        },
+        {
+          "feature": "vb_V296",
+          "tier": "tier_0",
+          "mean_abs": 0.01958663726841649,
+          "mean_signed": 0.005319728014496111
+        },
+        {
+          "feature": "M2",
+          "tier": "tier_1",
+          "mean_abs": 0.019459986351573436,
+          "mean_signed": 0.0036487520458290696
+        },
+        {
+          "feature": "id_09",
+          "tier": "tier_0",
+          "mean_abs": 0.019088861556911894,
+          "mean_signed": -0.0030136854208317565
+        },
+        {
+          "feature": "vb_V338",
+          "tier": "tier_0",
+          "mean_abs": 0.01877218415407611,
+          "mean_signed": -0.009333728850563315
+        },
+        {
+          "feature": "vb_V77",
+          "tier": "tier_0",
+          "mean_abs": 0.01816363818748633,
+          "mean_signed": 6.976369632931368e-06
+        },
+        {
+          "feature": "vb_V208",
+          "tier": "tier_0",
+          "mean_abs": 0.017119028331734478,
+          "mean_signed": 0.00747512918360632
+        },
+        {
+          "feature": "vb_V234",
+          "tier": "tier_0",
+          "mean_abs": 0.016990907624976067,
+          "mean_signed": -0.0104971872747212
+        },
+        {
+          "feature": "vb_V221",
+          "tier": "tier_0",
+          "mean_abs": 0.016814040523120133,
+          "mean_signed": -0.0002961576501319616
+        },
+        {
+          "feature": "vb_V268",
+          "tier": "tier_0",
+          "mean_abs": 0.016758176538015944,
+          "mean_signed": 2.2753865699569915e-05
+        },
+        {
+          "feature": "vb_V79",
+          "tier": "tier_0",
+          "mean_abs": 0.016714383587960333,
+          "mean_signed": 0.008306992046496051
+        },
+        {
+          "feature": "vb_V200",
+          "tier": "tier_0",
+          "mean_abs": 0.01669405765759079,
+          "mean_signed": 0.0032822537394156122
+        },
+        {
+          "feature": "vb_V59",
+          "tier": "tier_0",
+          "mean_abs": 0.016653178098227715,
+          "mean_signed": -0.004511696765754402
+        },
+        {
+          "feature": "id_28",
+          "tier": "tier_0",
+          "mean_abs": 0.016614975858501423,
+          "mean_signed": -0.0002187295278260194
+        },
+        {
+          "feature": "vb_V148",
+          "tier": "tier_0",
+          "mean_abs": 0.016318714082878515,
+          "mean_signed": 0.003128464082188403
+        },
+        {
+          "feature": "vb_V291",
+          "tier": "tier_0",
+          "mean_abs": 0.016006422301435688,
+          "mean_signed": 0.00037423897785583926
+        },
+        {
+          "feature": "vb_V64",
+          "tier": "tier_0",
+          "mean_abs": 0.015646546982694545,
+          "mean_signed": -0.0021399498266395384
+        },
+        {
+          "feature": "amt_round_band",
+          "tier": "tier_1",
+          "mean_abs": 0.015308729022504667,
+          "mean_signed": 0.005672284883788511
+        },
+        {
+          "feature": "vb_V2",
+          "tier": "tier_0",
+          "mean_abs": 0.0152737294772339,
+          "mean_signed": -0.00917854006169285
+        },
+        {
+          "feature": "vb_V266",
+          "tier": "tier_0",
+          "mean_abs": 0.015219729890376541,
+          "mean_signed": 0.001867185157331612
+        },
+        {
+          "feature": "card4",
+          "tier": "tier_1",
+          "mean_abs": 0.015214303078914278,
+          "mean_signed": 0.0011217319790903203
+        },
+        {
+          "feature": "vb_V158",
+          "tier": "tier_0",
+          "mean_abs": 0.015118940592911046,
+          "mean_signed": 0.0010905024605959246
+        },
+        {
+          "feature": "id_12",
+          "tier": "tier_0",
+          "mean_abs": 0.015083467164428686,
+          "mean_signed": -0.007134454785087222
+        },
+        {
+          "feature": "vb_V215",
+          "tier": "tier_0",
+          "mean_abs": 0.014856702044359096,
+          "mean_signed": 0.008029941764768228
+        },
+        {
+          "feature": "vb_V50",
+          "tier": "tier_0",
+          "mean_abs": 0.014797113598774345,
+          "mean_signed": 0.006980381925352407
+        },
+        {
+          "feature": "vb_V332",
+          "tier": "tier_0",
+          "mean_abs": 0.014456841572282102,
+          "mean_signed": 0.0046536548874571955
+        },
+        {
+          "feature": "vb_V66",
+          "tier": "tier_0",
+          "mean_abs": 0.01434164756011848,
+          "mean_signed": 0.0033233561842826243
+        },
+        {
+          "feature": "D12",
+          "tier": "tier_0",
+          "mean_abs": 0.013974969200761191,
+          "mean_signed": -0.004574473245307243
+        },
+        {
+          "feature": "vb_V135",
+          "tier": "tier_0",
+          "mean_abs": 0.013759629665061437,
+          "mean_signed": -0.004813309917072393
+        },
+        {
+          "feature": "vb_V24",
+          "tier": "tier_0",
+          "mean_abs": 0.013034109164844711,
+          "mean_signed": -0.0009227723344997843
+        },
+        {
+          "feature": "vb_V8",
+          "tier": "tier_0",
+          "mean_abs": 0.012567984397321335,
+          "mean_signed": -0.007744112926294758
+        },
+        {
+          "feature": "vb_V323",
+          "tier": "tier_0",
+          "mean_abs": 0.012551446019523621,
+          "mean_signed": 0.001092362804278482
+        },
+        {
+          "feature": "vb_V23",
+          "tier": "tier_0",
+          "mean_abs": 0.01232594587101069,
+          "mean_signed": -0.0015593284299721124
+        },
+        {
+          "feature": "vb_V306",
+          "tier": "tier_0",
+          "mean_abs": 0.011864987958860937,
+          "mean_signed": 0.0028093612183962315
+        },
+        {
+          "feature": "vb_V282",
+          "tier": "tier_0",
+          "mean_abs": 0.011769600018852598,
+          "mean_signed": -0.0033133451832073092
+        },
+        {
+          "feature": "vb_V86",
+          "tier": "tier_0",
+          "mean_abs": 0.011726257825398186,
+          "mean_signed": 0.0006823250681161509
+        },
+        {
+          "feature": "vb_V37",
+          "tier": "tier_0",
+          "mean_abs": 0.011597109445903633,
+          "mean_signed": 0.0014581412383417145
+        },
+        {
+          "feature": "vb_V276",
+          "tier": "tier_0",
+          "mean_abs": 0.011517656654352145,
+          "mean_signed": -0.0042027358358902
+        },
+        {
+          "feature": "vb_V206",
+          "tier": "tier_0",
+          "mean_abs": 0.011416049564749562,
+          "mean_signed": 0.003592595865139598
+        },
+        {
+          "feature": "id_29",
+          "tier": "tier_0",
+          "mean_abs": 0.011323419235558033,
+          "mean_signed": -0.001861263301454486
+        },
+        {
+          "feature": "vb_V3",
+          "tier": "tier_0",
+          "mean_abs": 0.011289199049313754,
+          "mean_signed": 0.00560028082519294
+        },
+        {
+          "feature": "vb_V129",
+          "tier": "tier_0",
+          "mean_abs": 0.011256930175820204,
+          "mean_signed": 0.0017187648018546788
+        },
+        {
+          "feature": "vb_V134",
+          "tier": "tier_0",
+          "mean_abs": 0.01099773311391349,
+          "mean_signed": -0.00264459362286872
+        },
+        {
+          "feature": "vb_present_V75",
+          "tier": "tier_0",
+          "mean_abs": 0.0109813714973565,
+          "mean_signed": -0.002907554907304584
+        },
+        {
+          "feature": "vb_present_V35",
+          "tier": "tier_0",
+          "mean_abs": 0.010874097935692332,
+          "mean_signed": -0.00011807389821887961
+        },
+        {
+          "feature": "vb_V273",
+          "tier": "tier_0",
+          "mean_abs": 0.010809398941648932,
+          "mean_signed": -0.0013626676154861982
+        },
+        {
+          "feature": "vb_V242",
+          "tier": "tier_0",
+          "mean_abs": 0.010474956594928921,
+          "mean_signed": -4.356101719206223e-05
+        },
+        {
+          "feature": "vb_V212",
+          "tier": "tier_0",
+          "mean_abs": 0.010455719791659865,
+          "mean_signed": 0.004049893742275861
+        },
+        {
+          "feature": "vb_V198",
+          "tier": "tier_0",
+          "mean_abs": 0.010371052754269406,
+          "mean_signed": 0.001293950570796127
+        },
+        {
+          "feature": "vb_V255",
+          "tier": "tier_0",
+          "mean_abs": 0.01033755549378351,
+          "mean_signed": 0.0008210668574857769
+        },
+        {
+          "feature": "vb_V233",
+          "tier": "tier_0",
+          "mean_abs": 0.010211343817112454,
+          "mean_signed": -0.0017318836707541259
+        },
+        {
+          "feature": "vb_V293",
+          "tier": "tier_0",
+          "mean_abs": 0.010031070771020653,
+          "mean_signed": -0.003151058686205006
+        },
+        {
+          "feature": "id_15",
+          "tier": "tier_0",
+          "mean_abs": 0.009845829484065378,
+          "mean_signed": 0.0027840937296240865
+        },
+        {
+          "feature": "vb_V109",
+          "tier": "tier_0",
+          "mean_abs": 0.009817353518316316,
+          "mean_signed": 0.0037695866907627175
+        },
+        {
+          "feature": "vb_V51",
+          "tier": "tier_0",
+          "mean_abs": 0.009598154586187383,
+          "mean_signed": 0.008110296518517943
+        },
+        {
+          "feature": "M1",
+          "tier": "tier_1",
+          "mean_abs": 0.00952867184930514,
+          "mean_signed": -0.0004096213665895786
+        },
+        {
+          "feature": "vb_V226",
+          "tier": "tier_0",
+          "mean_abs": 0.009307376345797173,
+          "mean_signed": -0.0014737825092754496
+        },
+        {
+          "feature": "vb_V4",
+          "tier": "tier_0",
+          "mean_abs": 0.009258775400462022,
+          "mean_signed": -0.003216711110552678
+        },
+        {
+          "feature": "vb_V25",
+          "tier": "tier_0",
+          "mean_abs": 0.009110758678039843,
+          "mean_signed": 0.0013466281321631358
+        },
+        {
+          "feature": "vb_V250",
+          "tier": "tier_0",
+          "mean_abs": 0.008764830535457912,
+          "mean_signed": 0.00196897573921068
+        },
+        {
+          "feature": "vb_V287",
+          "tier": "tier_0",
+          "mean_abs": 0.008675662585212799,
+          "mean_signed": -0.0022500160799656475
+        },
+        {
+          "feature": "vb_V26",
+          "tier": "tier_0",
+          "mean_abs": 0.008595871533024333,
+          "mean_signed": 0.0005360555131847478
+        },
+        {
+          "feature": "vb_V188",
+          "tier": "tier_0",
+          "mean_abs": 0.008342308323851369,
+          "mean_signed": 0.00037217779629592754
+        },
+        {
+          "feature": "vb_V168",
+          "tier": "tier_0",
+          "mean_abs": 0.008319852770287019,
+          "mean_signed": -0.0055332094972770805
+        },
+        {
+          "feature": "vb_V326",
+          "tier": "tier_0",
+          "mean_abs": 0.008305731955165093,
+          "mean_signed": 0.007007993416496975
+        },
+        {
+          "feature": "vb_V108",
+          "tier": "tier_0",
+          "mean_abs": 0.008229831691746254,
+          "mean_signed": 0.002776245332045884
+        },
+        {
+          "feature": "vb_V289",
+          "tier": "tier_0",
+          "mean_abs": 0.008150788303022991,
+          "mean_signed": -0.001870014167026789
+        },
+        {
+          "feature": "vb_V209",
+          "tier": "tier_0",
+          "mean_abs": 0.008125792444554332,
+          "mean_signed": -0.004811449074429728
+        },
+        {
+          "feature": "vb_V166",
+          "tier": "tier_0",
+          "mean_abs": 0.007827378572570093,
+          "mean_signed": 0.0022296810543784534
+        },
+        {
+          "feature": "vb_V46",
+          "tier": "tier_0",
+          "mean_abs": 0.007711472344889854,
+          "mean_signed": 0.0013025393853259234
+        },
+        {
+          "feature": "vb_V298",
+          "tier": "tier_0",
+          "mean_abs": 0.007622723952025865,
+          "mean_signed": 0.0016444249654522399
+        },
+        {
+          "feature": "D7",
+          "tier": "tier_0",
+          "mean_abs": 0.007613489071011386,
+          "mean_signed": -0.0006273101901756796
+        },
+        {
+          "feature": "vb_V217",
+          "tier": "tier_0",
+          "mean_abs": 0.007054065395622182,
+          "mean_signed": -0.0010864782828295479
+        },
+        {
+          "feature": "vb_V116",
+          "tier": "tier_0",
+          "mean_abs": 0.007021433997030534,
+          "mean_signed": -0.0028371209697093456
+        },
+        {
+          "feature": "vb_V42",
+          "tier": "tier_0",
+          "mean_abs": 0.0067869762774577435,
+          "mean_signed": 0.001484937498804615
+        },
+        {
+          "feature": "vb_V84",
+          "tier": "tier_0",
+          "mean_abs": 0.006764394458093791,
+          "mean_signed": -0.002510976480465333
+        },
+        {
+          "feature": "vb_V270",
+          "tier": "tier_0",
+          "mean_abs": 0.006523594833412774,
+          "mean_signed": -0.0020550247171241005
+        },
+        {
+          "feature": "vb_V180",
+          "tier": "tier_0",
+          "mean_abs": 0.0064119728652150725,
+          "mean_signed": 0.0025648396154594215
+        },
+        {
+          "feature": "id_36",
+          "tier": "tier_0",
+          "mean_abs": 0.006379167930207015,
+          "mean_signed": -0.0007489014767153295
+        },
+        {
+          "feature": "vb_V319",
+          "tier": "tier_0",
+          "mean_abs": 0.006335813389146403,
+          "mean_signed": 0.0018632192596741304
+        },
+        {
+          "feature": "vb_V15",
+          "tier": "tier_0",
+          "mean_abs": 0.006317351361761112,
+          "mean_signed": -0.0018062180026594738
+        },
+        {
+          "feature": "vb_V161",
+          "tier": "tier_0",
+          "mean_abs": 0.00625995958599752,
+          "mean_signed": -0.0028877709396948736
+        },
+        {
+          "feature": "vb_V213",
+          "tier": "tier_0",
+          "mean_abs": 0.006188103805434587,
+          "mean_signed": 0.0033267532802027716
+        },
+        {
+          "feature": "vb_V286",
+          "tier": "tier_0",
+          "mean_abs": 0.006165802251453843,
+          "mean_signed": 0.0001746888235429191
+        },
+        {
+          "feature": "id_32",
+          "tier": "tier_1",
+          "mean_abs": 0.0061543561811458645,
+          "mean_signed": 0.0038270383225308246
+        },
+        {
+          "feature": "id_18",
+          "tier": "tier_0",
+          "mean_abs": 0.0059857982923398065,
+          "mean_signed": -0.0004591145365124343
+        },
+        {
+          "feature": "id_11",
+          "tier": "tier_0",
+          "mean_abs": 0.005914594050483349,
+          "mean_signed": -0.0017677349863290356
+        },
+        {
+          "feature": "vb_V80",
+          "tier": "tier_0",
+          "mean_abs": 0.0058541850161756915,
+          "mean_signed": -0.0023701706586747528
+        },
+        {
+          "feature": "vb_V169",
+          "tier": "tier_0",
+          "mean_abs": 0.005814146813800275,
+          "mean_signed": 0.0010299761998662504
+        },
+        {
+          "feature": "vb_V300",
+          "tier": "tier_0",
+          "mean_abs": 0.005800041895491869,
+          "mean_signed": -0.0005313159962623273
+        },
+        {
+          "feature": "vb_V183",
+          "tier": "tier_0",
+          "mean_abs": 0.00579186179073435,
+          "mean_signed": -0.005203763329693257
+        },
+        {
+          "feature": "vb_V39",
+          "tier": "tier_0",
+          "mean_abs": 0.005757809728027563,
+          "mean_signed": 0.002074023979538098
+        },
+        {
+          "feature": "id_26",
+          "tier": "tier_0",
+          "mean_abs": 0.005724542230644849,
+          "mean_signed": 0.0009769077615299701
+        },
+        {
+          "feature": "vb_V279",
+          "tier": "tier_0",
+          "mean_abs": 0.005583026773411444,
+          "mean_signed": -0.002184527989095589
+        },
+        {
+          "feature": "vb_V6",
+          "tier": "tier_0",
+          "mean_abs": 0.005507275483132227,
+          "mean_signed": -0.0024280180608677203
+        },
+        {
+          "feature": "C7",
+          "tier": "tier_0",
+          "mean_abs": 0.005492608398213865,
+          "mean_signed": -0.003199871369482149
+        },
+        {
+          "feature": "vb_V262",
+          "tier": "tier_0",
+          "mean_abs": 0.0053892358156300045,
+          "mean_signed": 0.0011887637453077316
+        },
+        {
+          "feature": "vb_V275",
+          "tier": "tier_0",
+          "mean_abs": 0.005246648660939687,
+          "mean_signed": -0.0014120644737468466
+        },
+        {
+          "feature": "vb_V184",
+          "tier": "tier_0",
+          "mean_abs": 0.005230715559920087,
+          "mean_signed": -0.0004933837035189292
+        },
+        {
+          "feature": "vb_V265",
+          "tier": "tier_0",
+          "mean_abs": 0.004989005239280337,
+          "mean_signed": -8.58193419324075e-07
+        },
+        {
+          "feature": "vb_V104",
+          "tier": "tier_0",
+          "mean_abs": 0.004988034629011464,
+          "mean_signed": -0.0025319246301591116
+        },
+        {
+          "feature": "vb_V302",
+          "tier": "tier_0",
+          "mean_abs": 0.004915455942966143,
+          "mean_signed": 0.0021316917577746592
+        },
+        {
+          "feature": "vb_V327",
+          "tier": "tier_0",
+          "mean_abs": 0.004814535146977692,
+          "mean_signed": 0.002411469299805586
+        },
+        {
+          "feature": "vb_V125",
+          "tier": "tier_0",
+          "mean_abs": 0.004686616007109776,
+          "mean_signed": 0.0013983889975005372
+        },
+        {
+          "feature": "vb_V170",
+          "tier": "tier_0",
+          "mean_abs": 0.004674180241748241,
+          "mean_signed": -0.00040780084481050236
+        },
+        {
+          "feature": "vb_V235",
+          "tier": "tier_0",
+          "mean_abs": 0.004640714151620026,
+          "mean_signed": -0.0021044322649155403
+        },
+        {
+          "feature": "vb_V299",
+          "tier": "tier_0",
+          "mean_abs": 0.004623204080039359,
+          "mean_signed": 0.0001690309477067203
+        },
+        {
+          "feature": "vb_V334",
+          "tier": "tier_0",
+          "mean_abs": 0.004568889707945736,
+          "mean_signed": 0.0031252037696246986
+        },
+        {
+          "feature": "vb_V214",
+          "tier": "tier_0",
+          "mean_abs": 0.004534327036633778,
+          "mean_signed": -0.002049294792140496
+        },
+        {
+          "feature": "vb_V101",
+          "tier": "tier_0",
+          "mean_abs": 0.004413187059915163,
+          "mean_signed": -0.0008207897678974758
+        },
+        {
+          "feature": "vb_V132",
+          "tier": "tier_0",
+          "mean_abs": 0.004375367519103327,
+          "mean_signed": 0.00030093857617822617
+        },
+        {
+          "feature": "vb_V219",
+          "tier": "tier_0",
+          "mean_abs": 0.004052345118308881,
+          "mean_signed": -0.0006428073952625939
+        },
+        {
+          "feature": "vb_V260",
+          "tier": "tier_0",
+          "mean_abs": 0.0040450480360595354,
+          "mean_signed": 0.0003396277503542355
+        },
+        {
+          "feature": "id_35",
+          "tier": "tier_0",
+          "mean_abs": 0.004035703539266276,
+          "mean_signed": -0.001615964713175762
+        },
+        {
+          "feature": "vb_V211",
+          "tier": "tier_0",
+          "mean_abs": 0.0040187534836897245,
+          "mean_signed": -0.0025836242855312424
+        },
+        {
+          "feature": "vb_V232",
+          "tier": "tier_0",
+          "mean_abs": 0.0038994452494578377,
+          "mean_signed": -0.0006235113410404091
+        },
+        {
+          "feature": "vb_V202",
+          "tier": "tier_0",
+          "mean_abs": 0.0038907464344656154,
+          "mean_signed": -0.000691527410911096
+        },
+        {
+          "feature": "vb_V263",
+          "tier": "tier_0",
+          "mean_abs": 0.003759781595433926,
+          "mean_signed": -0.0003327251148069365
+        },
+        {
+          "feature": "vb_V297",
+          "tier": "tier_0",
+          "mean_abs": 0.0037129029569311846,
+          "mean_signed": -0.0012701038802867665
+        },
+        {
+          "feature": "vb_V106",
+          "tier": "tier_0",
+          "mean_abs": 0.003678741716565713,
+          "mean_signed": 0.0010838594526601892
+        },
+        {
+          "feature": "id_23",
+          "tier": "tier_2",
+          "mean_abs": 0.0036205068999593123,
+          "mean_signed": 5.44626503707591e-05
+        },
+        {
+          "feature": "vb_V100",
+          "tier": "tier_0",
+          "mean_abs": 0.003612253471814541,
+          "mean_signed": -0.0006130527703510581
+        },
+        {
+          "feature": "vb_V218",
+          "tier": "tier_0",
+          "mean_abs": 0.0035852882481216043,
+          "mean_signed": 5.141478362914228e-05
+        },
+        {
+          "feature": "vb_V172",
+          "tier": "tier_0",
+          "mean_abs": 0.003571250800554573,
+          "mean_signed": -0.0011119396347668371
+        },
+        {
+          "feature": "vb_V290",
+          "tier": "tier_0",
+          "mean_abs": 0.0035506840820689477,
+          "mean_signed": 0.0004903294234049792
+        },
+        {
+          "feature": "vb_V324",
+          "tier": "tier_0",
+          "mean_abs": 0.0035485813864129874,
+          "mean_signed": 0.0014017452082896174
+        },
+        {
+          "feature": "vb_V97",
+          "tier": "tier_0",
+          "mean_abs": 0.003545340402707327,
+          "mean_signed": -0.0007013785138716593
+        },
+        {
+          "feature": "id_03",
+          "tier": "tier_0",
+          "mean_abs": 0.0034936703961574536,
+          "mean_signed": -0.0010715298912646921
+        },
+        {
+          "feature": "vb_V246",
+          "tier": "tier_0",
+          "mean_abs": 0.0034669770986437646,
+          "mean_signed": 0.0004442270427673707
+        },
+        {
+          "feature": "id_08",
+          "tier": "tier_0",
+          "mean_abs": 0.003440554411829221,
+          "mean_signed": 0.0005034180530807119
+        },
+        {
+          "feature": "vb_V205",
+          "tier": "tier_0",
+          "mean_abs": 0.0034139190632657126,
+          "mean_signed": -0.0003720706314930272
+        },
+        {
+          "feature": "vb_V146",
+          "tier": "tier_0",
+          "mean_abs": 0.003402064045774351,
+          "mean_signed": 5.8137183163656194e-05
+        },
+        {
+          "feature": "vb_V220",
+          "tier": "tier_0",
+          "mean_abs": 0.003335159095388148,
+          "mean_signed": 0.0002788513119329743
+        },
+        {
+          "feature": "vb_V115",
+          "tier": "tier_0",
+          "mean_abs": 0.0033237127637048523,
+          "mean_signed": 0.00010350255769169339
+        },
+        {
+          "feature": "vb_V32",
+          "tier": "tier_0",
+          "mean_abs": 0.0033046862804566664,
+          "mean_signed": 0.0010873395796454114
+        },
+        {
+          "feature": "vb_V238",
+          "tier": "tier_0",
+          "mean_abs": 0.0031563019465911638,
+          "mean_signed": -0.0005786616008150293
+        },
+        {
+          "feature": "vb_V288",
+          "tier": "tier_0",
+          "mean_abs": 0.0029905598498788316,
+          "mean_signed": 0.0005684591353577233
+        },
+        {
+          "feature": "vb_V177",
+          "tier": "tier_0",
+          "mean_abs": 0.0029823196898014124,
+          "mean_signed": -0.0009076148443349922
+        },
+        {
+          "feature": "id_07",
+          "tier": "tier_0",
+          "mean_abs": 0.002976583219735563,
+          "mean_signed": -6.947068327451402e-05
+        },
+        {
+          "feature": "id_04",
+          "tier": "tier_0",
+          "mean_abs": 0.0029677320565338356,
+          "mean_signed": -0.0008436402811096323
+        },
+        {
+          "feature": "vb_V223",
+          "tier": "tier_0",
+          "mean_abs": 0.0029296838378846273,
+          "mean_signed": 0.0007436076544392082
+        },
+        {
+          "feature": "vb_V123",
+          "tier": "tier_0",
+          "mean_abs": 0.002662058645093981,
+          "mean_signed": 4.116251996724986e-05
+        },
+        {
+          "feature": "vb_V237",
+          "tier": "tier_0",
+          "mean_abs": 0.002565803253503367,
+          "mean_signed": -0.0012057143783060268
+        },
+        {
+          "feature": "vb_V236",
+          "tier": "tier_0",
+          "mean_abs": 0.0024463840464576266,
+          "mean_signed": 0.0009320860981508913
+        },
+        {
+          "feature": "vb_V103",
+          "tier": "tier_0",
+          "mean_abs": 0.0022962663311657788,
+          "mean_signed": -0.0006800706169434796
+        },
+        {
+          "feature": "vb_V95",
+          "tier": "tier_0",
+          "mean_abs": 0.0022793527021203698,
+          "mean_signed": -0.0005865323181418803
+        },
+        {
+          "feature": "vb_V105",
+          "tier": "tier_0",
+          "mean_abs": 0.0022592182743710345,
+          "mean_signed": 0.0004901197420617518
+        },
+        {
+          "feature": "id_21",
+          "tier": "tier_0",
+          "mean_abs": 0.0022154918683860315,
+          "mean_signed": -0.0007412101521244529
+        },
+        {
+          "feature": "vb_V98",
+          "tier": "tier_0",
+          "mean_abs": 0.0021431567412655383,
+          "mean_signed": -0.000743674027396614
+        },
+        {
+          "feature": "vb_present_V167",
+          "tier": "tier_0",
+          "mean_abs": 0.0020569998786448846,
+          "mean_signed": 0.0006918672342064834
+        },
+        {
+          "feature": "vb_V141",
+          "tier": "tier_0",
+          "mean_abs": 0.002023012155892503,
+          "mean_signed": -0.0005656398789146923
+        },
+        {
+          "feature": "vb_V167",
+          "tier": "tier_0",
+          "mean_abs": 0.0019785020999140224,
+          "mean_signed": -0.0005252012674868298
+        },
+        {
+          "feature": "vb_V182",
+          "tier": "tier_0",
+          "mean_abs": 0.0019765111229267346,
+          "mean_signed": -0.0011477340982157577
+        },
+        {
+          "feature": "id_10",
+          "tier": "tier_0",
+          "mean_abs": 0.0018114124830959145,
+          "mean_signed": -0.00011448564516119195
+        },
+        {
+          "feature": "vb_V284",
+          "tier": "tier_0",
+          "mean_abs": 0.0017754433493094805,
+          "mean_signed": 0.0002972474917722037
+        },
+        {
+          "feature": "freq_addr2",
+          "tier": "tier_2",
+          "mean_abs": 0.0017445589516257478,
+          "mean_signed": 0.00018299173801001735
+        },
+        {
+          "feature": "vb_V329",
+          "tier": "tier_0",
+          "mean_abs": 0.0017417061732767757,
+          "mean_signed": -0.000561876205916305
+        },
+        {
+          "feature": "vb_V337",
+          "tier": "tier_0",
+          "mean_abs": 0.001624092958596477,
+          "mean_signed": -0.0008335790416430724
+        },
+        {
+          "feature": "vb_V249",
+          "tier": "tier_0",
+          "mean_abs": 0.001584487563713326,
+          "mean_signed": -0.00012365836398439613
+        },
+        {
+          "feature": "vb_V247",
+          "tier": "tier_0",
+          "mean_abs": 0.0015841046922959443,
+          "mean_signed": 0.00024513372261870475
+        },
+        {
+          "feature": "has_identity",
+          "tier": "tier_1",
+          "mean_abs": 0.0015648593217020852,
+          "mean_signed": 0.0007510245803306532
+        },
+        {
+          "feature": "vb_V252",
+          "tier": "tier_0",
+          "mean_abs": 0.0015647440187775482,
+          "mean_signed": -0.00016249593055920065
+        },
+        {
+          "feature": "vb_V331",
+          "tier": "tier_0",
+          "mean_abs": 0.0015346230862176766,
+          "mean_signed": -0.0010949087528967648
+        },
+        {
+          "feature": "addr2",
+          "tier": "tier_1",
+          "mean_abs": 0.0014767280149324239,
+          "mean_signed": 0.000653202466923966
+        },
+        {
+          "feature": "vb_V142",
+          "tier": "tier_0",
+          "mean_abs": 0.001377107786506327,
+          "mean_signed": 5.040309775415035e-05
+        },
+        {
+          "feature": "vb_V121",
+          "tier": "tier_0",
+          "mean_abs": 0.0012527491229242461,
+          "mean_signed": -0.0003699608272227457
+        },
+        {
+          "feature": "vb_V194",
+          "tier": "tier_0",
+          "mean_abs": 0.0012503411316584475,
+          "mean_signed": 0.00043763979688840414
+        },
+        {
+          "feature": "vb_V227",
+          "tier": "tier_0",
+          "mean_abs": 0.0010918666257053393,
+          "mean_signed": -2.763756553262469e-05
+        },
+        {
+          "feature": "vb_V228",
+          "tier": "tier_0",
+          "mean_abs": 0.0010743944296224143,
+          "mean_signed": -0.0003980488313791535
+        },
+        {
+          "feature": "id_24",
+          "tier": "tier_0",
+          "mean_abs": 0.0010332760644822803,
+          "mean_signed": 0.00035399106486933924
+        },
+        {
+          "feature": "vb_V114",
+          "tier": "tier_0",
+          "mean_abs": 0.000930077277835632,
+          "mean_signed": -0.0003554723190221039
+        },
+        {
+          "feature": "vb_V9",
+          "tier": "tier_0",
+          "mean_abs": 0.0008849321105452188,
+          "mean_signed": -4.1690199252415446e-05
+        },
+        {
+          "feature": "id_25",
+          "tier": "tier_0",
+          "mean_abs": 0.0008795388213638272,
+          "mean_signed": -5.559766249165341e-05
+        },
+        {
+          "feature": "vb_V175",
+          "tier": "tier_0",
+          "mean_abs": 0.0008027580425602134,
+          "mean_signed": 0.00031814211181500045
+        },
+        {
+          "feature": "vb_V173",
+          "tier": "tier_0",
+          "mean_abs": 0.0007617951344442968,
+          "mean_signed": 0.00044317708421728625
+        },
+        {
+          "feature": "vb_V181",
+          "tier": "tier_0",
+          "mean_abs": 0.0007077201389626241,
+          "mean_signed": 0.00024776108473777766
+        },
+        {
+          "feature": "vb_V322",
+          "tier": "tier_0",
+          "mean_abs": 0.000640698913918477,
+          "mean_signed": 7.181720247054564e-05
+        },
+        {
+          "feature": "vb_V328",
+          "tier": "tier_0",
+          "mean_abs": 0.0005483393866827096,
+          "mean_signed": -6.705180220472659e-05
+        },
+        {
+          "feature": "vb_V118",
+          "tier": "tier_0",
+          "mean_abs": 0.0005395649765183695,
+          "mean_signed": -0.00014076029021154745
+        },
+        {
+          "feature": "vb_V110",
+          "tier": "tier_0",
+          "mean_abs": 0.0005287687112679457,
+          "mean_signed": 0.00018653288555261837
+        },
+        {
+          "feature": "vb_V190",
+          "tier": "tier_0",
+          "mean_abs": 0.0005244341434363871,
+          "mean_signed": -0.00012078323783313143
+        },
+        {
+          "feature": "vb_V174",
+          "tier": "tier_0",
+          "mean_abs": 0.0005159647208542812,
+          "mean_signed": -0.0001867567724770316
+        },
+        {
+          "feature": "id_27",
+          "tier": "tier_0",
+          "mean_abs": 0.0003045651031615101,
+          "mean_signed": 8.340722158767475e-05
+        },
+        {
+          "feature": "vb_V112",
+          "tier": "tier_0",
+          "mean_abs": 0.0001750288685047451,
+          "mean_signed": -1.2023806291638134e-05
+        },
+        {
+          "feature": "vb_V138",
+          "tier": "tier_0",
+          "mean_abs": 0.00014207356726711156,
+          "mean_signed": -4.2019843726820925e-05
+        },
+        {
+          "feature": "vb_V111",
+          "tier": "tier_0",
+          "mean_abs": 0.00013180218501101279,
+          "mean_signed": 4.9209174715926245e-05
+        },
+        {
+          "feature": "vb_V325",
+          "tier": "tier_0",
+          "mean_abs": 0.00011416644657286603,
+          "mean_signed": -2.3894502789349402e-05
+        },
+        {
+          "feature": "vb_V122",
+          "tier": "tier_0",
+          "mean_abs": 9.324732778005174e-05,
+          "mean_signed": -4.053946211703678e-05
+        },
+        {
+          "feature": "vb_V119",
+          "tier": "tier_0",
+          "mean_abs": 6.917649300388876e-05,
+          "mean_signed": -1.5334997918569457e-05
+        },
+        {
+          "feature": "vb_V120",
+          "tier": "tier_0",
+          "mean_abs": 5.3363819567343106e-05,
+          "mean_signed": -2.1308349416618103e-05
+        },
+        {
+          "feature": "vb_V240",
+          "tier": "tier_0",
+          "mean_abs": 4.7961910391992516e-05,
+          "mean_signed": -1.6629694967164677e-05
+        },
+        {
+          "feature": "vb_V117",
+          "tier": "tier_0",
+          "mean_abs": 6.934339999333142e-06,
+          "mean_signed": 8.094753718054012e-08
+        },
+        {
+          "feature": "vb_V14",
+          "tier": "tier_0",
+          "mean_abs": 7.430193558844886e-07,
+          "mean_signed": -6.741857568397438e-07
+        },
+        {
+          "feature": "vb_V65",
+          "tier": "tier_0",
+          "mean_abs": 2.878284104967981e-07,
+          "mean_signed": -1.3526106574104695e-07
+        },
+        {
+          "feature": "vb_V88",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V89",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V107",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V68",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V1",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V27",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V41",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V241",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "id_22",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        },
+        {
+          "feature": "vb_V305",
+          "tier": "tier_0",
+          "mean_abs": 0.0,
+          "mean_signed": 0.0
+        }
+      ]
+    }
+  }
+}
