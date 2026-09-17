@@ -95,5 +95,11 @@ addopts = [
     "--strict-markers", # a typo'd @pytest.mark.slwo becomes an error, not a silent no-op
     "--strict-config",  # same for typos in this config block
 ]
+# The tier docs/serving.md section 8 registers: tests that need the shipped model and
+# the built matrices, which a clean checkout does not have. Named so the suite can be
+# run without them deliberately (-m "not artifacts") rather than by accident.
+markers = [
+    "artifacts: needs the shipped artifacts and built matrices",
+]
 # Deliberately no `pythonpath` setting. That is the src-layout payoff: tests
 # import the installed package, not a directory that happens to be adjacent.
