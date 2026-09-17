@@ -272,7 +272,16 @@ adopted E3 and E4's re-runs — because Phase 08 has a p95 budget of 100 ms and 
 booster is large.
 
 **Measured:** per-row contribution latency, on the serving path's shape (one row, warm
-model), reported beside the scoring latency it adds to.
+model), reported beside the scoring latency it adds to. The marginal cost is the figure
+that decides anything — scoring happens regardless, and what Phase 08 is choosing is
+whether the explanation rides along on the same request.
+
+**At a stated thread count, and more than one.** LightGBM spreads a single prediction
+across every core it can see, so a number taken at a development machine's core count
+describes a deployment nobody would provision. Both ends of what a container plausibly
+gets are measured, and the record carries the machine — a latency figure without one is
+meaningless, per `problem-statement.md` §3.1. This is emphatically **not** that section's
+load test, which needs a service that does not exist yet.
 
 **If it does not fit**, the fallback is a Phase 08 design input rather than a Phase 08
 surprise. Options exist — compute codes only for non-allow decisions, or compute them

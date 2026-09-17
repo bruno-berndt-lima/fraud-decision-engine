@@ -61,6 +61,7 @@ USD_HALVES  := $(REPORTS_DIR)/metrics/usd_halves.json
 HEADLINE    := $(REPORTS_DIR)/metrics/policy_test.json
 EXPLAIN_DIR := $(DATA_DIR)/explain
 SHAP_GLOBAL := $(REPORTS_DIR)/metrics/shap_global.json
+EXPLAIN_LATENCY := $(REPORTS_DIR)/metrics/explain_latency.json
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -374,6 +375,15 @@ $(SHAP_GLOBAL): $(MODEL) $(FEATURES) $(call sections,load splits model explain) 
                 src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.explain.contributions
 
+# Separate from $(SHAP_GLOBAL) for the reason $(FAMILY_FLOOR) is separate from
+# $(FAMILIES): it answers a question the contributions do not change, and folding a
+# measurement of seconds into a stage of hours means it can never be rerun alone.
+$(EXPLAIN_LATENCY): $(MODEL) $(FEATURES) $(call sections,load splits model explain_latency) \
+                    src/fraud_engine/explain/latency.py \
+                    src/fraud_engine/models/train.py \
+                    src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.explain.latency
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -382,7 +392,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -403,6 +413,7 @@ sensitivity: $(SENSITIVITY) ## Sweep each cost assumption and chart the false-po
 usd-halves: $(USD_HALVES) ## E1 and E3 in USD: refit, verify, calibrate and cost each arm
 headline:  $(HEADLINE)   ## The one test touch: rules, naive and EV in USD, frozen policy
 explain:   $(SHAP_GLOBAL) ## Contributions for the shipped booster, and the global ranking
+latency:   $(EXPLAIN_LATENCY) ## Time one row scored against the same row explained
 
 # ==============================================================================
 # Housekeeping

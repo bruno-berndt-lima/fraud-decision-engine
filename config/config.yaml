@@ -106,6 +106,10 @@ paths:
   # tier. Tracked: docs/explainability.md section 4 is a deliverable, and the
   # tier shares are what the write-up is built on.
   shap_global: reports/metrics/shap_global.json
+  # Scoring against explaining, one row at a time, with the machine attached.
+  # Tracked, and the one record here whose numbers do not travel: it is true of
+  # the hardware named inside it and of nothing else.
+  explain_latency: reports/metrics/explain_latency.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -525,3 +529,28 @@ explain:
   # Contributors per reason code. Committed before the ranking existed, so it
   # cannot be widened later until one of them reads well.
   top_k: 3
+
+# ------------------------------------------------------------------------------
+# Phase 07 — what an explanation costs to serve
+# ------------------------------------------------------------------------------
+# Registered in docs/explainability.md section 8. Its own section rather than keys
+# under `explain`: a stamp covers a whole section, so a latency knob living there
+# would restage the contributions run, which is hours of compute for a question it
+# does not touch.
+explain_latency:
+  # Single-row calls, timed. Serving scores one transaction at a time, so a batch
+  # figure would describe a throughput the API never has.
+  rows: 100
+
+  # Made first and discarded. A cold first request is not a latency figure.
+  warmup: 10
+
+  # LightGBM spreads one prediction across every core it can see, so the number
+  # means nothing without saying how many it had. Measured at what a container
+  # plausibly gets rather than at a development machine's core count, which no
+  # deployment inherits.
+  threads: [1, 4]
+
+  # Whose rows are timed. Measurement on test is unlimited; nothing here moves a
+  # threshold, a parameter or a feature.
+  split: test
