@@ -18,6 +18,7 @@ Nothing here is fitted on, tuned against, or evaluated on validation.
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -257,6 +258,136 @@ def fit(train: pd.DataFrame, rules_cfg: dict) -> Constants:
     return constants
 
 
+# Everything a predicate reads. A file that cannot answer one of them is refused
+# at load rather than applied in part: the fail-open path runs when the model is
+# already gone, which is the worst moment to discover a half-fitted engine.
+REQUIRED_CONSTANTS = (
+    "round_amount",
+    "product_tier",
+    "amount_percentile",
+    "new_card",
+    "w_m4_m2",
+    "amount_tiebreaker",
+    "amount_ecdf_points",
+    "amount_p99",
+    "amount_grid",
+)
+
+
+def check_constants(constants: Constants) -> None:
+    """Refuse constants the engine cannot score with.
+
+    Called on the way out and on the way back in. The write side catches a fit
+    that produced something unusable; the read side catches a file that was
+    truncated, hand-edited, or written by an older version of this module — and
+    the read side is the serving path, where a wrong percentile is a wrong
+    decision rather than a failed run.
+
+    Args:
+        constants: From ``fit`` or ``load_constants``.
+
+    Raises:
+        KeyError: If a value a predicate reads is absent.
+        ValueError: If the amount grid is empty, is not sorted, does not hold the
+            number of points it claims, or there are no cut points to compare an
+            amount against.
+    """
+    missing = [key for key in REQUIRED_CONSTANTS if key not in constants]
+    if missing:
+        raise KeyError(f"constants are missing {missing}; a predicate reads every one of these")
+
+    grid = np.asarray(constants["amount_grid"], dtype="float64")
+    points = constants["amount_ecdf_points"]
+
+    if grid.size == 0:
+        raise ValueError("the amount grid is empty; amount_percentile would divide by zero")
+    if grid.size != points:
+        raise ValueError(
+            f"the amount grid holds {grid.size} points but amount_ecdf_points says {points}; "
+            "the percentile is a position over that length, so the two disagreeing rescales "
+            "every tiebreak"
+        )
+    # Also the NaN check: a gap in the grid fails this comparison rather than
+    # passing it, which is the direction that refuses rather than the one that
+    # returns a percentile meaning nothing.
+    if not np.all(np.diff(grid) >= 0):
+        raise ValueError(
+            "the amount grid is not sorted ascending; amount_percentile finds a value in it "
+            "by binary search, which on unsorted input returns a position and no error"
+        )
+    if not constants["amount_p99"]:
+        raise ValueError("no per-product cut points; the amount_percentile rule could never fire")
+
+
+def write_constants(constants: Constants, path: Path | str) -> None:
+    """Persist the fitted engine — the fail-open path cannot fit at 2am.
+
+    ``fit`` is the only function here that reads train, and a container has no
+    train to read: ``data/`` is not in the image and the training window is 690 MB
+    of CSV. So the constants are written once by the stage that fits them and
+    loaded by everything that scores afterwards.
+
+    JSON rather than a pickle, for the reason ``calibrator.json`` gives:
+    unpickling executes code, and this file is loaded inside a served API. The
+    numbers survive exactly — Python writes a float as the shortest string that
+    reads back identical — which is what lets a served score equal a recorded one.
+
+    **The config choices are written with the fitted values, in one object.** A
+    serving process that read the weights from ``config.yaml`` and the cut points
+    from here would apply whichever weights are current to cut points fitted
+    under the old ones. The scores would stay plausible and no longer match the
+    incumbent the headline was measured against.
+
+    Args:
+        constants: From ``fit``.
+        path: Destination. Parent directories are created.
+
+    Raises:
+        As ``check_constants`` — and before the file exists, so a rejected fit
+        cannot leave a partial artifact behind for the next process to load.
+    """
+    check_constants(constants)
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = dict(constants)
+    # numpy scalars and arrays are not JSON-serialisable. Converted explicitly
+    # rather than with json's `default=`, which would reach a numpy float by
+    # writing it as a string and leave the file loadable but wrong.
+    payload["amount_p99"] = {
+        product: float(cut) for product, cut in constants["amount_p99"].items()
+    }
+    payload["amount_grid"] = np.asarray(constants["amount_grid"], dtype="float64").tolist()
+
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def load_constants(path: Path | str) -> Constants:
+    """Read what ``write_constants`` wrote, ready to hand to ``score``.
+
+    The grid comes back as an array rather than the list JSON holds:
+    ``amount_percentile`` binary-searches it on every request, and a list would
+    be converted on every one of them.
+
+    Args:
+        path: The artifact ``write_constants`` produced.
+
+    Returns:
+        Constants equal to the fitted ones, to the digit.
+
+    Raises:
+        FileNotFoundError: If the artifact is absent. Serving reads that as the
+            fail-open path being unavailable, which is a different failure from
+            the model being absent and has to be told apart from it.
+        As ``check_constants``.
+    """
+    constants: Constants = json.loads(Path(path).read_text())
+    constants["amount_grid"] = np.asarray(constants["amount_grid"], dtype="float64")
+    check_constants(constants)
+    return constants
+
+
 def amount_percentile(amounts: pd.Series, constants: Constants) -> pd.Series:
     """Where each amount sits in the *training* amount distribution, in [0, 1].
 
@@ -378,6 +509,12 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     constants = fit(frame[frame["split"] == "train"], rules_cfg)
     frame["score"] = score(frame, rules, constants)
 
+    # Written here rather than by a stage of its own: this is the only place the
+    # constants exist, and an artifact fitted by one run and written by another
+    # could describe a different training window than the record beside it.
+    constants_path = Path(paths["rules_constants"])
+    write_constants(constants, constants_path)
+
     capacities = load_capacities(load_config(Path(paths["cost_matrix"])))
     metrics_path, predictions_path = write_run(
         REPORT_NAME, frame, capacities, paths["metrics_dir"], paths["predictions_dir"]
@@ -388,7 +525,7 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     log.info(
         "fitted amount cut points: %s", {k: round(v, 2) for k, v in constants["amount_p99"].items()}
     )
-    log.info("wrote %s and %s", metrics_path, predictions_path)
+    log.info("wrote %s, %s and %s", metrics_path, predictions_path, constants_path)
 
 
 if __name__ == "__main__":

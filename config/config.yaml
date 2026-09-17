@@ -28,6 +28,14 @@ paths:
   # so a figure drawn from it cannot disagree with the metrics it sits beside.
   # Carries only the splits the run actually scored; see report.DEFAULT_SPLITS.
   predictions_dir: data/predictions
+  # The incumbent, fitted. Gitignored with the rest of models/ — derived, and
+  # rebuilt by `make baselines` — but written rather than re-fitted, because the
+  # fail-open path runs in a container with no training window to fit on and
+  # fit() is the only function in rules.py that reads train. Carries the config
+  # choices beside the fitted values: a served rule pairing current weights with
+  # cut points fitted under the old ones would score plausibly and stop being
+  # the incumbent the headline was measured against.
+  rules_constants: models/rules.json
   # The measured spread of PR-AUC under meaningless columns — the bar a feature
   # family has to clear. Tracked: it is a decision input, not derived data.
   noise_floor: reports/metrics/noise_floor.csv
@@ -561,3 +569,35 @@ explain_latency:
   # Whose rows are timed. Measurement on test is unlimited; nothing here moves a
   # threshold, a parameter or a feature.
   split: test
+
+# ------------------------------------------------------------------------------
+# Phase 08 — serving
+# ------------------------------------------------------------------------------
+# Registered in docs/serving.md. Nothing here can move a decision: the model, the
+# calibrator and the policy were frozen before this section existed. A value
+# below changes what the service does when it cannot decide in time — never what
+# it decides.
+serving:
+  # The p95 the request path holds itself to, from problem-statement.md §3.1.
+  # Named here as well as there because the service enforces it rather than
+  # merely being measured against it: past this, the transaction takes the rules
+  # decision.
+  #
+  # Not a timeout on the booster. A LightGBM prediction cannot be interrupted
+  # from inside the process, so the request returns on time and the scoring work
+  # finishes unwatched — serving.md §4 states that rather than implying a
+  # cancellation the library does not offer.
+  budget_ms: 100
+
+  # Threads per worker, and one is measured rather than conventional: a single
+  # row gives LightGBM nothing to divide, and explainability.md §8 found more
+  # threads made the identical call slower, replicated across two runs.
+  # Concurrency comes from workers, not from threads.
+  threads: 1
+
+  # Whether a model that cannot answer falls back to the rules engine. On, per
+  # problem-statement.md §3.1: declining every transaction during a model outage
+  # converts an availability incident into a total revenue outage, which is
+  # almost always the worse failure. Off is for a test that wants the failure to
+  # surface, never for a deployment.
+  fail_open: true

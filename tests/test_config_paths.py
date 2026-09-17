@@ -26,6 +26,7 @@ PATH_PAIRS = [
     ("COST_MATRIX", "paths.cost_matrix"),
     ("FEATURES_DIR", "paths.features_dir"),
     ("PREDICTIONS_DIR", "paths.predictions_dir"),
+    ("RULES_CONSTANTS", "paths.rules_constants"),
     ("MODEL", "paths.model"),
     ("MEDIANS", "paths.medians"),
     ("SEED_SPREAD", "paths.seed_spread"),

@@ -74,6 +74,10 @@ TUNING      := $(REPORTS_DIR)/metrics/tuning.json
 # Unlike every other stage output, this one is TRACKED: reports/ is a
 # deliverable. Represents the whole baselines stage per the note above.
 BASELINES := $(REPORTS_DIR)/metrics/rules_baseline.json
+# The same stage's other output, and the only one a served process reads: the
+# incumbent's fitted constants. Gitignored with the rest of models/, unlike the
+# record above — it is derived, and rebuilt whenever the stage runs.
+RULES_CONSTANTS := $(MODEL_DIR)/rules.json
 LOGISTIC  := $(REPORTS_DIR)/metrics/logistic_baseline.json
 # Each baselines run writes a JSON record AND a predictions parquet. Per the
 # note above, the JSON stands for the pair — so the figures stage depends on the
@@ -189,7 +193,8 @@ $(SPLITS): $(INTERIM) $(call sections,load splits) src/fraud_engine/data/splits.
 $(BASELINES): $(SPLITS) $(INTERIM) $(call sections,load baselines) $(COST_MATRIX) \
               src/fraud_engine/models/rules.py \
               src/fraud_engine/evaluation/report.py \
-              src/fraud_engine/evaluation/metrics.py | $(REPORTS_DIR) $(PREDICTIONS_DIR)
+              src/fraud_engine/evaluation/metrics.py \
+              | $(REPORTS_DIR) $(PREDICTIONS_DIR) $(MODEL_DIR)
 	$(RUN) python -m fraud_engine.models.rules
 
 # Two records from one run - E2 requires both variants reported, so they are

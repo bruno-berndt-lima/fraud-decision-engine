@@ -9,17 +9,23 @@ machinery awards the points it says it awards, that fit() cannot reach beyond
 what it was given, and that the weighting is coherent.
 """
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from fraud_engine.models.rules import (
+    REQUIRED_CONSTANTS,
     Rule,
     amount_percentile,
     build_rules,
+    check_constants,
     contributions,
     fit,
+    load_constants,
     score,
+    write_constants,
 )
 
 RULES_CFG = {
@@ -252,3 +258,86 @@ def test_score_is_monotone_in_the_points_awarded(rules, constants):
     scored = score(frame, rules, constants)
     assert awarded.is_monotonic_increasing
     assert scored.is_monotonic_increasing
+
+
+# ---- the persisted engine ----------------------------------------------------
+# The fail-open path loads these constants instead of fitting them, so what is
+# tested here is that the file is the same engine: same scores, same guards, and
+# a refusal rather than a plausible number when it is not.
+
+
+def test_the_round_trip_reproduces_the_score_exactly(rules, constants, tmp_path):
+    """Not "close": a served decision has to equal the one the record was made from."""
+    frame = make_frame(
+        [
+            base_row(TransactionAmt=300.0, ProductCD="C", D1=1.0),
+            base_row(TransactionAmt=77.77, ProductCD="W", M4="M2"),
+            base_row(TransactionAmt=999.0, ProductCD="H", D1=0.0),
+            base_row(),
+        ]
+    )
+    path = tmp_path / "rules.json"
+    write_constants(constants, path)
+
+    pd.testing.assert_series_equal(
+        score(frame, rules, load_constants(path)),
+        score(frame, rules, constants),
+        check_exact=True,
+    )
+
+
+def test_the_grid_survives_the_round_trip_to_the_last_bit(constants, tmp_path):
+    path = tmp_path / "rules.json"
+    write_constants(constants, path)
+
+    loaded = load_constants(path)
+    assert np.array_equal(loaded["amount_grid"], constants["amount_grid"])
+    assert loaded["amount_p99"] == pytest.approx(constants["amount_p99"], rel=0, abs=0)
+
+
+def test_the_artifact_carries_the_choices_as_well_as_the_fit(constants, tmp_path):
+    """One object, so current weights can never be paired with older cut points."""
+    path = tmp_path / "rules.json"
+    write_constants(constants, path)
+
+    written = json.loads(path.read_text())
+    assert written["round_amount"] == RULES_CFG["round_amount"]
+    assert written["product_tier"] == RULES_CFG["product_tier"]
+    assert written["amount_tiebreaker"] == RULES_CFG["amount_tiebreaker"]
+
+
+@pytest.mark.parametrize("key", REQUIRED_CONSTANTS)
+def test_constants_missing_something_a_predicate_reads_are_refused(constants, key):
+    with pytest.raises(KeyError, match=key):
+        check_constants({name: value for name, value in constants.items() if name != key})
+
+
+def test_an_unsorted_grid_is_refused(constants):
+    """A binary search over unsorted input returns a position, not an error."""
+    with pytest.raises(ValueError, match="not sorted"):
+        check_constants(dict(constants, amount_grid=constants["amount_grid"][::-1]))
+
+
+def test_a_grid_that_disagrees_with_its_own_point_count_is_refused(constants):
+    with pytest.raises(ValueError, match="amount_ecdf_points"):
+        check_constants(dict(constants, amount_grid=constants["amount_grid"][:-1]))
+
+
+def test_a_gap_in_the_grid_is_refused(constants):
+    holed = constants["amount_grid"].copy()
+    holed[len(holed) // 2] = np.nan
+    with pytest.raises(ValueError):
+        check_constants(dict(constants, amount_grid=holed))
+
+
+def test_constants_the_engine_could_not_score_with_are_never_written(constants, tmp_path):
+    """Checked before the file exists, so nothing is left for the next process to load."""
+    path = tmp_path / "rules.json"
+    with pytest.raises(ValueError):
+        write_constants(dict(constants, amount_grid=np.array([])), path)
+    assert not path.exists()
+
+
+def test_loading_an_absent_artifact_says_so(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        load_constants(tmp_path / "never-written.json")
