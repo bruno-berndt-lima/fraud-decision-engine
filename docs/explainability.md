@@ -336,7 +336,38 @@ off the hot path — and choosing between them is Phase 08's, not this document'
 
 ### Result
 
-*Pending.*
+Record: `reports/metrics/explain_latency.json`. One hundred single-row calls per
+operation, warm, on an x86_64 macOS machine with sixteen cores — the machine is in the
+record, and these numbers are true of it and of nothing else.
+
+| threads | score p95 | explain p95 | difference |
+|---:|---:|---:|---:|
+| 1 | 15.7 ms | 914 ms | 899 ms |
+| 4 | 15.1 ms | 1,108 ms | 1,093 ms |
+
+**Scoring fits the budget with room to spare. Explaining does not fit it at all.** The
+contribution call costs around sixty times the prediction it decomposes, and roughly nine
+times the entire p95 budget `problem-statement.md` §3.1 sets for the whole request. This
+is not an implementation that can be tuned out of the way: it is the size of the booster
+Phase 05 selected, presenting its bill two phases later.
+
+**More threads made it slower, and that replicated across two independent runs.**
+LightGBM parallelises prediction across rows; a single row gives the pool nothing to
+divide, so the threads are overhead and nothing else. The practical consequence inverts
+the usual assumption — for this call, a one-core container is the *best* case, and
+provisioning more cores per worker would make the tail worse. Anyone reading a latency
+figure for this model has to be told what thread count produced it.
+
+**What this settles, and what it leaves to Phase 08.** Computing contributions inside the
+request is out. The two fallbacks §8 registered before the measurement are both still
+open — explaining only the transactions that are not allowed, or moving the work off the
+hot path entirely — and choosing between them is Phase 08's decision, with this number as
+its input rather than its surprise.
+
+**Read the order of magnitude, not the digits.** A p95 over a hundred calls moved by
+about ninety milliseconds between the two runs, and this is a single process with no
+concurrent load. It is not the §3.1 load test and does not stand in for one; what it
+supports is a conclusion three orders of magnitude clear of the noise.
 
 ## 9. What this phase may not change
 
