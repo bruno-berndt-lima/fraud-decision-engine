@@ -15,8 +15,11 @@ core it can see. A figure from a development machine's core count describes a de
 nobody would provision, so the measurement is repeated at thread counts a container
 plausibly gets and the record carries both.
 
-**The marginal cost is the answer.** Scoring has to happen regardless; what Phase 08 is
-deciding is whether the explanation can ride along on the same request.
+**What the explanation adds is the answer.** Scoring has to happen regardless; what
+Phase 08 is deciding is whether the explanation can ride along on the same request. The
+two are timed separately and the record reports the difference of their p95s, which is
+not the p95 of their difference — a distinction that costs nothing to state and would
+cost a redesign to remove.
 """
 
 from __future__ import annotations
@@ -168,8 +171,15 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
     with tracked_run(NAME, params, config_path):
         for threads in latency_cfg["threads"]:
             timings = measure(booster, row, threads, latency_cfg)
-            marginal = timings["explain"]["p95"] - timings["score"]["p95"]
-            by_threads[str(threads)] = timings | {"marginal_p95_ms": marginal}
+
+            # A difference of percentiles, which is not the percentile of the
+            # difference — the two calls are timed in separate loops, so there are no
+            # paired samples to take a percentile of. Named for what it computes. It
+            # answers the question anyway while one term is two orders larger and tight
+            # around its median; a future model where they are comparable would need
+            # the calls timed together and this renamed again.
+            difference = timings["explain"]["p95"] - timings["score"]["p95"]
+            by_threads[str(threads)] = timings | {"p95_difference_ms": difference}
 
             mlflow.log_metrics(
                 {
@@ -177,14 +187,14 @@ def main(config_path: Path = DEFAULT_CONFIG_PATH) -> None:
                     for operation, measured in timings.items()
                     for point, value in measured.items()
                 }
-                | {f"threads_{threads}.marginal_p95_ms": marginal}
+                | {f"threads_{threads}.p95_difference_ms": difference}
             )
             log.info(
-                "%2d thread(s)   score p95 %8.2f ms   explain p95 %8.2f ms   marginal %8.2f ms",
+                "%2d thread(s)   score p95 %8.2f ms   explain p95 %8.2f ms   diff %8.2f ms",
                 threads,
                 timings["score"]["p95"],
                 timings["explain"]["p95"],
-                marginal,
+                difference,
             )
 
     record = {

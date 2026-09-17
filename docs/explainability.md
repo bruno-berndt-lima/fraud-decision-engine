@@ -53,7 +53,14 @@ said Phase 09's decay chart needs its own stage.
 
 ### Result
 
-*Pending.*
+Both splits explained, 10,000 rows each, from `reports/metrics/shap_global.json`.
+
+**Nothing diverged.** The serving-tier shares move by less than two points between
+`VAL-CAL` and test, and the top of the ranking is the same set of columns in nearly the
+same order. The registered reading rule was written for a difference that did not
+appear: there is no decay signal to carry into Phase 09 from this comparison, which is
+a result rather than an absence — the alternative was a model whose grounds had shifted
+in the three weeks after the calibration slice, and it did not.
 
 ## 2. How contributions are computed
 
@@ -86,7 +93,17 @@ ranking is not read**, and no claim in this phase may rest on it.
 
 ### Result
 
-*Pending.*
+The proof passed before any contribution was computed: the reloaded booster reproduced
+its recorded `VAL-CAL` scores exactly.
+
+**The stage is deterministic, and this was measured rather than assumed.** It was run
+twice — the first record was stamped `-dirty`, because unrelated files were edited while
+it ran, and the project does not ship numbers whose code is not in history. The rerun
+differed from the first in two lines, its timestamp and its revision; every contribution,
+every tier share and both deviations were byte-identical.
+
+`shap` was never imported. Contributions came from `Booster.predict(pred_contrib=True)`,
+which is what keeps the dependency out of the Phase 08 image.
 
 ## 3. The space contributions live in
 
@@ -113,7 +130,13 @@ precision, and the measured deviation is reported so the headroom is visible.
 
 ### Result
 
-*Pending.*
+Both splits passed, with room to spare: the worst row in either sat around four parts in
+a hundred thousand of its own contribution mass, against a bound of one part in a
+hundred. The measured figures are in the record, per split.
+
+The base value is identical on both splits to every digit — as it must be, since it is
+the model's expected margin and not a property of the rows — which is the second guard
+reporting rather than merely passing.
 
 ## 4. The ceiling on what is explainable
 
@@ -144,7 +167,31 @@ for the tier-1/2/3 columns Phase 04 could not justify on PR-AUC.
 
 ### Result
 
-*Pending.*
+| tier | `VAL-CAL` | test |
+|---|---:|---:|
+| 0 — inherited, unreproducible | 55.4% | 57.2% |
+| 1 — request-only | 25.6% | 24.5% |
+| 2 — static fitted table | 15.0% | 14.3% |
+| 3 — live entity state | 4.1% | 4.0% |
+
+**Between two fifths and a half of what moves this model can be put into a sentence.**
+The rest is Vesta's, and the top of the ranking says so plainly: `C13`, `C1` and `C14`
+lead both splits, with `D1` just behind. Those are counters and day-deltas over lookback
+windows that were never published — `problem-statement.md` §6 records the assumption, and
+E7 measured the same asymmetry from the other side.
+
+The registered rule of this section now has work to do. A reason code for a typical
+blocked transaction will reach for `C13` first, and the honest generic is what it will
+find. That is the finding, not a defect in the mapping.
+
+**Use is not value, and the two disagree here more sharply than anywhere else in the
+project.** `freq_card1`, `amt_mean_card1` and `amt_z_addr1` sit in the top six of both
+splits; the velocity family carries about four percent of the mass. Phase 04 measured
+every one of those families as inside the noise floor under a linear probe, and E4 under
+a tree found that none of them cleared its width-matched bar when removed. Both readings
+are correct. The tree leans on columns whose removal costs nothing, because what they
+carry is also carried elsewhere — correlated redundancy, not a contradiction, and not a
+reason to revisit a frozen feature set.
 
 ## 5. The Phase 01 hypotheses against what the model shows
 
