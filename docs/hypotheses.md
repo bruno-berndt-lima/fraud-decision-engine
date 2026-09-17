@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | 3 of 3 recorded — H1 falsified and H3 softened in Phase 01 |
-| **Last updated** | 2026-08-25 |
+| **Status** | 3 of 3 judged against SHAP in Phase 07 — verdicts under each |
+| **Last updated** | 2026-09-17 |
 | **Evidence window** | Days 1–120 — `eda.horizon_day` in `config/config.yaml` |
 
 ---
@@ -73,6 +73,36 @@ significance test (t = 6.5) while being structurally wrong. Statistical strength
 protection against a mix artifact; the only cure was conditioning on the confound the
 hypothesis itself had named.
 
+### Verdict — Phase 07: falsified, on the product that carries the traffic
+
+Measured on test, from the persisted contributions:
+`reports/figures/shap_amount_dependence.png`.
+
+Within `ProductCD` W — 72% of transactions and 64% of fraud dollars — the amount's
+contribution rises with amount to about +0.44 near $300 and then **turns sharply
+negative**, reaching −0.56 above $475. That is falsification criterion 1 as written: a
+hump inside a single product, where mix cannot explain it. It is not a binning artifact —
+it sharpens at twenty bins, and the reversing band holds 385 transactions across 232
+distinct `card1` values and all 22 days of test. C is noisy with no clean rise; H rises
+throughout; R and S rise and do flatten at the top, which is what this hypothesis
+predicted and what W does not do.
+
+**The uncomfortable part.** The band where the amount's contribution goes negative is the
+band with the *highest* observed fraud rate in W — about 6%, against roughly 2% below it.
+The data says large W transactions are riskier; the model's use of the amount says the
+opposite, on the margin.
+
+Both can be true at once, and the resolution is the one §5 records. A SHAP value is
+marginal: it is what the amount moved *given* `C13`, `C1`, `D1` and the rest. If those
+already carry the risk of a large W transaction, the amount is left correcting for what
+they overstate. What is falsified is this hypothesis's prediction about the
+contribution. Whether the claim about amounts and fraud is wrong is a different question,
+and the fraud rates above suggest it is not.
+
+**Recorded, not repaired.** The frozen model is not revisited because its use of a
+feature is surprising — `explainability.md` §9. This is a caveat on the Phase 05 model
+and a question for anyone who retrains it.
+
 ## H2 — Round amounts are over-represented, but only between $150 and $500
 
 **Claim.** Fraud clusters on round `TransactionAmt` values that are multiples of $50 in
@@ -126,6 +156,38 @@ while a plain "is a round number" feature does not.
 as a whole is well-supported; individual multipliers at the sparse end are not.
 
 ---
+
+### Verdict — Phase 07: the mechanism survives, the feature built for it did not
+
+**Falsification criterion 3 was the real test, and it was passed.** The ratios were
+re-measured on test — days 161–182, sixty days past the evidence window, never looked at
+when this was written:
+
+| amount | ratio, test | in `ProductCD` H |
+|---|---:|---:|
+| $100 | **0.85** | 1.03 |
+| $150 | 1.49 | 2.83 |
+| $250 | 1.93 | — |
+| $300 | 7.44 | 9.60 |
+| $450 | **57.30** | 67.89 |
+| $500 | 3.47 | 1.26 |
+
+Across the whole band, round amounts between $150 and $500 carry an 8.0% fraud rate
+against 3.1% for the rest of the band. `$100` is still under-represented, which is the
+observation that made this hypothesis specific rather than a superstition about round
+numbers, and it is the one that would have been easiest to lose out of sample.
+
+**The Phase 07 prediction is another matter.** It said the engineered band feature would
+earn importance. `amt_round_band` ranks #163 of 349, and it and
+`amt_round_band_product` together carry about a sixth of what the raw `TransactionAmt`
+carries. The second form of the prediction — a spiky rather than smooth contribution —
+has support: the amount's median contribution sits above its immediate neighbourhood at
+$300, $400, $450 and $500, on counts small enough to be worth naming.
+
+**What this settles.** The signal is real and it generalises. The column built to hand it
+to a linear model was redundant to a tree, which can carve the same bands out of the raw
+amount by itself. That is a lesson about feature engineering for boosted trees, not
+about fraud, and it is the same lesson E4 recorded from the other direction.
 
 ## H3 — `ProductCD` is among the strongest single predictors, and the one others proxy for
 
@@ -202,6 +264,56 @@ recorded.
 
 ---
 
+
+### Verdict — Phase 07: not supported, and not cleanly falsified either
+
+`ProductCD` ranks **#70 of 349** by mean absolute contribution on test. The fields this
+hypothesis argued were proxies for it rank *above* it: `addr1` at #18, `P_emaildomain` at
+#15. Falsification criterion 2 — address presence retaining a large contribution
+alongside product — fires as written.
+
+`addr2` sits at #309, near zero, which is consistent with `addr1` carrying geography
+rather than the shared null mask this hypothesis was about.
+
+**Why this is not a clean falsification.** The evidence in section 6 above was lift at
+fixed volume with nothing else in the model. A contribution is marginal use given 348
+other columns, and `C13`, `C1`, `C14` and `D1` — the four above everything — are
+undocumented counters and day-deltas that could plausibly encode what product separates.
+A field can contribute nothing because it is irrelevant or because it is redundant, and
+nothing measured here tells those apart. Settling it would mean dropping the column and
+refitting; `explainability.md` §9 forbids that, and an explanation is not worth a
+retrain.
+
+**Criterion 3, measured: the ordering holds.** The fixed-volume comparison was re-run on
+test, both the way section 6 ran it — levels picked on the same rows the capture is
+measured on — and the operational way, levels picked on train and applied forward:
+
+| field | levels | volume | fraud captured | lift | (train-selected) lift |
+|---|---:|---:|---:|---:|---:|
+| `card2` | 20 | 10.2% | 42.6% | **4.16×** | 4.08× |
+| `addr1` | 1 | 11.0% | 42.7% | 3.87× | 3.79× |
+| `ProductCD` | 1 | 11.1% | **42.8%** | 3.86× | 3.86× |
+| `card1` | 40 | 10.3% | 36.1% | 3.52× | 2.91× |
+| `card5` | 6 | 19.6% | 37.1% | 1.90× | 2.09× |
+
+The same three fields lead, sixty days later, and `card5` and `card1` still trail. The
+lifts are all higher than in section 6, which is what a higher base rate does to this
+statistic.
+
+**`card2`'s edge is the denominator, not more fraud.** It captures 42.6% where
+`ProductCD` captures 42.8%; the lift favours it because it does so at nine tenths of a
+point less volume. Selected on train and applied forward — the only version an operator
+could run — `ProductCD` captures the most fraud of any single field here, and does it
+with **one level against forty-three**.
+
+**What survives, and what does not.** The claim about the world is in better shape than
+when it was softened: at the capacity this project operates under, nothing beats
+`ProductCD` on fraud captured, and it still costs nothing to obtain. The claim about
+*this model* does not survive — the field ranks #70 and the model barely uses it.
+
+That is the sharpest instance in the project of a distinction that runs through all of
+Phase 07: a field can separate risk as well as anything available and still contribute
+almost nothing to a model that has three hundred other ways to know the same thing.
 
 > **On `has_identity`.** Fraud is 7.34% where an identity record exists against 2.14%
 > where it does not — strongly predictive, and in the opposite direction to intuition.

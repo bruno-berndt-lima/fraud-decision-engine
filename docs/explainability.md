@@ -228,7 +228,55 @@ reports what this booster used, given everything else it was handed.
 
 ### Result
 
-*Pending.*
+Each hypothesis made two claims — one about how fraud relates to a field, one about how
+this model would use it — and they did not fare the same way. Reading only the second
+column would say the three were a washout; they were not.
+
+| | the claim about the world | the prediction about SHAP |
+|---|---|---|
+| **H1** | not re-tested, but fraud rates rise with amount in W, which supports it | **falsified**, on the product that carries the traffic |
+| **H2** | **confirmed on test**, against the criterion it registered in Phase 01 | **half** — the spikiness shows, the feature built for it did not earn its place |
+| **H3** | **holds on test** — nothing beats it on fraud captured at the operating capacity | **not supported**, and not cleanly falsified either |
+
+The verdicts and their evidence are written under each hypothesis in `hypotheses.md`.
+What belongs here is the thing all three have in common.
+
+**The predictions failed together, and for one reason.** Each assumed a model would use a
+field in proportion to how well that field separates fraud on its own. That is false for
+a booster holding three hundred and forty-nine columns in which the same signal appears
+several times over. Three hypotheses, one mistake, made before any of them could be
+checked — which is what writing them down in advance was for.
+
+**Every one of them was a claim about the data, and SHAP answers a different question.**
+A hypothesis says how fraud relates to a field. A contribution says how much this model
+moved its output on account of that field *given the other three hundred and forty-eight*.
+Those come apart whenever a signal is carried in more than one place, and this dataset
+carries almost everything in more than one place.
+
+H3 is the sharpest case, because both of its legs are now measured: at fixed volume on
+test it captures more fraud than any other single field, with one level against `card2`'s
+forty-three, and the model ranks it seventieth. H2 is the next cleanest, and it runs in
+the direction nobody expects. Its claim
+about the world was re-tested on test data, against the criterion it registered in Phase
+01, and it held decisively — round amounts between $150 and $500 carry roughly two and a
+half times the fraud rate of their neighbours, `$450` remains an extreme outlier, and
+`$100` remains *under*-represented, which is the observation that made the hypothesis
+specific rather than a superstition about round numbers. The feature engineered to
+capture it sits far down the ranking. The signal is real; the column built for it was
+redundant, because a tree holding the raw amount can carve those bands itself — and the
+raw amount's contribution does show a premium at several of them.
+
+**A hypothesis is not refuted by a model that did not need the feature.** Three of the
+four families Phase 04 built are in the same position, and §4 records the same asymmetry
+from the other side. Where a verdict below says "not supported", it means this model, on
+these columns; where it says "falsified", the prediction was about the contribution
+itself and the contribution contradicts it.
+
+**Two things this section cannot separate, and does not pretend to.** A prediction can
+fail because the mechanism was never real, or because it did not survive the sixty days
+between the evidence window and test. And a feature can contribute nothing because it is
+irrelevant or because it is redundant. Settling either would mean removing a column and
+refitting, which §9 forbids and which no explanation is worth.
 
 ## 6. Local cases
 
