@@ -230,6 +230,36 @@ LightGBM nothing to parallelise and that more threads made it *slower*, replicat
 two runs. The container therefore pins one thread per worker and scales with processes.
 This inverts the usual advice and is a measurement, not a preference.
 
+**The transform has one definition, and serving is a caller of it.** The service imports
+`apply_categories`, `apply_medians` and `feature_columns` from the training module rather
+than holding its own copy. A second implementation of the vocabulary and the fill values
+would be train/serve skew written by hand — precisely what §8's gate exists to catch — so
+the duplication is refused even though it would make the import graph tidier.
+
+**What that costs, measured and accepted.** Importing the training module brings MLflow
+into the serving process, and reading `config.yaml` brings pandera through `data/load.py`,
+which every module in the project reads config through. Both are *startup* cost, roughly a
+second between them, and startup is not what §3.1 budgets — loading a ~77 MB booster
+dominates it regardless.
+
+**What the image does not install, and what it cannot avoid.** `shap` and `matplotlib` stay
+out, and with `shap` goes the largest single block of weight in the environment — its
+`numba` and `llvmlite` chain is over a hundred megabytes, more than everything else the
+image would drop put together. That exclusion rests on Phase 07's rule that the serving
+path imports neither, and the image selects its dependencies accordingly rather than
+trusting the rule. **scikit-learn cannot be excluded**: LightGBM imports it itself, so a
+serving environment without it has no booster either. Recorded here so it is not
+rediscovered by someone trying to remove it.
+
+**The alternative was considered and declined.** Extracting the apply-side functions into a
+module free of MLflow would edit the file the frozen booster's stage depends on — marking a
+2,990-tree model stale, leaving the guarded headline target permanently unsatisfiable, and
+requiring new prerequisites across the build graph — to save MLflow's share of the image
+and about a second of startup. The extraction remains available if cold start ever becomes
+a real constraint, and it would be done the way any edit near a frozen artifact is: the
+artifacts' timestamps restored deliberately, and the reloaded model required to reproduce
+its recorded scores exactly before it is trusted again.
+
 ### Result
 
 *Pending.*
@@ -295,6 +325,22 @@ equal `data/features/{split}.parquet`, and the booster's scores on it must equal
 recorded prediction vectors, to the digit. Tier-3 columns are supplied from the matrix for
 this test, so the transform path is isolated from §2's default. This is `reproduce.py`'s
 rule applied to a new consumer: a model is proven before anything new is attached to it.
+
+**The named risk on that gate: the tier-2 artifacts have never been read.**
+`categories.parquet` and `medians.parquet` are written by the training stage and read back
+by nothing — every stage needing the vocabulary refits it from `train` through
+`prepare_matrices`. Serving is their first reader, and the vocabulary's codes are
+**positional**: the level order *is* the contract with the booster, which records the codes
+its splits test and never what they stand for. A read that re-sorted the levels, or took
+their order from row position, would hand the model correct-looking codes standing for the
+wrong levels, and nothing would raise — the scores would simply be wrong.
+
+`write_categories` anticipated this and persists the code beside the level rather than
+leaving it implicit in row order; the reader must use that column. The gate's fixture
+therefore has to include categoricals whose fitted order is **not** the order a naive read
+would produce, and the round trip is asserted on the reconstructed dtype as well as on the
+scores. The same applies to the frequency, entity-statistic and V-block tables, which
+serving also reads for the first time.
 
 **Two regression tests, as the Definition of Done asks.** A golden-prediction test pinning
 known requests to known probabilities and decisions; a PR-AUC regression test on a fixed
