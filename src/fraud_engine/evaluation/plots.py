@@ -1,9 +1,15 @@
-"""Figures for the evaluation harness.
+"""Figures for the evaluation harness, and the house style the others borrow.
 
-The only module that imports matplotlib. Keeping it here means ``report.py`` and
+**Nothing on the serving path imports matplotlib.** That is the rule; this module
+being its only importer was how it was enforced until Phase 07, which draws figures
+of its own from ``explain/plots.py``. The reason is unchanged: ``report.py`` and
 ``metrics.py`` stay importable in the Phase 08 container, which has no reason to
-carry a plotting library — and an accidental import there fails loudly instead of
+carry a plotting library, and an accidental import there fails loudly instead of
 quietly bloating the image.
+
+``new_axes`` and ``style_axes`` are public for that second importer. A palette and
+a chrome copied into a second module would drift, and two figures in one report
+disagreeing about what a gridline looks like is the kind of thing nobody fixes.
 
 Figures are written to ``reports/figures/``, which is tracked: they are
 deliverables, not debugging output.
@@ -46,16 +52,16 @@ SURFACE = "#fcfcfb"
 _MAX_SERIES = len(SERIES_COLOURS)
 
 
-def _new_axes(figsize=(7.0, 4.5)):
+def new_axes(figsize=(7.0, 4.5)):
     """A styled figure and axes: recessive chrome, no chartjunk."""
     figure, axes = plt.subplots(figsize=figsize, dpi=150)
     figure.patch.set_facecolor(SURFACE)
-    _style_axes(axes)
+    style_axes(axes)
     return figure, axes
 
 
-def _style_axes(axes):
-    """The chrome `_new_axes` applies, for figures with more than one panel."""
+def style_axes(axes):
+    """The chrome `new_axes` applies, for figures with more than one panel."""
     axes.set_facecolor(SURFACE)
 
     axes.grid(True, color=GRIDLINE, linewidth=1, linestyle="-")
@@ -109,7 +115,7 @@ def plot_pr_curve(
         ValueError: If there are no series, or more than the palette validates.
     """
     _check_series(scores)
-    figure, axes = _new_axes()
+    figure, axes = new_axes()
 
     base_rate = float(y_true.mean())
     peak = 0.0
@@ -210,7 +216,7 @@ def plot_recall_at_capacity(
         capacities = np.linspace(0.002, 0.05, 25)
     capacities = sorted(float(capacity) for capacity in capacities)
 
-    figure, axes = _new_axes()
+    figure, axes = new_axes()
 
     def recall_curve(score: pd.Series) -> list[float]:
         return [recall_at_capacity(y_true, score, days, c).recall for c in capacities]
@@ -311,7 +317,7 @@ def plot_reliability(
         ValueError: If there are no series, or more than the palette validates.
     """
     _check_series(tables)
-    figure, axes = _new_axes(figsize=(6.0, 6.0))
+    figure, axes = new_axes(figsize=(6.0, 6.0))
 
     drawn = [table[table["fraud_rate"] > 0] for table in tables.values()]
     hidden = sum(len(table) for table in tables.values()) - sum(len(table) for table in drawn)
@@ -387,7 +393,7 @@ def plot_sensitivity(
     figure.patch.set_facecolor(SURFACE)
 
     for axes in (top, bottom):
-        _style_axes(axes)
+        style_axes(axes)
         axes.axvline(base, color=AXIS, linewidth=1)
 
     for colour, column, label in (

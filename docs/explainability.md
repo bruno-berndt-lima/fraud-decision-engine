@@ -180,9 +180,15 @@ lead both splits, with `D1` just behind. Those are counters and day-deltas over 
 windows that were never published — `problem-statement.md` §6 records the assumption, and
 E7 measured the same asymmetry from the other side.
 
-The registered rule of this section now has work to do. A reason code for a typical
-blocked transaction will reach for `C13` first, and the honest generic is what it will
-find. That is the finding, not a defect in the mapping.
+**The majority is carried by the tail, not the head** — and this is the part that would
+have been got wrong by reading the ranking alone. Inside the top twenty features, tier 0
+holds two fifths of the mass and six of the twenty rows; across all 349 it holds well
+over half, because there are 295 inherited columns each moving the model a little. The
+figure `reports/figures/shap_ranking_by_tier.png` shows the head, and the head is more
+nameable than the model as a whole.
+
+What that means for a single decision — how often a reason code has nothing but the
+generic to offer — is a per-row question and is measured in §7, not inferred here.
 
 **Use is not value, and the two disagree here more sharply than anywhere else in the
 project.** `freq_card1`, `amt_mean_card1` and `amt_z_addr1` sit in the top six of both
@@ -247,7 +253,22 @@ score half is an explanation of the model, not of the decision.
 
 ### Result
 
-*Pending.*
+Figures: `shap_waterfall_true_positive.png`, `shap_waterfall_false_positive.png`,
+`shap_waterfall_high_value_catch.png`. Cases were selected from the explained rows
+rather than from all of test — a figures module that could score is one that could
+disagree with the record it draws from, so the rule selects within a sixth of the
+split instead of over all of it. Typical cases are the median amount of their kind;
+the high-value catch is the extreme by construction.
+
+**The high-value catch is the figure that justifies §7's whole design.** It is a
+$2,259.95 fraud, blocked at a calibrated 2.00% against a break-even of 0.65% — and
+`TransactionAmt` is the second-largest contributor *in the direction of safety*, pushing
+the log-odds down by more than one. The model found the amount reassuring. The policy
+blocked it anyway, because at that size the bar had fallen below the score.
+
+A waterfall alone would have said this transaction was blocked despite its amount. The
+truth is that it was blocked because of it. Half the decision lives in a threshold that
+`shap` cannot see, and the annotation is not a caption — it reverses the reading.
 
 ## 7. Reason codes
 
