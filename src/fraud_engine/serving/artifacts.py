@@ -22,16 +22,20 @@ are two files apart, and the round-trip tests are what hold them together.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
 from fraud_engine.features.aggregations import GLOBAL
 from fraud_engine.features.encoders import MISSING
 from fraud_engine.features.vblock import PREFIX, V_COLUMNS
+from fraud_engine.models.rules import Constants, Rule, build_rules, load_constants
 from fraud_engine.models.train import OTHER
 
 # What `vblock.write_tables` calls a flag, against what it calls a kept column.
@@ -236,3 +240,110 @@ def load_tables(paths: Mapping[str, str], impute: bool) -> Tables:
         amount_stats=read_amount_stats(paths["amount_stats"]),
         vblock=read_vblock(paths["vblock"]),
     )
+
+
+# ---- what a request is scored by ---------------------------------------------
+
+
+@dataclass(frozen=True)
+class Model:
+    """The booster, what it reads, and what turns its output into a probability.
+
+    The calibrator is not optional equipment. `decision-policy.md` §1: serving without it
+    returns uncalibrated probabilities and raises nothing, and this booster's raw output
+    is roughly three and a half times too extreme in log-odds.
+
+    Attributes:
+        booster: Reloaded from `model.txt`, already truncated at the peak iteration.
+        columns: Its feature names — the transform's output order.
+        calibrator: As `calibrate.fit_calibrator` wrote it.
+        tables: The five fitted tables the transform needs.
+    """
+
+    booster: lgb.Booster
+    columns: list[str]
+    calibrator: dict
+    tables: Tables
+
+
+@dataclass(frozen=True)
+class Fallback:
+    """The rules engine, loaded rather than fitted — `problem-statement.md` §3.1.
+
+    Nothing here needs `config.yaml`: the constants carry the weights they were fitted
+    beside, which is why `write_constants` puts them in one object, so `build_rules` can
+    be handed the artifact itself.
+    """
+
+    rules: tuple[Rule, ...]
+    constants: Constants
+
+
+def load_model(paths: Mapping[str, str], impute: bool) -> Model:
+    """The booster, its calibrator and its tables, read once.
+
+    Args:
+        paths: The `paths` block of `config.yaml`.
+        impute: `model.impute`.
+
+    Returns:
+        Everything the scoring path holds between requests.
+
+    Raises:
+        FileNotFoundError: If an artifact is absent. The caller decides what that means;
+            `serving.md` §4 says the service comes up degraded rather than not at all.
+        As each reader.
+    """
+    booster = lgb.Booster(model_file=str(paths["model"]))
+
+    return Model(
+        booster=booster,
+        columns=booster.feature_name(),
+        calibrator=json.loads(Path(paths["calibrator"]).read_text()),
+        tables=load_tables(paths, impute),
+    )
+
+
+def load_fallback(paths: Mapping[str, str]) -> Fallback:
+    """The incumbent, from the artifact the baselines stage writes."""
+    constants = load_constants(paths["rules_constants"])
+    return Fallback(rules=build_rules(constants), constants=constants)
+
+
+# ---- what is loaded, as something a reader can check -------------------------
+
+# Enough to tell two artifacts apart in a log or a health check, and short enough to read
+# aloud. This is provenance, not integrity: a file is identified, never authenticated.
+STAMP_LENGTH = 12
+
+STAMPED = (
+    "model",
+    "categories",
+    "medians",
+    "calibrator",
+    "encoders",
+    "amount_stats",
+    "vblock",
+    "rules_constants",
+    "cost_matrix",
+    "reason_dictionary",
+)
+
+
+def stamp(path: Path | str) -> str:
+    """A short content hash of one artifact, or `absent` when there is nothing to hash."""
+    path = Path(path)
+    if not path.exists():
+        return "absent"
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    return digest[:STAMP_LENGTH]
+
+
+def stamps(paths: Mapping[str, str]) -> dict[str, str]:
+    """What is loaded, identified — `serving.md` §5.
+
+    A decision has to be traceable to the objects that produced it without reading the
+    image, and "the model" is not an answer when two of them exist.
+    """
+    return {name: stamp(paths[name]) for name in STAMPED}
