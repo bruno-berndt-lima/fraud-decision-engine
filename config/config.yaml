@@ -110,6 +110,13 @@ paths:
   # Tracked, and the one record here whose numbers do not travel: it is true of
   # the hardware named inside it and of nothing else.
   explain_latency: reports/metrics/explain_latency.json
+  # The sentences a declined customer is read. Versioned separately from this
+  # file, like cost_matrix.yaml: editing text someone reads is not the same kind
+  # of change as editing a threshold.
+  reason_dictionary: config/reason_codes.yaml
+  # How often a decline can be explained with anything but the generic. Tracked:
+  # section 7's result, and the compliance-facing number of the phase.
+  reason_codes: reports/metrics/reason_codes.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review

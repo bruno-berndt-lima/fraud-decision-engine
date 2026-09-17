@@ -1,0 +1,89 @@
+{
+  "name": "reason_codes",
+  "created": "2026-09-17T17:47:55+00:00",
+  "git_revision": "6098a6e485b41190ceb8cdba22419239a370940d-dirty",
+  "split": "test",
+  "dictionary_version": 1,
+  "cost_matrix_version": 1,
+  "top_k": 3,
+  "explained": 10000,
+  "summary": {
+    "declines": 762,
+    "tier_of_every_reason": {
+      "tier_0": 0.6439195100612424,
+      "tier_2": 0.23753280839895013,
+      "tier_1": 0.10761154855643044,
+      "tier_3": 0.010936132983377077
+    },
+    "leading_reason_unnameable": 0.7086614173228346,
+    "fully_generic": 0.36220472440944884,
+    "at_least_one_named": 0.6377952755905512
+  },
+  "examples": {
+    "largest_decline": {
+      "decision": "block",
+      "adverse": true,
+      "review_eligible": true,
+      "probability": 0.011362777433345104,
+      "break_even": 0.0027742739725013965,
+      "amount": 5366.82,
+      "reasons": [
+        {
+          "feature": "C14",
+          "contribution": 1.0753260307710852,
+          "phrase": "a pre-computed risk indicator supplied with the transaction data, whose definition the data provider does not publish",
+          "named": false
+        },
+        {
+          "feature": "C13",
+          "contribution": 1.0661379211111583,
+          "phrase": "a pre-computed risk indicator supplied with the transaction data, whose definition the data provider does not publish",
+          "named": false
+        },
+        {
+          "feature": "amt_mean_card1",
+          "contribution": 0.5927604640749665,
+          "phrase": "the amount is out of line with what this card usually spends",
+          "named": true
+        }
+      ],
+      "cost_matrix_version": 1,
+      "statements": [
+        "several pre-computed risk indicators supplied with the transaction data, whose definitions the data provider does not publish",
+        "the amount is out of line with what this card usually spends"
+      ]
+    },
+    "fully_generic": {
+      "decision": "block",
+      "adverse": true,
+      "review_eligible": true,
+      "probability": 0.11096135806899472,
+      "break_even": 0.010940919037199124,
+      "amount": 1331.0,
+      "reasons": [
+        {
+          "feature": "C13",
+          "contribution": 2.056671986407857,
+          "phrase": "a pre-computed risk indicator supplied with the transaction data, whose definition the data provider does not publish",
+          "named": false
+        },
+        {
+          "feature": "C14",
+          "contribution": 1.56010115752778,
+          "phrase": "a pre-computed risk indicator supplied with the transaction data, whose definition the data provider does not publish",
+          "named": false
+        },
+        {
+          "feature": "C6",
+          "contribution": 1.3726871559456617,
+          "phrase": "a pre-computed risk indicator supplied with the transaction data, whose definition the data provider does not publish",
+          "named": false
+        }
+      ],
+      "cost_matrix_version": 1,
+      "statements": [
+        "several pre-computed risk indicators supplied with the transaction data, whose definitions the data provider does not publish"
+      ]
+    }
+  }
+}

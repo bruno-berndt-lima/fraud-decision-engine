@@ -379,7 +379,41 @@ test rather than shipping a blank line to a customer.
 
 ### Result
 
-*Pending.*
+`explain/codes.py`, its dictionary in `config/reason_codes.yaml`, and the measurement in
+`reports/metrics/reason_codes.json`. Of the explained test rows, the frozen policy
+declined **762**, and those are the decisions an explanation is owed for.
+
+| | |
+|---|---:|
+| declines whose **leading** reason has no sentence | 70.9% |
+| declines whose **every** shown reason has no sentence | **36.2%** |
+| declines with at least one nameable reason | 63.8% |
+
+**A third of declines can only be explained by saying that they cannot be.** That is the
+answer to the question this phase opened with, and it is not the one the BACEN and LGPD
+framing wants. A person declined on those transactions can be told the amount, the bar it
+had to clear, and that several pre-computed indicators supplied with the transaction data
+argued against them — indicators whose definitions the data provider does not publish.
+Three fifths of declines do better than that, and none of them do well.
+
+**It is a property of this dataset, and it is what a real deployment would have to fix.**
+Nothing in the mapping is broken. The columns that dominate a typical decline are `C13`,
+`C14` and `C1`, and the reason there is no sentence for them is that nobody outside Vesta
+knows what they count. A firm building this on its own data would know, and §4's shares
+are the measurement that says how much it would be worth knowing.
+
+**The design decision the measurement forced.** The first version printed one reason per
+contributor, and a decline whose top three were all inherited read the same sentence three
+times. That is a notice that looks broken rather than one that admits a limit, so the
+generic has two forms and the shown lines collapse. `reasons` keeps one entry per
+contributor as the audit trail — it is what the table above counts — and `statements()`
+is what a person is read.
+
+**What ships.** A decline carries the three parts §7 registered: the contributors that
+argued for it, the probability against the break-even for that amount, and review
+*eligibility* — never the review itself, which is queue state no request can know. The
+cost matrix version rides along, because a later version would silently change what
+customers are told.
 
 ## 8. What an explanation costs to serve
 

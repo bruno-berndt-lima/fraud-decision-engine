@@ -1,0 +1,93 @@
+# ==============================================================================
+# Reason codes — what a person is told when a transaction is declined
+# ==============================================================================
+# Registered in docs/explainability.md §7. Versioned separately from config.yaml
+# for cost_matrix.yaml's reason: this is customer-facing text, and editing a
+# sentence someone reads is not the same kind of change as editing a threshold.
+#
+# One entry per column the booster can split on, or the tier-0 generic. A column
+# with neither fails a test rather than shipping a blank line to a customer.
+#
+# `raises` is what the column means when it pushed the score toward fraud. Only
+# that direction is ever shown: an explanation is owed for the decision that went
+# against the customer, and "this looked safe because..." is not an explanation
+# of a decline.
+# ==============================================================================
+version: 1
+
+# The 295 inherited columns. One sentence, not 295 invented ones — §4 measures
+# how much of the model this covers, and the honest answer is the finding rather
+# than a gap to paper over.
+# Two forms, because a notice that repeated one sentence three times would be
+# worse than useless. `many` is used whenever more than one of the contributors
+# shown has no sentence of its own — which §7 measures happening on roughly a
+# third of declines.
+generic:
+  tier_0:
+    one: >-
+      a pre-computed risk indicator supplied with the transaction data, whose
+      definition the data provider does not publish
+    many: >-
+      several pre-computed risk indicators supplied with the transaction data,
+      whose definitions the data provider does not publish
+
+features:
+  # ---- the request itself ----------------------------------------------------
+  TransactionAmt: the amount is unusual for this kind of transaction
+  ProductCD: this type of purchase carries higher risk
+  card1: this card has an unusual history
+  card2: the card's issuing range is associated with higher risk
+  card3: the card's issuing range is associated with higher risk
+  card4: this card network is associated with higher risk for this purchase type
+  card5: the card's issuing range is associated with higher risk
+  card6: this type of card is associated with higher risk for this purchase type
+  addr1: the billing address region is associated with higher risk
+  addr2: the billing country is associated with higher risk
+  dist1: the distance between the billing and delivery locations is unusual
+  dist2: the distance between the billing and delivery locations is unusual
+  P_emaildomain: the email domain on this purchase is associated with higher risk
+  R_emaildomain: the recipient email domain is associated with higher risk
+  M1: a card and address consistency check did not match
+  M2: a card and address consistency check did not match
+  M3: a card and address consistency check did not match
+  M4: the match between the card and the address details is unusual
+  M5: the name on the card did not match the billing name
+  M6: a card and address consistency check did not match
+  M7: a card and address consistency check did not match
+  M8: a card and address consistency check did not match
+  M9: a card and address consistency check did not match
+  DeviceType: this type of device is associated with higher risk
+  DeviceInfo: this device is associated with higher risk
+  has_identity: the device and browser details collected with this purchase are unusual
+  hour: the time of day is unusual for this kind of purchase
+  weekday: the day of the week is unusual for this kind of purchase
+  amt_whole_dollar: the amount is a whole dollar figure rather than a priced item
+  amt_round_band: the amount is a round figure in a range often used in fraud
+  amt_round_band_product: the amount is a round figure unusual for this purchase type
+  id_14: the device's time zone does not fit the rest of the purchase
+  id_30: this operating system is associated with higher risk
+  id_31: this browser is associated with higher risk
+  id_32: the screen colour depth reported by this device is unusual
+  id_33: the screen resolution reported by this device is unusual
+
+  # ---- fitted tables, shipped beside the model -------------------------------
+  freq_card1: this card has been seen rarely
+  freq_card2: this card's issuing range has been seen rarely
+  freq_card3: this card's issuing range has been seen rarely
+  freq_card5: this card's issuing range has been seen rarely
+  freq_addr1: this billing region has been seen rarely
+  freq_addr2: this billing country has been seen rarely
+  freq_DeviceInfo: this device model has been seen rarely
+  amt_mean_card1: the amount is out of line with what this card usually spends
+  amt_z_card1: the amount is far above what this card usually spends
+  amt_absz_card1: the amount is far from what this card usually spends
+  amt_mean_addr1: the amount is out of line with what this billing region usually spends
+  amt_z_addr1: the amount is far above what this billing region usually spends
+  amt_absz_addr1: the amount is far from what this billing region usually spends
+  id_23: the connection is routed through an anonymising service
+
+  # ---- live entity state -----------------------------------------------------
+  vel_n1h_card1: this card has been used several times in the past hour
+  vel_n24h_card1: this card has been used several times in the past day
+  vel_n7d_card1: this card has been used several times in the past week
+  vel_recency_card1: this card was used again very soon after its last purchase

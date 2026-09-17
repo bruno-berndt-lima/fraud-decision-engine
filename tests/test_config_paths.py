@@ -40,6 +40,8 @@ PATH_PAIRS = [
     ("EXPLAIN_DIR", "paths.explain_dir"),
     ("SHAP_GLOBAL", "paths.shap_global"),
     ("EXPLAIN_LATENCY", "paths.explain_latency"),
+    ("REASON_DICT", "paths.reason_dictionary"),
+    ("REASON_CODES", "paths.reason_codes"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment

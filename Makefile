@@ -63,6 +63,8 @@ EXPLAIN_DIR := $(DATA_DIR)/explain
 SHAP_GLOBAL := $(REPORTS_DIR)/metrics/shap_global.json
 EXPLAIN_LATENCY := $(REPORTS_DIR)/metrics/explain_latency.json
 EXPLAIN_FIGURE  := $(REPORTS_DIR)/figures/shap_ranking_by_tier.png
+REASON_DICT     := $(CONFIG_DIR)/reason_codes.yaml
+REASON_CODES    := $(REPORTS_DIR)/metrics/reason_codes.json
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -393,6 +395,17 @@ $(EXPLAIN_FIGURE): $(SHAP_GLOBAL) $(FEATURES) $(COST_MATRIX) \
                    src/fraud_engine/evaluation/cost.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.explain.figures
 
+# Like the figures, this reads the persisted contributions and the headline's recorded
+# probabilities, and $(HEADLINE) is deliberately not a prerequisite for the same reason.
+# The dictionary is a plain file prerequisite: it is small, read whole, and editing a
+# sentence has to re-measure how many declines it covers.
+$(REASON_CODES): $(SHAP_GLOBAL) $(FEATURES) $(COST_MATRIX) $(REASON_DICT) \
+                 $(call sections,load splits model explain) \
+                 src/fraud_engine/explain/codes.py \
+                 src/fraud_engine/features/registry.py \
+                 src/fraud_engine/evaluation/cost.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.explain.codes
+
 # Separate from $(SHAP_GLOBAL) for the reason $(FAMILY_FLOOR) is separate from
 # $(FAMILIES): it answers a question the contributions do not change, and folding a
 # measurement of seconds into a stage of hours means it can never be rerun alone.
@@ -410,7 +423,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -433,6 +446,7 @@ headline:  $(HEADLINE)   ## The one test touch: rules, naive and EV in USD, froz
 explain:   $(SHAP_GLOBAL) ## Contributions for the shipped booster, and the global ranking
 latency:   $(EXPLAIN_LATENCY) ## Time one row scored against the same row explained
 explain-figures: $(EXPLAIN_FIGURE) ## Draw the beeswarm, the tier ranking and the waterfalls
+reason-codes: $(REASON_CODES) ## Code every declined transaction and measure what covers them
 
 # ==============================================================================
 # Housekeeping
