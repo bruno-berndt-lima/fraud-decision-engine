@@ -77,6 +77,12 @@ class Deployment:
         self.model = self._load(load_model, "model", self.paths, config["model"]["impute"])
         self.fallback = self._load(load_fallback, "fail-open path", self.paths)
 
+        # Hashed once, with the artifacts that were just read. Computing them per request
+        # would re-read every file to answer a question whose answer cannot change while
+        # the process lives — and one of those files is ~77 MB, which measured at nearly
+        # two hundred milliseconds against a budget of one hundred.
+        self.stamps = stamps(self.paths)
+
     @staticmethod
     def _load(loader, what: str, *arguments):
         """Load one half of the service, or record that it is not there.
@@ -173,11 +179,9 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
             # later is the right behaviour rather than a bug.
             raise HTTPException(status_code=503, detail=str(failure)) from failure
 
-        stamped = stamps(deployment.paths)
-
         return ScoreResponse(
             **vars(verdict),
-            model_version=model_version(deployment, stamped),
+            model_version=model_version(deployment, deployment.stamps),
             cost_matrix_version=deployment.costs.version,
         )
 
@@ -192,7 +196,7 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
             mode=deployment.mode,
             model_loaded=model is not None,
             fallback_loaded=fallback is not None,
-            artifacts=stamps(deployment.paths),
+            artifacts=deployment.stamps,
             features=len(model.columns) if model else None,
             trees=model.booster.num_trees() if model else None,
             calibration=model.calibrator.get("method") if model else None,

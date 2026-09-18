@@ -141,22 +141,54 @@ def prepare_inputs(
     # `raw_inputs` derives — but narrowing the frame without it would drop state a
     # caller did supply and default it silently.
     needed = [*raw_inputs(columns), *history_supplied(raw)]
-    frame = raw.reindex(columns=needed)
 
-    casts = {}
-    for name in needed:
-        if name in vocabulary:
-            continue
-        if name == "TransactionAmt":
-            casts[name] = load_cfg["amount_dtype"]
-        elif name == "TransactionDT":
-            casts[name] = TIME_DTYPE
-        elif name == "has_identity":
-            casts[name] = "bool"
-        else:
-            casts[name] = load_cfg["default_float_dtype"]
+    # **Typed by group, not by column.** `astype` with a four-hundred-key mapping costs
+    # roughly nine times one call per dtype, measured on a single row — pandas pays a
+    # fixed cost per column and a request has only one of them to amortise it over. The
+    # groups are the pipeline's own: the timestamp is an integer because `add_time_columns`
+    # divides it, the amount is double because it is summed into the headline, every other
+    # number is float32, and the vocabulary's columns are left alone for
+    # `apply_categories` to level.
+    special = {
+        "TransactionAmt": load_cfg["amount_dtype"],
+        "TransactionDT": TIME_DTYPE,
+        "has_identity": "bool",
+    }
+    numeric = [name for name in needed if name not in vocabulary and name not in special]
+    categorical = [name for name in needed if name in vocabulary]
 
-    return frame.astype(casts)
+    pieces = [
+        _typed(
+            raw, [name for name in numeric if name in raw.columns], load_cfg["default_float_dtype"]
+        ),
+        _gaps(
+            raw.index,
+            [name for name in numeric if name not in raw.columns],
+            load_cfg["default_float_dtype"],
+        ),
+        raw[[name for name in categorical if name in raw.columns]],
+        _gaps(raw.index, [name for name in categorical if name not in raw.columns], object),
+        *(_typed(raw, [name], dtype) for name, dtype in special.items() if name in raw.columns),
+    ]
+
+    return pd.concat([piece for piece in pieces if not piece.empty], axis=1)[needed]
+
+
+def _typed(raw: pd.DataFrame, names: list[str], dtype: object) -> pd.DataFrame:
+    """The named columns of `raw`, as one cast rather than one cast each."""
+    return raw[names].astype(dtype) if names else pd.DataFrame(index=raw.index)
+
+
+def _gaps(index: pd.Index, names: list[str], dtype: object) -> pd.DataFrame:
+    """Columns the request did not carry, as nulls of the dtype they would have had."""
+    if not names:
+        return pd.DataFrame(index=index)
+
+    return pd.DataFrame(
+        np.full((len(index), len(names)), np.nan if dtype is not object else None, dtype=dtype),
+        columns=names,
+        index=index,
+    )
 
 
 def fill_history(frame: pd.DataFrame, velocity_cfg: dict) -> pd.DataFrame:
@@ -184,21 +216,28 @@ def fill_history(frame: pd.DataFrame, velocity_cfg: dict) -> pd.DataFrame:
         for column in velocity.COLUMNS
     }
     absent = [column for column in velocity.COLUMNS if column not in frame.columns]
+    supplied = [column for column in velocity.COLUMNS if column in frame.columns]
 
-    if absent:
-        frame = pd.concat(
-            [
-                frame,
-                pd.DataFrame(
-                    {column: defaults[column] for column in absent},
-                    index=frame.index,
-                    dtype="float32",
-                ),
-            ],
-            axis=1,
-        )
+    # Cast the columns, never the frame. `astype` with a four-key mapping copies every
+    # column of a wide frame to change four of them, which measured at three hundred times
+    # the cost of building the four.
+    for column in supplied:
+        frame[column] = frame[column].astype("float32")
 
-    return frame.astype(dict.fromkeys(velocity.COLUMNS, "float32"))
+    if not absent:
+        return frame
+
+    return pd.concat(
+        [
+            frame,
+            pd.DataFrame(
+                {column: defaults[column] for column in absent},
+                index=frame.index,
+                dtype="float32",
+            ),
+        ],
+        axis=1,
+    )
 
 
 def history_supplied(raw: pd.DataFrame) -> tuple[str, ...]:
