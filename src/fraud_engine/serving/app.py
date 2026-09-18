@@ -26,6 +26,7 @@ is where the difference is visible.
 """
 
 import logging
+import threading
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -37,6 +38,7 @@ from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.cost import Costs, load_costs
 from fraud_engine.models.rules import REQUIRED_COLUMNS
 from fraud_engine.serving.artifacts import Fallback, Model, load_fallback, load_model, stamps
+from fraud_engine.serving.budget import pool, within
 from fraud_engine.serving.decide import MODEL, RULES, Verdict, decide, decide_with_rules
 from fraud_engine.serving.fast import Layout, build_layout
 from fraud_engine.serving.schemas import HealthResponse, ScoreResponse, request_model
@@ -60,6 +62,17 @@ FALLBACK_CATEGORICALS = ("ProductCD", "M4")
 UNAVAILABLE = "no model is loaded and the fail-open path is unavailable"
 
 
+class NothingLoaded(RuntimeError):
+    """Neither path can answer, which is not the same failure as one of them breaking.
+
+    Typed rather than matched on `RuntimeError`, because the endpoint answers the two
+    differently: a service holding nothing is a 503 a caller should retry against, and a
+    scoring path that raised with fail-open disarmed is a fault the caller cannot fix by
+    waiting. Catching the base class made every broken decision look like an empty
+    service.
+    """
+
+
 class Deployment:
     """What the process holds between requests.
 
@@ -72,6 +85,17 @@ class Deployment:
         self.paths = config["paths"]
         self.load_cfg = config["load"]
         self.features_cfg = config["features"]
+
+        serving_cfg = config["serving"]
+        self.budget_ms = float(serving_cfg["budget_ms"])
+        self.fail_open = bool(serving_cfg["fail_open"])
+
+        self.workers = pool()
+        # Counted because a service falling back on every request looks, from outside,
+        # exactly like a healthy one: same status code, same shape, a decision every time.
+        # `mode` says so per request; this is what says so across them.
+        self.fallbacks = 0
+        self._tally = threading.Lock()
         self.costs: Costs = load_costs(load_config(Path(self.paths["cost_matrix"])))
 
         self.model = self._load(load_model, "model", self.paths, config["model"]["impute"])
@@ -131,20 +155,49 @@ class Deployment:
         )
 
     def decide(self, values: Mapping) -> Verdict:
-        """The model's answer, or the incumbent's.
+        """The model's answer, or the incumbent's — §4's three arms, in one place.
+
+        The model is tried under the budget. A breach, a raise anywhere in the scoring
+        path, or a model that never loaded all end the same way: the incumbent decides and
+        the response says which answered. **Broadly caught on purpose.** Fail-open is
+        worth nothing if it covers the failures that were anticipated and not the one that
+        happens, and a transaction declined by an exception is the revenue outage §3.1
+        exists to prevent. The exception is logged, so a fallback is never silent in the
+        record even when it is invisible in the response.
 
         Raises:
-            RuntimeError: If neither is loaded. A service holding nothing cannot decide a
-                transaction, and saying so is better than any number it could invent.
+            NothingLoaded: If neither path can answer. A service holding nothing cannot
+                decide a transaction, and saying so is better than any number it invents.
+            Exception: Whatever the model path raised, when fail-open is disarmed — which
+                is for a test that wants the failure to surface, never for a deployment.
         """
         if self.model is not None and self.layout is not None:
-            return decide(
-                self.model, self.layout, values, self.costs, self.load_cfg, self.features_cfg
-            )
+            try:
+                return within(self.workers, self.budget_ms, lambda: self._scored(values))
+            except Exception as failure:
+                if not self.fail_open:
+                    raise
+                log.warning("falling back to the rules engine: %s", failure)
+                self._count_fallback()
+
         if self.fallback is not None:
             return decide_with_rules(self.fallback, values, self.costs)
 
-        raise RuntimeError(UNAVAILABLE)
+        raise NothingLoaded(UNAVAILABLE)
+
+    def _scored(self, values: Mapping) -> Verdict:
+        """The model's decision, as the budgeted call runs it."""
+        return decide(self.model, self.layout, values, self.costs, self.load_cfg, self.features_cfg)
+
+    def _count_fallback(self) -> None:
+        """One more transaction the model did not decide.
+
+        Locked because the counter is written from the pool's threads and `+= 1` is three
+        bytecodes, not one. A dropped count would be harmless and a lock costs nothing at
+        this rate; the point is that the number can be read at face value.
+        """
+        with self._tally:
+            self.fallbacks += 1
 
 
 def model_version(deployment: Deployment, stamped: Mapping[str, str]) -> str:
@@ -181,7 +234,7 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
         """
         try:
             verdict = deployment.decide(request.model_dump())
-        except RuntimeError as failure:
+        except NothingLoaded as failure:
             # 503, not 500: nothing about the request is wrong, and a caller retrying
             # later is the right behaviour rather than a bug.
             raise HTTPException(status_code=503, detail=str(failure)) from failure
@@ -208,6 +261,9 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
             trees=model.booster.num_trees() if model else None,
             calibration=model.calibrator.get("method") if model else None,
             cost_matrix_version=deployment.costs.version,
+            fail_open=deployment.fail_open,
+            budget_ms=deployment.budget_ms,
+            fallback_decisions=deployment.fallbacks,
         )
 
     return app

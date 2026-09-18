@@ -8,6 +8,7 @@ miniature cannot: whether the service returns what the shipped model says.
 """
 
 import json
+import time
 from pathlib import Path
 
 import lightgbm as lgb
@@ -30,6 +31,7 @@ from fraud_engine.models.train import (
     write_categories,
     write_medians,
 )
+from fraud_engine.serving import app as serving_app
 from fraud_engine.serving.app import create_app
 from fraud_engine.serving.artifacts import load_model, load_tables
 from fraud_engine.serving.fast import build_layout, row
@@ -278,6 +280,72 @@ def test_an_omitted_inherited_column_is_scored_rather_than_refused(client, deplo
     answer = client.post("/score", json=body)
     assert answer.status_code == 200
     assert answer.json()["inherited_expected"] > answer.json()["inherited_present"]
+
+
+# ---- fail open ---------------------------------------------------------------
+# §4's three arms. The first — an artifact that never loaded — is the degraded mode
+# below. These two are the ones that happen while the service is up and healthy.
+
+
+def test_a_model_that_raises_does_not_take_the_transaction_down(client, deployment, monkeypatch):
+    """A transaction declined by an exception is the outage fail-open exists to prevent."""
+
+    def fell_over(*arguments, **keywords):
+        raise RuntimeError("the booster fell over mid-request")
+
+    monkeypatch.setattr(serving_app, "decide", fell_over)
+    answer = client.post("/score", json=request_body(deployment))
+
+    assert answer.status_code == 200
+    assert answer.json()["mode"] == "rules"
+
+
+def test_a_decision_that_misses_the_budget_is_not_waited_for(client, deployment, monkeypatch):
+    """The caller is bounded; the work is not — it finishes in its thread and is dropped."""
+    budget = client.get("/health").json()["budget_ms"]
+
+    def slowly(*arguments, **keywords):
+        time.sleep(budget / 1000 * 3)
+        raise AssertionError("this result should have been abandoned")
+
+    monkeypatch.setattr(serving_app, "decide", slowly)
+
+    began = time.perf_counter()
+    answer = client.post("/score", json=request_body(deployment))
+    elapsed = (time.perf_counter() - began) * 1000
+
+    assert answer.status_code == 200
+    assert answer.json()["mode"] == "rules"
+    assert elapsed < budget * 3, "the request waited for work it had already given up on"
+
+
+def test_falling_back_is_counted_even_though_the_response_looks_ordinary(
+    client, deployment, monkeypatch
+):
+    """A service answering every request from the incumbent looks healthy from outside."""
+    before = client.get("/health").json()["fallback_decisions"]
+
+    def fell_over(*arguments, **keywords):
+        raise RuntimeError("again")
+
+    monkeypatch.setattr(serving_app, "decide", fell_over)
+    client.post("/score", json=request_body(deployment))
+
+    assert client.get("/health").json()["fallback_decisions"] == before + 1
+
+
+def test_a_disarmed_service_lets_the_failure_surface(deployment, monkeypatch):
+    """`fail_open: false` is for a test that wants to see the break, never for a deployment."""
+    config = dict(deployment["config"])
+    config["serving"] = dict(config["serving"]) | {"fail_open": False}
+    client = TestClient(create_app(config), raise_server_exceptions=False)
+
+    def fell_over(*arguments, **keywords):
+        raise RuntimeError("no net")
+
+    monkeypatch.setattr(serving_app, "decide", fell_over)
+
+    assert client.post("/score", json=request_body(deployment)).status_code == 500
 
 
 # ---- the degraded mode -------------------------------------------------------

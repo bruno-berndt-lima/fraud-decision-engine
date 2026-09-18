@@ -139,12 +139,19 @@ class HealthResponse(BaseModel):
     Three different facts, per §4: the process being up, the artifacts being loaded, and
     which mode is currently being served. An orchestrator that cannot tell them apart
     either restarts a healthy degraded service or sends traffic to one holding nothing.
+
+    `fallback_decisions` is the fourth, and the one nothing else reports: a service whose
+    model loaded but answers every request from the incumbent is indistinguishable from a
+    healthy one at the status code, and this is the number that is not.
     """
 
     status: str
     mode: str
     model_loaded: bool
     fallback_loaded: bool
+    fail_open: bool
+    budget_ms: float
+    fallback_decisions: int
     artifacts: dict[str, str]
     features: int | None
     trees: int | None
