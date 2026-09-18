@@ -267,6 +267,41 @@ than holding its own copy. A second implementation of the vocabulary and the fil
 would be train/serve skew written by hand — precisely what §8's gate exists to catch — so
 the duplication is refused even though it would make the import graph tidier.
 
+**Amended, before the fast path existed, and here is what the rule above cost.** Building
+one row through the pipeline's own functions was measured at **211 ms against a budget of
+100**, of which **163 ms** is three functions doing per-column work on a single row —
+`apply_medians` at 86 ms over ~310 columns, the V-block reduction at 48 ms, and
+`apply_categories` at 29 ms over 31. The booster's own prediction is 21 ms of the total.
+Narrowing the frames does not touch it: measured on a frame holding exactly the columns
+each function reads, every one of the three costs the same. The cost is per column, and a
+request has one row to amortise it over.
+
+This is the shape `explainability.md` §1 already set a precedent for, when "every row"
+became 10,000 rows once TreeSHAP's per-row cost was known: a rule written before its price
+was measured, amended once it was, with the amendment registered ahead of the result it
+affects.
+
+**What stays refused.** A second definition of *what the values are*. The vocabulary, the
+fill values, the surviving V columns and the frequency tables are read from the shipped
+artifacts, once, by `artifacts.py`, and nothing else may compute, infer or default them.
+
+**What is permitted.** A second *application* of those same values, in a different data
+structure, on the single-row path only: filling with a vector rather than a per-column
+`fillna`, and finding a level's code by lookup rather than by re-levelling a Series.
+
+**The condition, which is not a promise to be careful.** The pandas transform remains the
+reference and is not deleted. The fast path ships only while §8's gate proves the two
+produce the same matrix — same values, same dtypes, same scores — on the same real
+transactions, and the proof is re-made every time the gate runs rather than asserted once.
+Where they disagree, what is removed is the fast path, never the reference.
+
+**What this costs in guarantees, stated plainly.** §5 no longer says *there is one
+definition*; it says *there are two, and one is proven equal to the other*. A structural
+guarantee cannot fail quietly and a verified one can — and the proof lives in the tier §8
+registers as artifact-gated, which a clean checkout skips. So the guarantee now depends on
+someone running the gate where the artifacts are. That is a real reduction, accepted for a
+measured 163 ms, and recorded here rather than discovered later.
+
 **What that costs, measured and accepted.** Importing the training module brings MLflow
 into the serving process, and reading `config.yaml` brings pandera through `data/load.py`,
 which every module in the project reads config through. Both are *startup* cost, roughly a
