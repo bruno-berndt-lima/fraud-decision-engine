@@ -23,7 +23,7 @@ a request does not carry. ``serving.md`` §2 registers what serving sends instea
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -142,44 +142,61 @@ def prepare_inputs(
     # caller did supply and default it silently.
     needed = [*raw_inputs(columns), *history_supplied(raw)]
 
-    # **Typed by group, not by column.** `astype` with a four-hundred-key mapping costs
-    # roughly nine times one call per dtype, measured on a single row — pandas pays a
-    # fixed cost per column and a request has only one of them to amortise it over. The
-    # groups are the pipeline's own: the timestamp is an integer because `add_time_columns`
-    # divides it, the amount is double because it is summed into the headline, every other
-    # number is float32, and the vocabulary's columns are left alone for
-    # `apply_categories` to level.
+    return typed(raw, needed, vocabulary, load_cfg)
+
+
+def dtypes_for(names: Sequence[str], vocabulary: Mapping[str, pd.Index], load_cfg: dict) -> dict:
+    """What each named input is typed as — the one definition of that rule.
+
+    The reference path types four hundred inputs with it and the fast path types the dozen
+    its families read. Two rules would be two ways to spell a `card1`, and the frequency
+    tables are keyed by how it is spelled.
+
+    The groups are the pipeline's own: the timestamp is an integer because
+    `add_time_columns` divides it, the amount is double because it is summed into the
+    headline, every other number is float32, and the vocabulary's columns are left as
+    objects for `apply_categories` to level.
+    """
     special = {
         "TransactionAmt": load_cfg["amount_dtype"],
         "TransactionDT": TIME_DTYPE,
         "has_identity": "bool",
     }
-    numeric = [name for name in needed if name not in vocabulary and name not in special]
-    categorical = [name for name in needed if name in vocabulary]
-
-    pieces = [
-        _typed(
-            raw, [name for name in numeric if name in raw.columns], load_cfg["default_float_dtype"]
-        ),
-        _gaps(
-            raw.index,
-            [name for name in numeric if name not in raw.columns],
-            load_cfg["default_float_dtype"],
-        ),
-        raw[[name for name in categorical if name in raw.columns]],
-        _gaps(raw.index, [name for name in categorical if name not in raw.columns], object),
-        *(_typed(raw, [name], dtype) for name, dtype in special.items() if name in raw.columns),
-    ]
-
-    return pd.concat([piece for piece in pieces if not piece.empty], axis=1)[needed]
+    return {
+        name: special.get(name, object if name in vocabulary else load_cfg["default_float_dtype"])
+        for name in names
+    }
 
 
-def _typed(raw: pd.DataFrame, names: list[str], dtype: object) -> pd.DataFrame:
-    """The named columns of `raw`, as one cast rather than one cast each."""
-    return raw[names].astype(dtype) if names else pd.DataFrame(index=raw.index)
+def typed(
+    raw: pd.DataFrame,
+    names: Sequence[str],
+    vocabulary: Mapping[str, pd.Index],
+    load_cfg: dict,
+) -> pd.DataFrame:
+    """The named inputs, cast by group, with the ones that did not arrive as nulls.
+
+    **By group, not by column.** `astype` with a four-hundred-key mapping costs roughly
+    nine times one call per dtype, measured on a single row — pandas pays a fixed cost per
+    column and a request has one row to amortise it over.
+    """
+    wanted = dtypes_for(names, vocabulary, load_cfg)
+    pieces = []
+
+    for dtype in dict.fromkeys(wanted.values()):
+        group = [name for name in names if wanted[name] == dtype]
+        present = [name for name in group if name in raw.columns]
+        absent = [name for name in group if name not in raw.columns]
+
+        if present:
+            pieces.append(raw[present] if dtype is object else raw[present].astype(dtype))
+        if absent:
+            pieces.append(_gaps(raw.index, absent, dtype))
+
+    return pd.concat(pieces, axis=1)[list(names)]
 
 
-def _gaps(index: pd.Index, names: list[str], dtype: object) -> pd.DataFrame:
+def _gaps(index: pd.Index, names: Sequence[str], dtype: object) -> pd.DataFrame:
     """Columns the request did not carry, as nulls of the dtype they would have had."""
     if not names:
         return pd.DataFrame(index=index)

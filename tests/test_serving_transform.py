@@ -17,7 +17,8 @@ import pytest
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.features import encoders, velocity
 from fraud_engine.models.train import prepare_matrices
-from fraud_engine.serving.artifacts import load_tables
+from fraud_engine.serving.artifacts import load_model, load_tables
+from fraud_engine.serving.fast import build_layout, row
 from fraud_engine.serving.transform import (
     fill_history,
     history_supplied,
@@ -235,14 +236,32 @@ def gate() -> dict:
     raw = raw.merge(sample[["TransactionID", *velocity.COLUMNS]], on="TransactionID", how="left")
 
     tables = load_tables(PATHS, CONFIG["model"]["impute"])
+    built = transform(raw, tables, CONFIG["load"], CONFIG["features"], columns)
+
+    # The same transactions through the fast path, and the reference as the numbers a
+    # booster actually receives: a categorical reaches it as its code, not its level.
+    model = load_model(PATHS, CONFIG["model"]["impute"])
+    layout = build_layout(model, CONFIG["features"])
+    requests = [
+        {name: (None if pd.isna(value) else value) for name, value in raw.iloc[position].items()}
+        for position in range(len(raw))
+    ]
+
+    coded = built.copy()
+    for name in tables.vocabulary:
+        coded[name] = coded[name].cat.codes
 
     return {
         "booster": booster,
         "columns": columns,
-        "built": transform(raw, tables, CONFIG["load"], CONFIG["features"], columns),
+        "built": built,
         "expected": sample[columns],
         "shipped_vocabulary": tables.vocabulary,
         "refit_vocabulary": vocabulary,
+        "reference_values": coded.to_numpy(dtype="float64"),
+        "fast": np.vstack(
+            [row(values, model, layout, CONFIG["load"], CONFIG["features"]) for values in requests]
+        ),
     }
 
 
@@ -283,3 +302,23 @@ def test_the_shipped_vocabulary_is_the_one_the_training_path_refits(gate):
     for column, levels in refit.items():
         assert list(shipped[column]) == list(levels)
         assert pd.CategoricalDtype(shipped[column]) == pd.CategoricalDtype(levels)
+
+
+@pytest.mark.artifacts
+@gated
+def test_the_fast_path_assembles_the_reference_row(gate):
+    """§5's condition, and the only thing that keeps the amendment honest.
+
+    Cell for cell, not scores alone: a value rounded differently survives most splits and
+    crosses one eventually, and the run where it crosses is not the run you want to find
+    out on.
+    """
+    np.testing.assert_array_equal(gate["fast"], gate["reference_values"])
+
+
+@pytest.mark.artifacts
+@gated
+def test_the_fast_path_scores_what_the_reference_scores(gate):
+    booster = gate["booster"]
+
+    assert np.array_equal(booster.predict(gate["fast"]), booster.predict(gate["built"]))

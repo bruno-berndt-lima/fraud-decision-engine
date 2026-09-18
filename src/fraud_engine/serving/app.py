@@ -30,7 +30,6 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import lightgbm as lgb
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -39,6 +38,7 @@ from fraud_engine.evaluation.cost import Costs, load_costs
 from fraud_engine.models.rules import REQUIRED_COLUMNS
 from fraud_engine.serving.artifacts import Fallback, Model, load_fallback, load_model, stamps
 from fraud_engine.serving.decide import MODEL, RULES, Verdict, decide, decide_with_rules
+from fraud_engine.serving.fast import Layout, build_layout
 from fraud_engine.serving.schemas import HealthResponse, ScoreResponse, request_model
 from fraud_engine.serving.transform import REQUIRED_INPUTS, raw_inputs
 
@@ -76,6 +76,13 @@ class Deployment:
 
         self.model = self._load(load_model, "model", self.paths, config["model"]["impute"])
         self.fallback = self._load(load_fallback, "fail-open path", self.paths)
+
+        # Worked out once, from the artifacts that were just read: where every value
+        # lands in the model's row. A request then costs three array writes and a dozen
+        # lookups — serving.md §5.
+        self.layout: Layout | None = (
+            build_layout(self.model, self.features_cfg) if self.model is not None else None
+        )
 
         # Hashed once, with the artifacts that were just read. Computing them per request
         # would re-read every file to answer a question whose answer cannot change while
@@ -123,17 +130,19 @@ class Deployment:
             raw_inputs(self.model.columns), tuple(self.model.tables.vocabulary), forbid_unknown=True
         )
 
-    def decide(self, raw: pd.DataFrame) -> Verdict:
+    def decide(self, values: Mapping) -> Verdict:
         """The model's answer, or the incumbent's.
 
         Raises:
             RuntimeError: If neither is loaded. A service holding nothing cannot decide a
                 transaction, and saying so is better than any number it could invent.
         """
-        if self.model is not None:
-            return decide(self.model, raw, self.costs, self.load_cfg, self.features_cfg)
+        if self.model is not None and self.layout is not None:
+            return decide(
+                self.model, self.layout, values, self.costs, self.load_cfg, self.features_cfg
+            )
         if self.fallback is not None:
-            return decide_with_rules(self.fallback, raw, self.costs)
+            return decide_with_rules(self.fallback, values, self.costs)
 
         raise RuntimeError(UNAVAILABLE)
 
@@ -170,10 +179,8 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
 
         Plain `def` on purpose — see the module docstring.
         """
-        raw = pd.DataFrame([request.model_dump()])
-
         try:
-            verdict = deployment.decide(raw)
+            verdict = deployment.decide(request.model_dump())
         except RuntimeError as failure:
             # 503, not 500: nothing about the request is wrong, and a caller retrying
             # later is the right behaviour rather than a bug.

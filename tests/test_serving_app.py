@@ -31,7 +31,8 @@ from fraud_engine.models.train import (
     write_medians,
 )
 from fraud_engine.serving.app import create_app
-from fraud_engine.serving.artifacts import load_tables
+from fraud_engine.serving.artifacts import load_model, load_tables
+from fraud_engine.serving.fast import build_layout, row
 from fraud_engine.serving.transform import raw_inputs, transform
 
 ROWS = 240
@@ -328,6 +329,35 @@ def test_a_service_holding_nothing_says_so_rather_than_inventing_a_number(deploy
 
     assert client.get("/health").json()["fallback_loaded"] is False
     assert client.post("/score", json=request_body(deployment)).status_code == 503
+
+
+def test_the_fast_path_assembles_the_reference_row(deployment):
+    """The §5 proof, on a model small enough to carry in the repository.
+
+    The gate makes this comparison on the shipped booster and real transactions; that tier
+    is skipped where the artifacts are absent, so the same equality is checked here on the
+    miniature deployment, which runs anywhere.
+    """
+    paths = deployment["config"]["paths"]
+    model = load_model(paths, CONFIG["model"]["impute"])
+    layout = build_layout(model, CONFIG["features"])
+
+    bodies = [request_body(deployment, position) for position in range(6)]
+    fast = np.vstack(
+        [row(values, model, layout, CONFIG["load"], CONFIG["features"]) for values in bodies]
+    )
+
+    reference = transform(
+        pd.DataFrame(bodies),
+        load_tables(paths, CONFIG["model"]["impute"]),
+        CONFIG["load"],
+        CONFIG["features"],
+        model.columns,
+    )
+    for name in model.tables.vocabulary:
+        reference[name] = reference[name].cat.codes
+
+    np.testing.assert_array_equal(fast, reference.to_numpy(dtype="float64"))
 
 
 # ---- against the shipped artifacts -------------------------------------------
