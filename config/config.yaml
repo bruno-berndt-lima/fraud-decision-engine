@@ -595,6 +595,14 @@ serving:
   # Concurrency comes from workers, not from threads.
   threads: 1
 
+  # What the explanation endpoint holds itself to, and it is deliberately not the number
+  # above. problem-statement.md §3.1 prices an authorisation; an adverse-action notice is
+  # not one, and explainability.md §8 measured a contribution call at ~900 ms p95 on a
+  # sixteen-core machine at one thread. This sits above that with room for the two cheap
+  # predictions beside it, and a breach returns no explanation rather than a fabricated
+  # one — there is no fallback for a sentence a customer is read.
+  explain_budget_ms: 2000
+
   # Whether a model that cannot answer falls back to the rules engine. On, per
   # problem-statement.md §3.1: declining every transaction during a model outage
   # converts an availability incident into a total revenue outage, which is

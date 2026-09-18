@@ -36,12 +36,19 @@ from pydantic import BaseModel
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.cost import Costs, load_costs
+from fraud_engine.explain.codes import Dictionary, ReasonCodes, load_dictionary
 from fraud_engine.models.rules import REQUIRED_COLUMNS
 from fraud_engine.serving.artifacts import Fallback, Model, load_fallback, load_model, stamps
 from fraud_engine.serving.budget import pool, within
 from fraud_engine.serving.decide import MODEL, RULES, Verdict, decide, decide_with_rules
+from fraud_engine.serving.explanation import explain
 from fraud_engine.serving.fast import Layout, build_layout
-from fraud_engine.serving.schemas import HealthResponse, ScoreResponse, request_model
+from fraud_engine.serving.schemas import (
+    ExplainResponse,
+    HealthResponse,
+    ScoreResponse,
+    request_model,
+)
 from fraud_engine.serving.transform import REQUIRED_INPUTS, raw_inputs
 
 log = logging.getLogger(__name__)
@@ -60,6 +67,7 @@ FALLBACK_INPUTS = tuple(dict.fromkeys([*REQUIRED_INPUTS, *REQUIRED_COLUMNS]))
 FALLBACK_CATEGORICALS = ("ProductCD", "M4")
 
 UNAVAILABLE = "no model is loaded and the fail-open path is unavailable"
+NO_EXPLANATION = "no model is loaded, so there is no decision of its to explain; the fail-open path issues no adverse decisions"
 
 
 class NothingLoaded(RuntimeError):
@@ -88,7 +96,16 @@ class Deployment:
 
         serving_cfg = config["serving"]
         self.budget_ms = float(serving_cfg["budget_ms"])
+        self.explain_budget_ms = float(serving_cfg["explain_budget_ms"])
         self.fail_open = bool(serving_cfg["fail_open"])
+        self.top_k = int(config["explain"]["top_k"])
+
+        # The sentences a declined customer is read. Versioned apart from config.yaml for
+        # the reason that file gives: editing text someone reads is not the same kind of
+        # change as editing a threshold.
+        self.dictionary: Dictionary | None = self._load(
+            load_dictionary, "reason dictionary", self.paths["reason_dictionary"]
+        )
 
         self.workers = pool()
         # Counted because a service falling back on every request looks, from outside,
@@ -185,6 +202,37 @@ class Deployment:
 
         raise NothingLoaded(UNAVAILABLE)
 
+    def explain(self, values: Mapping) -> ReasonCodes:
+        """The notice for one decision, under the explanation's own budget.
+
+        No fail-open here, and §3 gives the reason: a decision the model cannot make is
+        better made by the incumbent than not made, and an explanation it cannot produce
+        has no substitute — an invented one is a false statement to a customer. There is
+        also nothing to explain in the degraded mode, where the engine never blocks.
+
+        Raises:
+            NothingLoaded: If the model or the dictionary is absent.
+            TimeoutError: If the budget passed. The work runs on and is discarded, as it
+                does on the scoring path.
+        """
+        if self.model is None or self.layout is None or self.dictionary is None:
+            raise NothingLoaded(NO_EXPLANATION)
+
+        return within(
+            self.workers,
+            self.explain_budget_ms,
+            lambda: explain(
+                self.model,
+                self.layout,
+                values,
+                self.costs,
+                self.dictionary,
+                self.top_k,
+                self.load_cfg,
+                self.features_cfg,
+            ),
+        )
+
     def _scored(self, values: Mapping) -> Verdict:
         """The model's decision, as the budgeted call runs it."""
         return decide(self.model, self.layout, values, self.costs, self.load_cfg, self.features_cfg)
@@ -243,6 +291,36 @@ def create_app(config: Mapping | None = None, config_path: Path = DEFAULT_CONFIG
             **vars(verdict),
             model_version=model_version(deployment, deployment.stamps),
             cost_matrix_version=deployment.costs.version,
+        )
+
+    @app.post("/explain", response_model=ExplainResponse)
+    def explanation(request: ScoreRequest) -> ExplainResponse:  # type: ignore[valid-type]
+        """Explain one decision. Off the request path, with its own budget (§3).
+
+        Takes the transaction rather than a reference to an earlier decision: this process
+        keeps no store, and whoever is owed the notice has the record.
+        """
+        try:
+            coded = deployment.explain(request.model_dump())
+        except NothingLoaded as absent:
+            raise HTTPException(status_code=503, detail=str(absent)) from absent
+        except TimeoutError as exceeded:
+            # 503 rather than a partial notice: there is no shorter true explanation to
+            # fall back to, and a fabricated one is a false statement to a customer.
+            raise HTTPException(status_code=503, detail=str(exceeded)) from exceeded
+
+        return ExplainResponse(
+            decision=coded.decision,
+            adverse=coded.adverse,
+            review_eligible=coded.review_eligible,
+            probability=coded.probability,
+            break_even=coded.break_even,
+            amount=coded.amount,
+            statements=coded.statements(deployment.dictionary),
+            reasons=tuple(vars(reason) for reason in coded.reasons),
+            dictionary_version=deployment.dictionary.version,
+            cost_matrix_version=coded.cost_matrix_version,
+            model_version=model_version(deployment, deployment.stamps),
         )
 
     @app.get("/health", response_model=HealthResponse)

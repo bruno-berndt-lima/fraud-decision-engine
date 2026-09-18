@@ -282,6 +282,50 @@ def test_an_omitted_inherited_column_is_scored_rather_than_refused(client, deplo
     assert answer.json()["inherited_expected"] > answer.json()["inherited_present"]
 
 
+# ---- the notice -------------------------------------------------------------
+
+
+def test_a_decision_can_be_explained_on_its_own_endpoint(client, deployment):
+    """§3: the explanation is owed when it is asked for, not inline with the authorisation."""
+    body = client.post("/explain", json=request_body(deployment)).json()
+
+    assert body["decision"] in {"allow", "block"}
+    assert body["statements"], "a notice with no sentences explains nothing"
+    assert len(body["reasons"]) <= CONFIG["explain"]["top_k"]
+    assert body["dictionary_version"] >= 1
+
+
+def test_the_two_endpoints_decide_the_same_transaction_the_same_way(client, deployment):
+    """The notice explains the decision that was made, not a second one made to explain it."""
+    body = request_body(deployment)
+
+    scored = client.post("/score", json=body).json()
+    explained = client.post("/explain", json=body).json()
+
+    assert explained["decision"] == scored["decision"]
+    assert explained["probability"] == scored["probability"]
+    assert explained["break_even"] == scored["break_even"]
+
+
+def test_the_audit_trail_and_the_notice_are_different_objects(client, deployment):
+    """`reasons` is one entry per contributor; `statements` is what a person is read."""
+    body = client.post("/explain", json=request_body(deployment)).json()
+
+    unnameable = [reason for reason in body["reasons"] if not reason["named"]]
+    if len(unnameable) > 1:
+        assert len(body["statements"]) < len(body["reasons"]), (
+            "the generic was printed once per contributor rather than collapsed"
+        )
+
+
+def test_a_service_without_a_model_explains_nothing_rather_than_inventing(degraded, deployment):
+    """There is nothing to explain in fallback: the engine never blocks, so nothing is adverse."""
+    answer = degraded.post("/explain", json=request_body(deployment))
+
+    assert answer.status_code == 503
+    assert "no adverse decisions" in answer.json()["detail"]
+
+
 # ---- fail open ---------------------------------------------------------------
 # §4's three arms. The first — an artifact that never loaded — is the degraded mode
 # below. These two are the ones that happen while the service is up and healthy.
@@ -520,3 +564,18 @@ def test_a_request_that_stopped_carrying_the_block_says_so(shipped):
 
     assert stripped["inherited_present"] < full["inherited_present"]
     assert stripped["inherited_expected"] == full["inherited_expected"]
+
+
+@pytest.mark.artifacts
+@gated
+def test_the_shipped_service_explains_a_real_decline(shipped):
+    """The §7 output of Phase 07, reached through HTTP for the first time."""
+    answer = shipped["client"].post("/explain", json=shipped["body"])
+    assert answer.status_code == 200, answer.json()
+
+    body = answer.json()
+    assert body["statements"], "a notice with no sentences explains nothing"
+    assert len(body["reasons"]) <= CONFIG["explain"]["top_k"]
+    assert all(reason["contribution"] > 0 for reason in body["reasons"]), (
+        "only the contributors that argue for the decision belong in a notice"
+    )

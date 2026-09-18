@@ -159,3 +159,40 @@ class HealthResponse(BaseModel):
     cost_matrix_version: int | None
 
     model_config = ConfigDict(protected_namespaces=())
+
+
+class ReasonResponse(BaseModel):
+    """One contributor, as the audit trail records it."""
+
+    feature: str
+    contribution: float
+    phrase: str
+    named: bool
+
+
+class ExplainResponse(BaseModel):
+    """What a declined customer can be told, and what the file has to show a regulator.
+
+    Two objects, deliberately. `statements` is the notice — the lines a person is read,
+    with the unnameable contributors collapsed into one honest sentence rather than the
+    same sentence three times. `reasons` is the audit trail, one entry per contributor,
+    which is what `explainability.md` §7 measures and what a reviewer needs.
+
+    `adverse` is whether an explanation is owed at all. Reasons are produced for an allowed
+    transaction too — they are useful internally — and the flag is what keeps them from
+    being read as a notice nobody was sent.
+    """
+
+    decision: str
+    adverse: bool
+    review_eligible: bool
+    probability: float
+    break_even: float
+    amount: float
+    statements: tuple[str, ...]
+    reasons: tuple[ReasonResponse, ...]
+    dictionary_version: int
+    cost_matrix_version: int
+    model_version: str
+
+    model_config = ConfigDict(protected_namespaces=())
