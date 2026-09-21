@@ -525,7 +525,74 @@ the explanation is the deliverable in either case.
 
 ### Result
 
-*Pending.*
+**The budget is met at one and two requests in flight, and missed from four.** Both are
+reported, as the reading rule requires. 30 seconds per cell, 5 discarded as warmup, one
+thread per worker, 2,000 test transactions replayed, on a 16-core Intel i9-9980HK under
+Docker Desktop — a Linux VM given all 16 cores, with the generator beside it on the same
+machine.
+
+| workers | in flight | req/s | p50 | p95 | p99 | fell back | |
+|---:|---:|---:|---:|---:|---:|---:|:--|
+| 1 | 1 | 35.6 | 27.3 | **31.0** | 37.3 | 0.0% | met |
+| 1 | 2 | 34.2 | 57.2 | **79.4** | 93.5 | 0.2% | met |
+| 1 | 4 | 14.6 | 267.6 | 345.3 | 375.9 | 100% | missed |
+| 1 | 8 | 19.2 | 408.7 | 544.7 | 612.9 | 100% | missed |
+| 1 | 16 | 30.1 | 522.7 | 705.9 | 766.9 | 100% | missed |
+| 1 | 32 | 37.6 | 839.3 | 1102.4 | 1192.7 | 100% | missed |
+| 4 | 1 | 31.6 | 32.2 | **36.6** | 54.6 | 0.0% | met |
+| 4 | 2 | 62.2 | 29.6 | **45.1** | 70.5 | 0.1% | met |
+| 4 | 4 | 75.8 | 36.7 | 107.6 | 209.0 | 3.7% | missed |
+| 4 | 8 | 37.2 | 80.9 | 687.9 | 842.6 | 39.3% | missed |
+| 4 | 16 | 31.0 | 425.9 | 1199.5 | 1357.3 | 58.9% | missed |
+| 4 | 32 | 31.4 | 1179.3 | 2023.3 | 2427.5 | 69.9% | missed |
+
+Milliseconds. No request errored in any cell. `reports/metrics/serving_latency.json`
+carries the image digest, the artifact stamps `/health` reported, and the machine.
+
+**Per request, the service is about three times faster than it has to be** — p95 31.0 ms
+against 100. The misses are not the request path being slow; they are more requests in
+flight than there are workers to run them, which is arithmetic rather than a defect. Four
+concurrent CPU-bound calls of ~30 ms cannot leave one worker inside 100 ms, and no
+implementation escapes that.
+
+**Where the operating point actually is.** Test holds 61,585 transactions over 22 days:
+2,799 a day, **0.032 requests per second**. At ten times peak-to-mean that is 0.32, which
+by Little's Law is **0.01 requests in flight**. The budget is met at 1 and at 2. The
+margin between the load this system would see and the load that breaks it is about two
+orders of magnitude, and the §3.1 verdict rests on the rows that describe the deployment
+rather than on the ones that describe an overload.
+
+**The finding, which is the section's own.** Past the knee, throughput *falls*. One
+worker serves 35.6 req/s with a single request in flight and **14.6** with four — offered
+more work, it completes less than half as much. Saturation alone does not do that: it
+holds throughput flat and grows the queue. What does it is §4's own guarantee. A breach
+releases the caller, and the abandoned prediction **is not cancelled** — LightGBM's
+`predict` cannot be interrupted — so the worker finishes a score nobody will read and
+then runs the rules decision on top. Every request in breach costs the server both paths.
+That is what makes the next one breach, and the fallback rate goes from 0.2% at two in
+flight to 100% at four with nothing in between: two stable states and no ramp. With four
+workers the transition is gradual — 3.7%, 39.3%, 58.9% — because the imbalance arrives
+one worker at a time.
+
+**§4 wrote this mechanism down before it had a number.** "The request is bounded; the
+worker is not" was stated there as the honest shape of the guarantee. Under load it is
+also a feedback loop, and that is worse than the sentence implies. The measurement is
+what turned one into the other.
+
+**One row is worth naming separately.** Four workers at four in flight misses by 7.6% —
+p95 107.6 ms against a p50 of 36.7. Most requests are comfortable and a tail is not,
+which is uneven distribution across workers rather than a service that is uniformly slow.
+
+**What the figures are not.** The generator shares the machine and was encoding
+433-field bodies at up to 76 a second, so the four-worker rows are pessimistic by an
+unmeasured amount. Docker Desktop on this Intel Mac runs a Linux VM, which a native host
+would not pay for. And a p99 over a few hundred requests rests on a handful of
+observations. All three make the table a floor on this machine, not a specification.
+
+**Nothing moves because of this** (§9). The obvious repair — shedding on queue depth, so
+an overloaded service declines to start work it will discard rather than paying for both
+paths — is a change to the request path and belongs in what Phase 09 writes down as next,
+not in a phase whose frozen set was fixed before the number existed.
 
 ## 8. What the tests prove, and where
 
