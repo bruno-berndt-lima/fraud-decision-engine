@@ -66,6 +66,11 @@ EXPLAIN_FIGURE  := $(REPORTS_DIR)/figures/shap_ranking_by_tier.png
 REASON_DICT     := $(CONFIG_DIR)/reason_codes.yaml
 REASON_CODES    := $(REPORTS_DIR)/metrics/reason_codes.json
 NEUTRALISATION  := $(REPORTS_DIR)/metrics/neutralisation.json
+SERVING_LATENCY := $(REPORTS_DIR)/metrics/serving_latency.json
+# Not a file: docker owns the image, and its tag is what the load test starts. The
+# stamp is what make can compare timestamps against.
+IMAGE_TAG   := fraud-engine:local
+IMAGE       := $(DATA_DIR)/.image
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -443,6 +448,28 @@ $(NEUTRALISATION): $(MODEL) $(FEATURES) $(CALIBRATOR) $(BASELINES) $(INTERIM) $(
                    src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.serving.neutralisation
 
+# The image. A stamp file rather than a target docker would own: the build is not
+# reproducible by timestamp, so what make tracks is "an image was built from these
+# inputs". models/ is a prerequisite because the image refuses to build without the
+# artifacts, and config/ because they are read from inside it.
+$(IMAGE): Dockerfile .dockerignore pyproject.toml uv.lock \
+          $(MODEL) $(CALIBRATOR) $(RULES_CONSTANTS) $(COST_MATRIX) $(REASON_DICT) \
+          $(shell find src -name '*.py') | $(DATA_DIR)
+	docker build -t $(IMAGE_TAG) .
+	@touch $@
+
+# Starts and stops its own container, so the worker count the record names is the one
+# the run set. The four sections it does not open itself arrive through the imports
+# that build a request — and they belong here anyway: a different model or calibrator
+# is a different latency, whatever this module reads.
+$(SERVING_LATENCY): $(IMAGE) $(INTERIM) $(FEATURES) \
+                    $(call sections,load splits baselines model calibration serving serving_latency) \
+                    src/fraud_engine/serving/loadtest.py \
+                    src/fraud_engine/serving/transform.py \
+                    src/fraud_engine/evaluation/timing.py \
+                    src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.serving.loadtest
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -451,7 +478,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -476,6 +503,14 @@ latency:   $(EXPLAIN_LATENCY) ## Time one row scored against the same row explai
 explain-figures: $(EXPLAIN_FIGURE) ## Draw the beeswarm, the tier ranking and the waterfalls
 reason-codes: $(REASON_CODES) ## Code every declined transaction and measure what covers them
 neutralisation: $(NEUTRALISATION) ## What serving without the card's history costs on VAL-CAL
+image:     $(IMAGE)     ## Build the serving image from the shipped artifacts
+loadtest:  $(SERVING_LATENCY) ## p50/p95/p99 against the container, per worker count
+
+# For looking at the thing by hand. The load test does not use this — it starts its
+# own container so the record can name the worker count it measured.
+.PHONY: serve
+serve: $(IMAGE)  ## Run the service in the foreground on port 8000
+	docker run --rm -p 8000:8000 $(IMAGE_TAG)
 
 # ==============================================================================
 # Housekeeping

@@ -125,6 +125,11 @@ paths:
   # How often a decline can be explained with anything but the generic. Tracked:
   # section 7's result, and the compliance-facing number of the phase.
   reason_codes: reports/metrics/reason_codes.json
+  # p50/p95/p99 against the running container, per worker count and concurrency.
+  # Tracked, and the second record here whose numbers do not travel: like
+  # explain_latency.json it is true of the hardware named inside it and of nothing
+  # else — and of the image digest it names beside it.
+  serving_latency: reports/metrics/serving_latency.json
   # What the tier-3 default costs on VAL-CAL, in PR-AUC and in USD. Tracked:
   # serving.md section 2 registers it as the price of not building the store,
   # and a serving default nobody priced is the thing that measurement prevents.
@@ -628,4 +633,51 @@ neutralisation:
   interval: 0.95
 
   # Fixed so the interval is a rerunnable number rather than a draw.
+  seed: 0
+
+# The §3.1 load test, in its own section rather than under `serving:` — a concurrency
+# swept for a measurement is not a setting the service runs under, and folding the two
+# together would restage the image every time the test changes its duration.
+serving_latency:
+  # The tag the stage starts, stops, and records the digest of. Built by `make image`.
+  image: fraud-engine:local
+
+  # Published on the host. Not 8000, so a container someone left running by hand is not
+  # silently measured in place of the one this stage started.
+  port: 8001
+
+  # Worker processes, passed as WEB_CONCURRENCY. Both are reported: one is the honest
+  # floor of what a container gets, and the question the table has to answer is whether
+  # the budget is met by adding processes rather than threads. Threads per worker stay
+  # at serving.threads, which explainability.md §8 measured rather than assumed.
+  workers: [1, 4]
+
+  # Requests held in flight, swept by doubling. serving.md §7: a budget met at one
+  # concurrency and missed at another is reported as both, so this is a list and never
+  # a single number chosen after seeing a result.
+  #
+  # Doubling rather than a few round numbers, because what the table has to say is
+  # where the budget stops holding. A sweep that steps from one to eight reports a
+  # cliff and cannot say which side of it a deployment would sit on.
+  concurrency: [1, 2, 4, 8, 16, 32]
+
+  # Wall time per (workers, concurrency) pair, warmup included. Long enough that the
+  # arms which collapse under load still complete a few hundred requests — a p99 over
+  # fewer would be one observation wearing a percentile's name.
+  duration_seconds: 30
+
+  # Leading seconds whose samples are dropped. The load runs continuously across the
+  # boundary — a cold first request is not a latency figure, and neither is a service
+  # that was allowed to go idle before being timed.
+  warmup_seconds: 5
+
+  # Distinct transactions replayed, cycled by the senders. One row repeated would be
+  # scored through branches no production mix would warm.
+  rows: 2000
+
+  # Whose transactions. Measurement on test is unlimited and nothing here moves a
+  # threshold, a parameter or a feature — the same standing explain_latency runs under.
+  split: test
+
+  # Fixed, so a rerun replays the same traffic.
   seed: 0
