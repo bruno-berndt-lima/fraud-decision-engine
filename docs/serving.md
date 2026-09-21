@@ -169,7 +169,51 @@ says so rather than resolving it by retraining.
 
 ### Result
 
-*Pending.*
+**$56.19 per 1,000, and the interval does not clear zero.** Serving every transaction as a
+card nobody has seen moves the cost from **$2,343.18 to $2,399.37** per 1,000, a difference
+of **[−18.20, +123.99]** at 95%, paired over VAL-CAL's twenty days. By the rule every
+difference in this project is read under, the serving default **cannot be shown to cost
+anything in USD**. PR-AUC falls **0.00729**, from 0.52145 to 0.51416.
+
+**The slice did not do the work.** Only **0.67%** of VAL-CAL rows already held the
+no-history values, so 99.3% were genuinely changed. The null is not the default quietly
+being true already.
+
+**And the model does use what was pinned.** `vel_n7d_card1` is the **tenth-largest
+contributor** on this slice, and the four columns carry **4.1%** of the contribution mass
+(`explainability.md` §4). They were not ignored; they were held at a constant for a booster
+that had learned to read them.
+
+**The registered criterion, applied: no contradiction is declared.** It asked whether
+neutralising the family costs materially more than removing it was worth — and E3 never
+established what removing it was worth. Its own reading rule refused the sign, because its
+arms stopped at 561 and 283 rounds and a day-bootstrap does not see refit variation. E3
+says the store *cannot be shown to pay*; this says serving without it *cannot be shown to
+cost*. That is one non-finding reached twice, from opposite sides, not two findings in
+conflict.
+
+**Why the signs point opposite ways, which is mechanism rather than evidence.** E3 removed
+the columns and refit, and a new booster redistributes those splits onto the columns saying
+the same thing another way — `C13`, `C1`, `D1`, the `vb_*` block. A model that never learns
+to depend on history never misses it. This pins the columns on a booster already fitted
+around them, which cannot re-route. Removal therefore measures what the family is worth to
+a model that could be built without it; neutralisation measures what it costs a model built
+with it and then deprived. The second is the harsher question and the one serving actually
+asks, because the frozen booster is the one in the container. The two numbers are not
+subtractable, and E3 ran the untuned configuration on VAL-FIT where this runs the shipped
+booster on VAL-CAL.
+
+**What this adds that E3 could not.** It rules out the failure mode neither half of E3
+could see: that serving the family as a first sighting is *worse* than not having built it.
+Detectably, it is not. The record is `reports/metrics/neutralisation.json`.
+
+**One thing it does not settle.** The PR-AUC movement has no bar built the way it was
+measured. The width-matched ablation floor registered in Phase 05 spans −0.0079 to +0.0160,
+which brackets this, but that floor carries refit variation and this measurement has none,
+so it is conservative here rather than exact. A matched floor was considered and declined:
+USD is the unit of account, USD says nothing happened, and sharpening a supporting metric
+for a family E3 twice failed to justify would buy a crisper sentence and no different
+decision.
 
 ## 3. Where the explanation lives
 

@@ -1,0 +1,44 @@
+{
+  "name": "neutralisation",
+  "created": "2026-09-21T16:56:42+00:00",
+  "git_revision": "f0cfe13cecb1148a239c7b470ce9ca25e6e7c48e",
+  "split": "val_cal",
+  "rows": 56949,
+  "positives": 1796,
+  "days": 20,
+  "model": "lightgbm_tuned",
+  "neutralised": [
+    "vel_n1h_card1",
+    "vel_n24h_card1",
+    "vel_n7d_card1",
+    "vel_recency_card1"
+  ],
+  "first_sighting_share": 0.006742875204130011,
+  "pr_auc_from": "raw scores",
+  "usd_from": "platt, out-of-fold",
+  "review_capacity": 0.01,
+  "cost_matrix_version": 1,
+  "arms": {
+    "with_history": {
+      "usd_per_1000": 2343.1792656587477,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05585699485504574,
+      "pr_auc": 0.5214493719453812
+    },
+    "neutralised": {
+      "usd_per_1000": 2399.3734920718534,
+      "reviews_per_day": 27.95,
+      "block_rate": 0.05511949287959402,
+      "pr_auc": 0.5141632153433681
+    }
+  },
+  "delta": {
+    "pr_auc": -0.00728615660201315,
+    "usd_per_1000": 56.19422641310575,
+    "usd_interval": [
+      -18.203614956984186,
+      123.98639512982759
+    ],
+    "interval": 0.95
+  }
+}
