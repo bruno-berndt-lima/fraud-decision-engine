@@ -108,7 +108,23 @@ licence to change the model.
 
 ### Result
 
-*Pending.*
+**433 inputs**, derived rather than typed: the 349 features the booster holds, less what
+the families build, plus the 339 columns the V-block reduction consumes and never shows.
+`schemas.request_model` builds the Pydantic contract from that list at startup, so the two
+cannot drift — a feature added to the model becomes a field of the contract on the next
+deploy, and one that leaves stops being accepted.
+
+**Nearly half of a real record arrives null.** The first transaction of the interim table
+carries **199 of the 433 non-null — 46%**. That is not a malformed request; it is what this
+data looks like, and it is the measured justification for §1's rule that an omitted field
+is a null rather than an error. A contract that demanded them all would reject the
+dataset it was built from.
+
+The four required fields and the three refused null are enforced in the schema, so a
+request missing one is a 422 naming it. Unknown field names are refused for the reason
+registered above, and the response reports `inherited_present` against
+`inherited_expected` so a caller that quietly stops sending the block can be seen doing
+it.
 
 ## 2. Velocity — the tier-3 family, and what serving does without a store
 
@@ -182,7 +198,26 @@ is to say so in the latency table, not to move contributions back onto the reque
 
 ### Result
 
-*Pending.*
+**`/explain`, and the separation holds under measurement.** On the shipped model, one
+transaction through `/score` costs about **30 ms** and the same transaction through
+`/explain` about **960 ms** — single warm calls through the test client, not the §7 load
+test, and reported here only as the ratio that decided the design. It is the ratio
+`explainability.md` §8 predicted, arriving where it predicted it would.
+
+The endpoint takes the transaction rather than a reference to a stored decision: this
+process keeps no store, which is the same reason §6 reports review eligibility rather
+than promising a review.
+
+**It does not fail open, and §4's reasoning is what rules it out.** A decision the model
+cannot make is better made by the incumbent than not made at all; an explanation it cannot
+produce has no substitute, because an invented one is a false statement to a customer. A
+breach of the explanation's own budget returns 503 rather than a partial notice. And there
+is nothing to explain in the degraded mode: the rules engine never blocks, so a service in
+fallback issues no adverse decisions.
+
+The notice reads as §7 of `explainability.md` designed it. On a real transaction the
+leading contributor is `C13` — tier 0, and unnameable — so the first line a person would
+be read is the honest generic, followed by two sentences that can be said plainly.
 
 ## 4. Fail open, to rules
 
@@ -224,7 +259,32 @@ or route traffic at one that has nothing loaded.
 
 ### Result
 
-*Pending.*
+**All three arms, and one of them was the wrong shape until a test said so.** A missing
+artifact leaves the service up and degraded; a raise anywhere in the scoring path falls
+back to the incumbent; a breach of `budget_ms` returns the incumbent's decision on time.
+
+The catch around the scoring path is deliberately broad. Fail-open is worth nothing if it
+covers the failures someone anticipated and not the one that happens, and the exception is
+logged, so a fallback is never silent in the record even when it is invisible in the
+response.
+
+**What the budget actually promises.** A LightGBM prediction is a blocking call into C and
+cannot be interrupted, so a breach releases the caller while the work finishes in its own
+thread and is discarded. The request is bounded; the worker is not. A test asserts the
+abandoned work really did run to completion, because "timeout" reads as "stopped" and it
+is not. Under load, part of what a request waits for is a worker to run on, and that wait
+counts against the same budget — it should, and it is said so nobody reads a breach as
+proof the model itself was slow.
+
+**503 and 500 had to be told apart.** The endpoint was catching `RuntimeError` to answer
+"nothing is loaded" with a 503, which meant a scoring path that raised with fail-open
+disarmed looked identical to an empty service. They are different answers to a caller: one
+is fixed by waiting and the other is not. `NothingLoaded` is now its own type, and only it
+becomes a 503.
+
+**`/health` counts the fallbacks**, because a service whose model loaded but answers every
+request from the incumbent is indistinguishable from a healthy one at the status code.
+`mode` says so per request; the counter says so across them.
 
 ## 5. What ships in the image
 
@@ -328,7 +388,30 @@ its recorded scores exactly before it is trusted again.
 
 ### Result
 
-*Pending.*
+**Ten, not five.** The manifest in the table above is what `stamps()` identifies, and the
+rules constants were the artifact nobody had written: `fit()` is the only function in
+`rules.py` that reads the training window, and a container has none. It is now produced by
+the baselines stage as **11.9 KB of JSON**, carrying the config choices beside the fitted
+values so a served rule can never pair current weights with older cut points. Re-running
+that stage moved only the record's timestamp and revision — every metric identical, which
+is what licensed the rest of the pipeline to be left alone.
+
+The tier-2 tables came to **31 vocabulary columns, 317 fill values, and 228 kept V columns
+with 6 presence flags** — read back for the first time by `artifacts.py`, under the guards
+§8 asked for.
+
+**The amendment above was taken, and here is what it bought.** With the reference
+transform on the request path, one row cost **211 ms**; with the arithmetic assembly it
+costs **29 ms**, of which 21 is the booster's own prediction. The fast path is proven
+against the reference on 300 real transactions: **0 of 104,700 cells differ**, and no
+score differs. The proof runs in both tiers — on the shipped booster where the artifacts
+exist, and on the miniature deployment everywhere else — which is narrower than the
+structural guarantee it replaced and wider than the amendment promised.
+
+**One defect belongs in this section rather than in §7.** `stamps()` was being computed
+per request, which re-read and hashed the 77 MB model file to answer a question that
+cannot change while the process lives: **190 ms of the original 590 ms**, and the largest
+single item on the bill. Identity is now hashed once, with the artifacts it identifies.
 
 ## 6. What the response says, and what it may not promise
 
@@ -352,7 +435,24 @@ cannot see the day's queue would be a decision the system is not in a position t
 
 ### Result
 
-*Pending.*
+**Implemented as registered.** `/score` returns the action, the calibrated probability,
+the break-even for this amount, review eligibility with the expected saving that makes it
+eligible, which mode answered, which tier-3 inputs arrived, how much of the contract did,
+and the identity of the artifacts behind it.
+
+Review stayed eligibility. The queue that would turn it into a review is not in this
+process, and the response gives that queue what it needs to rank — the expected saving —
+without claiming an analyst will look. In the fallback mode every transaction is a
+candidate and the engine's points are the priority, which is `cost.rules_policy` behaving
+as it does in the evaluation harness rather than a serving invention.
+
+**Two fields answer questions nothing else could.** `mode` says which path decided, and
+`inherited_present` against `inherited_expected` says how much of the record the decision
+was made on — §1's guard against an integration that quietly stops sending the block.
+
+One field was written and removed before it shipped: a flag saying an explanation was
+available. It would have been true on every response regardless of anything, which is a
+field that reads as information and carries none.
 
 ## 7. The latency measurement
 
