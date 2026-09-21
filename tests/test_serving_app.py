@@ -156,9 +156,29 @@ def deployment(tmp_path_factory) -> dict:
     }
 
 
+# A budget the miniature deployment cannot breach. Every test expecting the model's
+# answer would otherwise depend on wall-clock timing: a breach falls back, and the
+# incumbent reports no probability at all, so an arithmetic assertion fails on a busy
+# machine for a reason that has nothing to do with the arithmetic. The budget's own
+# behaviour is tested against `strict`, where a breach is forced rather than raced for.
+PATIENT_BUDGET_MS = 30_000
+
+
+def serving(deployment, **overrides) -> TestClient:
+    """A client over the miniature deployment, with `serving:` adjusted."""
+    config = deployment["config"]
+    return TestClient(create_app(config | {"serving": config["serving"] | overrides}))
+
+
 @pytest.fixture(scope="module")
 def client(deployment) -> TestClient:
-    return TestClient(create_app(deployment["config"]))
+    return serving(deployment, budget_ms=PATIENT_BUDGET_MS)
+
+
+@pytest.fixture(scope="module")
+def strict(deployment) -> TestClient:
+    """The service under the budget `config.yaml` ships, for the tests about the budget."""
+    return serving(deployment)
 
 
 def request_body(deployment, row: int = 0) -> dict:
@@ -346,9 +366,9 @@ def test_a_model_that_raises_does_not_take_the_transaction_down(client, deployme
     assert answer.json()["mode"] == "rules"
 
 
-def test_a_decision_that_misses_the_budget_is_not_waited_for(client, deployment, monkeypatch):
+def test_a_decision_that_misses_the_budget_is_not_waited_for(strict, deployment, monkeypatch):
     """The caller is bounded; the work is not — it finishes in its thread and is dropped."""
-    budget = client.get("/health").json()["budget_ms"]
+    budget = strict.get("/health").json()["budget_ms"]
 
     def slowly(*arguments, **keywords):
         time.sleep(budget / 1000 * 3)
@@ -357,7 +377,7 @@ def test_a_decision_that_misses_the_budget_is_not_waited_for(client, deployment,
     monkeypatch.setattr(serving_app, "decide", slowly)
 
     began = time.perf_counter()
-    answer = client.post("/score", json=request_body(deployment))
+    answer = strict.post("/score", json=request_body(deployment))
     elapsed = (time.perf_counter() - began) * 1000
 
     assert answer.status_code == 200
