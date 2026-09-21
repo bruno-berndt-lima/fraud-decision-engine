@@ -240,7 +240,7 @@ def gate() -> dict:
 
     # The same transactions through the fast path, and the reference as the numbers a
     # booster actually receives: a categorical reaches it as its code, not its level.
-    model = load_model(PATHS, CONFIG["model"]["impute"])
+    model = load_model(PATHS, CONFIG["model"]["impute"], CONFIG["serving"]["threads"])
     layout = build_layout(model, CONFIG["features"])
     requests = [
         {name: (None if pd.isna(value) else value) for name, value in raw.iloc[position].items()}

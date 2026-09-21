@@ -78,8 +78,11 @@ def calibrated(model: Model, features: pd.DataFrame) -> np.ndarray:
 
     `num_iteration` is not passed: `model.txt` was written truncated at the peak, so the
     file holds those trees and no others — `explain/contributions.py` records the same.
+    `num_threads` is, for the reason `Model` gives.
     """
-    return apply_calibrator(model.calibrator, model.booster.predict(features))
+    return apply_calibrator(
+        model.calibrator, model.booster.predict(features, num_threads=model.threads)
+    )
 
 
 def decide(

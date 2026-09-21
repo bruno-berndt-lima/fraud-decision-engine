@@ -18,6 +18,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, add_time_columns, load_config
+from fraud_engine.evaluation.cost import load_costs
 from fraud_engine.features import aggregations, encoders, vblock
 from fraud_engine.features.build import build_features, order_by_time
 from fraud_engine.models.calibrate import apply_calibrator, fit_calibrator
@@ -34,6 +35,7 @@ from fraud_engine.models.train import (
 from fraud_engine.serving import app as serving_app
 from fraud_engine.serving.app import create_app
 from fraud_engine.serving.artifacts import load_model, load_tables
+from fraud_engine.serving.decide import decide
 from fraud_engine.serving.fast import build_layout, row
 from fraud_engine.serving.transform import raw_inputs, transform
 
@@ -451,7 +453,7 @@ def test_the_fast_path_assembles_the_reference_row(deployment):
     miniature deployment, which runs anywhere.
     """
     paths = deployment["config"]["paths"]
-    model = load_model(paths, CONFIG["model"]["impute"])
+    model = load_model(paths, CONFIG["model"]["impute"], CONFIG["serving"]["threads"])
     layout = build_layout(model, CONFIG["features"])
 
     bodies = [request_body(deployment, position) for position in range(6)]
@@ -470,6 +472,38 @@ def test_the_fast_path_assembles_the_reference_row(deployment):
         reference[name] = reference[name].cat.codes
 
     np.testing.assert_array_equal(fast, reference.to_numpy(dtype="float64"))
+
+
+def test_the_measured_thread_count_reaches_the_prediction(deployment, monkeypatch):
+    """The setting was declared in config and read by nothing, which nothing would report.
+
+    `Booster.predict` builds its predictor from its keyword arguments alone, so a thread
+    count held anywhere else — on `booster.params`, in an environment variable the library
+    does not consult — is a silent no-op, and §5's one-thread-per-worker claim would be
+    false while every test passed.
+    """
+    chosen = CONFIG["serving"]["threads"] + 2
+    model = load_model(deployment["config"]["paths"], CONFIG["model"]["impute"], chosen)
+    layout = build_layout(model, CONFIG["features"])
+
+    seen = []
+    predict = model.booster.predict
+
+    def capture(features, **kwargs):
+        seen.append(kwargs.get("num_threads"))
+        return predict(features, **kwargs)
+
+    monkeypatch.setattr(model.booster, "predict", capture)
+    decide(
+        model,
+        layout,
+        request_body(deployment),
+        load_costs(load_config(Path(CONFIG["paths"]["cost_matrix"]))),
+        CONFIG["load"],
+        CONFIG["features"],
+    )
+
+    assert seen == [chosen]
 
 
 # ---- against the shipped artifacts -------------------------------------------

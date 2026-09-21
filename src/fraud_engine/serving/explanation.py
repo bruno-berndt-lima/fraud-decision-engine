@@ -103,9 +103,11 @@ def explain(
     """
     features = row(values, model, layout, load_cfg, features_cfg)
 
-    probability = apply_calibrator(model.calibrator, model.booster.predict(features))
-    margin = float(model.booster.predict(features, raw_score=True)[0])
-    decomposed = model.booster.predict(features, pred_contrib=True)[0]
+    probability = apply_calibrator(
+        model.calibrator, model.booster.predict(features, num_threads=model.threads)
+    )
+    margin = float(model.booster.predict(features, raw_score=True, num_threads=model.threads)[0])
+    decomposed = model.booster.predict(features, pred_contrib=True, num_threads=model.threads)[0]
 
     check_additive(decomposed, margin)
 

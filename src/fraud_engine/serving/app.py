@@ -98,6 +98,7 @@ class Deployment:
         self.budget_ms = float(serving_cfg["budget_ms"])
         self.explain_budget_ms = float(serving_cfg["explain_budget_ms"])
         self.fail_open = bool(serving_cfg["fail_open"])
+        self.threads = int(serving_cfg["threads"])
         self.top_k = int(config["explain"]["top_k"])
 
         # The sentences a declined customer is read. Versioned apart from config.yaml for
@@ -115,7 +116,9 @@ class Deployment:
         self._tally = threading.Lock()
         self.costs: Costs = load_costs(load_config(Path(self.paths["cost_matrix"])))
 
-        self.model = self._load(load_model, "model", self.paths, config["model"]["impute"])
+        self.model = self._load(
+            load_model, "model", self.paths, config["model"]["impute"], self.threads
+        )
         self.fallback = self._load(load_fallback, "fail-open path", self.paths)
 
         # Worked out once, from the artifacts that were just read: where every value

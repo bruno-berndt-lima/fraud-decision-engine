@@ -258,12 +258,18 @@ class Model:
         columns: Its feature names — the transform's output order.
         calibrator: As `calibrate.fit_calibrator` wrote it.
         tables: The five fitted tables the transform needs.
+        threads: What every `predict` on this booster is given. Held here because
+            `Booster.predict` builds its predictor from its keyword arguments alone —
+            `booster.params` is not consulted — so a thread count set anywhere else is a
+            silent no-op, and the measurement behind the number would be lost without a
+            word. `serving.md` §5.
     """
 
     booster: lgb.Booster
     columns: list[str]
     calibrator: dict
     tables: Tables
+    threads: int
 
 
 @dataclass(frozen=True)
@@ -279,12 +285,13 @@ class Fallback:
     constants: Constants
 
 
-def load_model(paths: Mapping[str, str], impute: bool) -> Model:
+def load_model(paths: Mapping[str, str], impute: bool, threads: int) -> Model:
     """The booster, its calibrator and its tables, read once.
 
     Args:
         paths: The `paths` block of `config.yaml`.
         impute: `model.impute`.
+        threads: `serving.threads`, carried through to every prediction.
 
     Returns:
         Everything the scoring path holds between requests.
@@ -301,6 +308,7 @@ def load_model(paths: Mapping[str, str], impute: bool) -> Model:
         columns=booster.feature_name(),
         calibrator=json.loads(Path(paths["calibrator"]).read_text()),
         tables=load_tables(paths, impute),
+        threads=threads,
     )
 
 
