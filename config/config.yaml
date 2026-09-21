@@ -125,6 +125,10 @@ paths:
   # How often a decline can be explained with anything but the generic. Tracked:
   # section 7's result, and the compliance-facing number of the phase.
   reason_codes: reports/metrics/reason_codes.json
+  # What the tier-3 default costs on VAL-CAL, in PR-AUC and in USD. Tracked:
+  # serving.md section 2 registers it as the price of not building the store,
+  # and a serving default nobody priced is the thing that measurement prevents.
+  neutralisation: reports/metrics/neutralisation.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -609,3 +613,19 @@ serving:
   # almost always the worse failure. Off is for a test that wants the failure to
   # surface, never for a deployment.
   fail_open: true
+
+# What the serving default in serving.md §2 costs, measured on VAL-CAL. Its own
+# section rather than a key under `serving:`, so that re-measuring the price of
+# not building the store does not restage the service that charges it.
+neutralisation:
+  # Resamples of VAL-CAL's twenty days, drawn with replacement and shared by both
+  # arms, so the interval is on the paired difference. Same values as
+  # usd_halves: the two differences are meant to be read beside each other.
+  bootstrap_resamples: 2000
+
+  # The central share of resampled differences reported. An interval containing
+  # zero reads as "not shown to differ in USD".
+  interval: 0.95
+
+  # Fixed so the interval is a rerunnable number rather than a draw.
+  seed: 0
