@@ -65,6 +65,7 @@ EXPLAIN_LATENCY := $(REPORTS_DIR)/metrics/explain_latency.json
 EXPLAIN_FIGURE  := $(REPORTS_DIR)/figures/shap_ranking_by_tier.png
 REASON_DICT     := $(CONFIG_DIR)/reason_codes.yaml
 REASON_CODES    := $(REPORTS_DIR)/metrics/reason_codes.json
+NEUTRALISATION  := $(REPORTS_DIR)/metrics/neutralisation.json
 SEED_SPREAD := $(REPORTS_DIR)/metrics/seed_spread.csv
 IMBALANCE   := $(REPORTS_DIR)/metrics/imbalance.csv
 ABLATION    := $(REPORTS_DIR)/metrics/ablation.csv
@@ -349,6 +350,7 @@ $(USD_HALVES): $(PURGE) $(ABLATION) $(FEATURES) $(CALIBRATOR) $(BASELINES) $(INT
                $(call sections,load splits features model calibration usd_halves) \
                src/fraud_engine/models/usd_halves.py \
                src/fraud_engine/models/ablation.py \
+               src/fraud_engine/evaluation/arms.py \
                src/fraud_engine/models/train.py \
                src/fraud_engine/models/calibrate.py \
                src/fraud_engine/evaluation/policy.py \
@@ -420,6 +422,27 @@ $(EXPLAIN_LATENCY): $(MODEL) $(FEATURES) $(call sections,load splits model expla
                     src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.explain.latency
 
+# Phase 08. Scores VAL-CAL twice with the shipped booster — nothing is refitted — so it
+# hangs off $(MODEL) and the matrices, and off $(CALIBRATOR) for the out-of-fold
+# probabilities the USD half is costed on. serving/transform.py is a prerequisite because
+# the neutralised arm is built by the function the service itself defaults with — which
+# is also where `baselines` comes from: that import reaches the artifact loaders, and
+# they read the incumbent's weights even though nothing here decides by them.
+$(NEUTRALISATION): $(MODEL) $(FEATURES) $(CALIBRATOR) $(BASELINES) $(INTERIM) $(COST_MATRIX) \
+                   $(call sections,load splits features baselines model calibration neutralisation) \
+                   src/fraud_engine/serving/neutralisation.py \
+                   src/fraud_engine/serving/transform.py \
+                   src/fraud_engine/evaluation/arms.py \
+                   src/fraud_engine/models/calibrate.py \
+                   src/fraud_engine/models/train.py \
+                   src/fraud_engine/features/velocity.py \
+                   src/fraud_engine/evaluation/policy.py \
+                   src/fraud_engine/evaluation/cost.py \
+                   src/fraud_engine/evaluation/metrics.py \
+                   src/fraud_engine/evaluation/reproduce.py \
+                   src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.serving.neutralisation
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -428,7 +451,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -452,6 +475,7 @@ explain:   $(SHAP_GLOBAL) ## Contributions for the shipped booster, and the glob
 latency:   $(EXPLAIN_LATENCY) ## Time one row scored against the same row explained
 explain-figures: $(EXPLAIN_FIGURE) ## Draw the beeswarm, the tier ranking and the waterfalls
 reason-codes: $(REASON_CODES) ## Code every declined transaction and measure what covers them
+neutralisation: $(NEUTRALISATION) ## What serving without the card's history costs on VAL-CAL
 
 # ==============================================================================
 # Housekeeping
