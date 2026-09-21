@@ -1,0 +1,24 @@
+# What the build context carries. Not a copy of .gitignore, and the difference is the
+# point: `models/` is gitignored and must be *in* the context, because the image ships
+# the artifacts; `reports/` is tracked and must be out, because the service never reads
+# a figure.
+#
+# data/ alone is hundreds of megabytes. Sending it would be paid on every build.
+data/
+mlruns/
+reports/
+notebooks/
+docs/
+tests/
+
+.git/
+.github/
+.venv/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+*.pyc
+
+.env
+.DS_Store
+Makefile
