@@ -40,29 +40,13 @@ import pandas as pd
 
 from fraud_engine.data.load import DEFAULT_CONFIG_PATH, load_config
 from fraud_engine.evaluation.report import git_revision
+from fraud_engine.evaluation.timing import percentiles
 from fraud_engine.evaluation.tracking import configure_tracking, tracked_run
 from fraud_engine.models.train import feature_columns, prepare_matrices, run_name
 
 log = logging.getLogger(__name__)
 
 NAME = "explain_latency"
-
-# Reported for every timed call. p99 over a hundred samples rests on one observation and
-# is recorded as the tail it is, not as a number to plan against.
-PERCENTILES = (50, 95, 99)
-
-
-def percentiles(samples: np.ndarray) -> dict[str, float]:
-    """A timing distribution as the milliseconds a latency table is written from.
-
-    Args:
-        samples: Per-call durations, in milliseconds.
-
-    Returns:
-        `p50`, `p95`, `p99` and `mean`, in milliseconds.
-    """
-    measured = {f"p{point}": float(np.percentile(samples, point)) for point in PERCENTILES}
-    return measured | {"mean": float(samples.mean())}
 
 
 def time_call(call: Callable[[], object], rows: int, warmup: int) -> dict[str, float]:
