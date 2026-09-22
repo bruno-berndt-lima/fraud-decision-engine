@@ -1,0 +1,102 @@
+{
+  "artifacts": {
+    "model": "ea2c7967eb95",
+    "calibrator": "8fff83d56abc",
+    "categories": "cb3dcb41b85c",
+    "medians": "bf3432f979a1"
+  },
+  "predictions": [
+    {
+      "TransactionID": 3516145,
+      "probability": 0.003558519680296471,
+      "break_even": 0.15313935681470137,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3516247,
+      "probability": 0.01851908747111181,
+      "break_even": 0.07853403141361257,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3516458,
+      "probability": 0.03938443295081107,
+      "break_even": 0.3190878342445064,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3516499,
+      "probability": 0.008112760528197316,
+      "break_even": 0.1579778830963665,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3516543,
+      "probability": 0.0958976656187294,
+      "break_even": 0.09274659774563937,
+      "decision": "block",
+      "review_eligible": true
+    },
+    {
+      "TransactionID": 3516865,
+      "probability": 0.007550305460773142,
+      "break_even": 0.16853932584269662,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3516873,
+      "probability": 0.008037127337537631,
+      "break_even": 0.12610340479192939,
+      "decision": "allow",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3517175,
+      "probability": 0.014619363181077276,
+      "break_even": 0.004788492295315897,
+      "decision": "block",
+      "review_eligible": true
+    },
+    {
+      "TransactionID": 3520636,
+      "probability": 0.9659238488363312,
+      "break_even": 0.13183799746871044,
+      "decision": "block",
+      "review_eligible": false
+    },
+    {
+      "TransactionID": 3525502,
+      "probability": 0.1425921869993266,
+      "break_even": 0.07894736842105263,
+      "decision": "block",
+      "review_eligible": true
+    },
+    {
+      "TransactionID": 3526414,
+      "probability": 0.8502394225098393,
+      "break_even": 0.10714285714285714,
+      "decision": "block",
+      "review_eligible": true
+    },
+    {
+      "TransactionID": 3528060,
+      "probability": 0.22615823269249385,
+      "break_even": 0.04967709885742673,
+      "decision": "block",
+      "review_eligible": true
+    }
+  ],
+  "pr_auc": {
+    "split": "test",
+    "rows": 1000,
+    "seed": 0,
+    "observed": 0.5874961480057048,
+    "note": "a property of this sample, not the model's test PR-AUC",
+    "floor": 0.567
+  }
+}
