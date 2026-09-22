@@ -640,7 +640,47 @@ check is worse than one that says what it did not run.
 
 ### Result
 
-*Pending.*
+**The gate caught nothing, and the named risk was real anyway.** The transform reproduces
+the training matrix exactly and the booster scores it to the digit, on 300 real
+transactions. But the tier-2 artifacts had never been read by anything, and the reader
+had to be written against a vocabulary whose fitted order is not the order a naive read
+produces: the codes come from the column `write_categories` persists them in, the range
+is checked to be dense, and the round trip is asserted on the reconstructed dtype as well
+as on the scores. Reading them by row position would have handed the model correct-looking
+codes standing for the wrong levels, and nothing would have raised.
+
+**Both regression tests exist, in both tiers.** The golden record pins twelve
+transactions to their probability, break-even, decision and review eligibility. It
+compares exactly — a probability moved by **1e-9** fails it, and the failure names the
+transaction and both numbers.
+
+**Two things the writing of them found.** A dozen transactions drawn at random are a
+dozen *allows*, because the policy declines a few percent: a golden set chosen that way
+pins only the decision with no consequence attached. The pinned set is now taken from
+both sides of a scored pool. And the generator, running under the shipped budget, logged
+a breach — under which the incumbent answers and carries **no probability at all**, so a
+busy machine could have recorded `None` as the model's expected output. Closed twice:
+the recorder refuses any response the model did not decide, and the service that records
+runs under a budget it cannot breach. The same race was found in the existing tests,
+where every assertion expecting the model's answer was one slow request away from
+failing for a reason unrelated to what it checks.
+
+**The golden file holds no transaction data** — identifiers and outputs, with the bodies
+rebuilt from the interim table at test time. Twelve real feature rows in the repository
+is a licence question, not a size one. Regenerating is deliberate and lands in a diff;
+nothing re-blesses itself on a failure.
+
+**The PR-AUC floor is a sample's property, not the model's.** 0.58750 over a fixed
+1,000-row draw from test, floored at 0.567 — a margin that covers a different LightGBM
+build rather than a different model. A sample that size holds a few dozen positives, so
+it is far coarser than the 0.51498 the headline reports over the whole slice, and the
+record says so inside itself because that file is what a reader would quote from.
+
+**The Definition of Done item is reported as registered: met with the exception named.**
+1,015 tests run everywhere, including every piece of machinery both regression tests are
+built from. Eleven need the shipped artifacts and skip in CI with their reason printed —
+`-ra` is in `addopts` so the log says what did not run, rather than showing a green tick
+over silence.
 
 ## 9. What this phase may not change
 
