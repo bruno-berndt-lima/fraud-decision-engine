@@ -1207,7 +1207,7 @@ write down about this project is a limitation rather than a win.
 
 ## E5 — Is the train/validation gap the model, or the data it was given?
 
-**Status:** registered, not yet run. Phase 09.
+**Status:** registered, amended before the run, not yet run. Phase 09.
 
 **Question.** Identity coverage falls sharply across the split boundary. How much
 of the gap between training and validation performance is the model failing to
@@ -1257,6 +1257,17 @@ of the compositional part is what this reports.
 2. **No re-fit, no re-tune.** This is a re-reading of scores the shipped model
    already produced. A model fitted per stratum would answer a different question
    and would spend a training decision on something measurement can settle.
+
+**Train is scored, and the composition share has a method** — amended from the
+original registration, which called this a re-reading of scores already produced.
+The table needs train rows, and train's scores were never persisted, so the stage
+reloads the shipped booster, proves it reproduces its `VAL-CAL` record, and scores
+train. Constraint 2 forbids refitting and retuning, not scoring. Those scores are
+in-sample, so no train figure is read as a generalisation estimate — only whether
+the gap within each stratum is smaller than the pooled one. And because PR-AUC does
+not add across strata, the compositional share is measured by reweighting validation
+rows to train's identity mix: the difference between the reweighted and the raw
+validation figure. Registered in `monitoring.md` §5.
 
 **What gets reported.** The four cells above, and the share of the pooled gap
 attributable to composition. Both directions are publishable: "the gap is almost
