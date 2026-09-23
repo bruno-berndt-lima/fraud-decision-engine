@@ -45,8 +45,8 @@ chosen after seeing the drift table is a fit to it, and a retraining rule tuned 
 fires the number of times that feels right is not a rule.
 
 **To fix before the first run** — values, not decisions. A `monitoring` section of
-`config.yaml` holds the window widths, the PSI bin count and its epsilon, the reference
-window, how many features the summary reports, and the §7 thresholds. A **separate**
+`config.yaml` holds the window widths, the PSI bin count and its epsilon, the two
+references, how many features the summary reports, and the §7 thresholds. A **separate**
 `horizon` section holds the expensive build's knobs, for the reason `explain_latency` is
 separate from `explain`: a stamp covers a whole section, and correcting a bin count must
 not restage a build of half a million rows.
@@ -181,7 +181,7 @@ say so.
 
 **The zero-count guard is a registered value, not a convenience.** PSI takes a logarithm
 of a ratio, so an empty bin on either side is undefined. The epsilon lives in
-`monitoring.psi_epsilon` and is added to both sides, so it cannot quietly inflate one.
+`monitoring.psi.epsilon` and is added to both sides, so it cannot quietly inflate one.
 
 **The convention, and what it is worth.** PSI < 0.1 stable, 0.1–0.25 moderate, > 0.25
 significant. This is the credit-scoring convention, it has no distributional derivation,
@@ -198,17 +198,15 @@ consults is not that. The full table is persisted regardless.
 
 **Two exclusions, both registered now.**
 
-1. **The four `vel_*` columns are excluded from horizon PSI.** The unlabelled file is a
-   fresh sequence beginning after a thirty-day gap, carrying no card history across the
-   boundary, so every card reads as first-seen in the early windows.
-   Their distribution there measures the file boundary, not the world. There is a second
-   and more interesting reason, which outlives this dataset: `serving.md` §2 pins those
-   four to the family's no-history defaults in production, so what the service writes
-   into them is a constant. Their distance from the training reference is then fixed and
-   large, and it never moves again — so no window-over-window reading of it can ever
-   signal anything. **A monitored system cannot detect drift in a feature it defaults.**
-   That is a real cost of the §2 decision, discovered here, and it belongs in the
-   README's limitations rather than buried in a config comment.
+1. **The four `vel_*` columns are excluded from horizon PSI.** The horizon is scored
+   with them filled as the service fills them (§8) — the family's no-history defaults,
+   the same constant on every row. Their distance from the training reference is then
+   fixed and large and never moves, so no window-over-window reading of it can signal
+   anything; computing them from the file instead would measure a card history that
+   restarts at the file boundary, not the world. The first reason outlives this
+   dataset: **a monitored system cannot detect drift in a feature it defaults.** That
+   is a real cost of `serving.md` §2's decision, discovered here, and it belongs in
+   the README's limitations rather than buried in a config comment.
 2. **`C*` and `D*` are computed, reported, and read with a caveat that cannot be
    removed.** They are Vesta's aggregates over windows nobody published, computed for a
    different file. If they shift across the boundary there is no way to tell real drift
@@ -415,7 +413,11 @@ rule and why condition 1 is weighted rather than raw — the label-free signals 
 weaker substitute for the labelled one, they are the only ones that can act in time.
 
 **What the trigger may not fire on.** A service incident (§1), a partial window (§2), or
-a tier-0 PSI read in isolation (§3).
+one column's PSI read on its own (§3). Condition 1 is an aggregate weighted by
+contribution, and the columns leading that ranking are tier 0, whose individual shifts
+§3 refuses to attribute. That refusal governs what this project may *claim* about the
+horizon; it does not exempt those columns from a production rule, because a retrain
+answers a moved input whatever moved it.
 
 **Evaluated against what was measured, not asserted.** The stage reads the records this
 phase wrote and reports which condition would have fired first, on which window, and
@@ -437,13 +439,17 @@ that is wrong and looks entirely plausible.
 `data/features/test.parquet` on every tier 0, 1 and 2 column.** It ships as a test, in
 both tiers, the way `serving.md` §8's transform guard does.
 
-**Tier 3 is outside the guard, and that is the §3 exclusion in another form.** The four
-`vel_*` columns are a function of the sequence the builder is handed, so they reproduce
-when it is handed the labelled frame and cannot when it is handed a file that starts
-thirty days later with no history behind it. A guard that demanded they match would be
-asserting something false about the horizon; one that quietly relaxed to make them pass
-would be worth nothing. They are excluded from the guard and from horizon PSI alike, and
-named in both places.
+**Tier 3 is filled the way the service fills it, and is therefore outside the guard.**
+The horizon file starts thirty days after the labelled data with no card history behind
+it, so computing the four `vel_*` columns there would score every card as first-seen for
+a reason the service never produces. §1 watches the shipped system, and `serving.md` §2
+decided what that system writes into those columns: the family's no-history defaults,
+through `serving/transform.fill_history`. The builder calls that same function, so the
+horizon is scored as the service would have scored it. On labelled rows `build.py`
+computed them from real history, so the builder and the matrix differ there by design —
+a guard demanding they match would assert something false, and one relaxed until they
+passed would be worth nothing. They are excluded from the guard and from horizon PSI
+alike, and named in both places.
 
 **No refit, ever.** `features/build.py` fits frequencies, entity amount statistics and
 the V-block reduction on `split == "train"`. The horizon has no train rows and must not
