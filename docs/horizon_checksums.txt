@@ -1,0 +1,9 @@
+# SHA-256 of the unlabelled horizon, in `shasum -a 256 -c` format.
+#
+# Enforced by the horizon stage's own stamp, never by `make data`: these files are
+# read by nothing earlier, and a checkout without them must still build every
+# stage that does not watch the horizon. See data-provenance.md.
+#
+# Paths are relative to data/raw/.
+2a8e51f1d335a86025d2b7f45beb9b78d0ab1edd726ef531d8b71a8a0065c011  test_transaction.csv
+3e5978cb13ca5e72f52babc4349ae0125e14b87ca8bfabe952ab67bb4ff1e10b  test_identity.csv

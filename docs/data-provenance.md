@@ -134,10 +134,18 @@ stamp sitting there claiming the data was verified. Clearing it first means a
 failed verification leaves no stamp, and every subsequent `make data` stays
 blocked until the mismatch is resolved.
 
-**Scope.** Only the two files the pipeline reads are enforced. `test_*.csv` are
-recorded in the table above but excluded from `raw_checksums.txt`: no stage
-consumes them, and listing them would make `make data` fail for anyone who
-deleted 639 MB of unlabelled data they do not need until Phase 09.
+**Scope.** `raw_checksums.txt` enforces the two files `make data` reads, and only
+those. `test_*.csv` are excluded from it: listing them would make `make data` fail
+for anyone who deleted 639 MB of unlabelled data that no stage before the horizon
+needs.
+
+**The unlabelled pair has its own control.** Once the horizon stage reads them
+(`docs/monitoring.md`), an unverified input there would be the same gap this section
+closes for the training files. They are checked by `horizon_checksums.txt` through a
+second stamp, `data/raw/.horizon_verified`, built the same way and for the same
+reason. It is a prerequisite of the horizon alone, so the property above still
+holds: a checkout without the test files builds every stage that does not watch the
+horizon.
 
 **What this does not do.** It detects corruption and accidental substitution —
 the realistic failure, and the one that would otherwise surface as unexplainable

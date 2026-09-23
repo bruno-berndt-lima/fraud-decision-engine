@@ -5,6 +5,9 @@ the human-readable table in `data-provenance.md`, the `shasum -c` file the build
 actually enforces, and the Makefile wiring that makes the build consult it. Each
 can be edited without touching the others, and two of the three failure modes
 are silent — the pipeline keeps working while the control quietly stops.
+
+The unlabelled horizon has the same control through its own sums file and stamp,
+and one property more: `make data` must never come to depend on it.
 """
 
 import re
@@ -15,6 +18,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SUMS_FILE = REPO_ROOT / "docs" / "raw_checksums.txt"
+HORIZON_SUMS_FILE = REPO_ROOT / "docs" / "horizon_checksums.txt"
 PROVENANCE = REPO_ROOT / "docs" / "data-provenance.md"
 
 # `<digest>  <filename>`, ignoring comments and blank lines.
@@ -31,6 +35,12 @@ def enforced() -> dict[str, str]:
 
 
 @pytest.fixture(scope="module")
+def horizon_enforced() -> dict[str, str]:
+    """{filename: digest} from the file the horizon stage checks."""
+    return {name: digest for digest, name in SUMS_LINE.findall(HORIZON_SUMS_FILE.read_text())}
+
+
+@pytest.fixture(scope="module")
 def recorded() -> dict[str, str]:
     """{filename: digest} from the provenance table humans read."""
     return dict(TABLE_ROW.findall(PROVENANCE.read_text()))
@@ -41,9 +51,10 @@ def makefile() -> str:
     return (REPO_ROOT / "Makefile").read_text()
 
 
-def test_both_sources_parsed(enforced, recorded):
+def test_both_sources_parsed(enforced, horizon_enforced, recorded):
     """Guards the guard: a regex that matches nothing passes every test below."""
     assert enforced, f"no digest lines parsed from {SUMS_FILE.name}"
+    assert horizon_enforced, f"no digest lines parsed from {HORIZON_SUMS_FILE.name}"
     assert recorded, f"no table rows parsed from {PROVENANCE.name}"
 
 
@@ -80,6 +91,38 @@ def test_every_pipeline_input_is_enforced(enforced):
     )
 
 
+def test_horizon_digests_match_the_provenance_table(horizon_enforced, recorded):
+    for name, digest in horizon_enforced.items():
+        assert recorded.get(name) == digest, (
+            f"digest drift for {name}: {HORIZON_SUMS_FILE.name} enforces {digest}, "
+            f"{PROVENANCE.name} records {recorded.get(name)}"
+        )
+
+
+def test_every_horizon_input_is_enforced(horizon_enforced):
+    config = yaml.safe_load((REPO_ROOT / "config" / "config.yaml").read_text())
+    inputs = {Path(p).name for p in config["paths"]["horizon_raw"].values()}
+
+    unenforced = inputs - set(horizon_enforced)
+    assert not unenforced, (
+        f"config declares horizon inputs with no enforced checksum: {sorted(unenforced)}. "
+        f"Add them to {HORIZON_SUMS_FILE.name}."
+    )
+
+
+def test_make_data_never_needs_the_horizon(enforced, horizon_enforced):
+    """Listed in raw_checksums.txt, the unlabelled files would gate `make data`.
+
+    That is the failure data-provenance.md exists to prevent: a checkout without
+    639 MB it never reads, unable to build anything.
+    """
+    shared = set(enforced) & set(horizon_enforced)
+    assert not shared, (
+        f"{sorted(shared)} are checked by {SUMS_FILE.name}, so `make data` now needs "
+        f"them. They belong in {HORIZON_SUMS_FILE.name} alone."
+    )
+
+
 def test_the_load_depends_on_the_verification_stamp(makefile):
     """Without this edge the checksums are documentation again.
 
@@ -95,7 +138,8 @@ def test_the_load_depends_on_the_verification_stamp(makefile):
     )
 
 
-def test_the_stamp_is_cleared_before_verifying(makefile):
+@pytest.mark.parametrize("stamp", ["VERIFIED", "HORIZON_VERIFIED"])
+def test_the_stamp_is_cleared_before_verifying(makefile, stamp):
     """A failed check must leave no stamp behind.
 
     .DELETE_ON_ERROR: does not cover this: it only removes a target the failing
@@ -103,11 +147,11 @@ def test_the_stamp_is_cleared_before_verifying(makefile):
     `rm -f`, a mismatch leaves the previous run's stamp asserting that data was
     verified when the last attempt to verify it failed.
     """
-    stamp_rule = re.search(r"^\$\(VERIFIED\):[^\n]*\n((?:\t[^\n]*\n)+)", makefile, re.MULTILINE)
-    assert stamp_rule, "could not find the $(VERIFIED) rule in the Makefile"
+    stamp_rule = re.search(rf"^\$\({stamp}\):[^\n]*\n((?:\t[^\n]*\n)+)", makefile, re.MULTILINE)
+    assert stamp_rule, f"could not find the $({stamp}) rule in the Makefile"
 
     recipe = [line.strip() for line in stamp_rule.group(1).splitlines()]
     assert recipe[0].startswith("rm -f"), (
-        f"the $(VERIFIED) recipe must clear the stamp first, got: {recipe[0]!r}"
+        f"the $({stamp}) recipe must clear the stamp first, got: {recipe[0]!r}"
     )
-    assert any("shasum" in line for line in recipe), "the $(VERIFIED) recipe never runs shasum"
+    assert any("shasum" in line for line in recipe), f"the $({stamp}) recipe never runs shasum"

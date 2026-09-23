@@ -2,10 +2,10 @@
 #
 # Enforced: `make data` will not run until these match. See data-provenance.md.
 #
-# Only the two files the pipeline reads are listed. test_transaction.csv and
-# test_identity.csv are recorded in data-provenance.md but deliberately not
-# checked here — they are unlabelled, no stage consumes them, and listing them
-# would make `make data` fail for anyone who deleted 639 MB they do not need.
+# Only the two files `make data` reads are listed. test_transaction.csv and
+# test_identity.csv are deliberately not checked here — listing them would make
+# `make data` fail for anyone who deleted 639 MB it never reads. The horizon
+# stage checks them against horizon_checksums.txt instead.
 #
 # Paths are relative to data/raw/.
 3a5c83ab6b3cc13dcabe5ffa9f522307fd5f7f7b6e6f6a60c32284ca6283d642  train_transaction.csv

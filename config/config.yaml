@@ -134,6 +134,26 @@ paths:
   # serving.md section 2 registers it as the price of not building the store,
   # and a serving default nobody priced is the thing that measurement prevents.
   neutralisation: reports/metrics/neutralisation.json
+  # The Kaggle test files: unlabelled, and read by nothing before the horizon stage.
+  # Their own group rather than `raw`, whose every file `make data` must verify;
+  # these are verified by the horizon's own stamp, so deleting them breaks only the
+  # stage that needs them. See docs/data-provenance.md.
+  horizon_raw:
+    transactions: data/raw/test_transaction.csv
+    identity: data/raw/test_identity.csv
+  # The unlabelled horizon, built with the shipped tables and scored by the shipped
+  # model. Gitignored with the rest of data/: half a million rows of derived data.
+  horizon_dir: data/horizon
+  # docs/monitoring.md section 5 — E5, the identity strata. Tracked.
+  composition: reports/metrics/composition.json
+  # Section 4 — PR-AUC window by window across the labelled days. Tracked.
+  decay: reports/metrics/decay.json
+  # Sections 3 and 6 — feature PSI on both horizons, and the score distribution and
+  # the frozen policy's behaviour on the unlabelled one. Tracked.
+  drift: reports/metrics/drift.json
+  # Section 7 — which condition would have fired first, and when a retrain could
+  # legitimately have used the data. Tracked.
+  retraining_trigger: reports/metrics/retraining_trigger.json
   # Figures are deliverables and live under the tracked reports/ tree.
   figures_dir: reports/figures
   # Economic assumptions, versioned separately. report.py reads the review
@@ -681,3 +701,77 @@ serving_latency:
 
   # Fixed, so a rerun replays the same traffic.
   seed: 0
+
+# ------------------------------------------------------------------------------
+# Phase 09 — monitoring
+# ------------------------------------------------------------------------------
+# Registered in docs/monitoring.md, every value committed before the run that reads
+# it. Nothing here can move a decision: section 9 forbids acting on what it measures.
+monitoring:
+  # Days per window (section 2). Five divides VAL-FIT and VAL-CAL exactly, so no
+  # labelled window straddles a split boundary; twenty-eight is the roadmap's month,
+  # which only the unlabelled horizon is long enough to hold. Each horizon is anchored
+  # at its own first day, read from the data rather than repeated here.
+  window_days:
+    labelled: 5
+    horizon: 28
+
+  # What each distribution is measured against. Features against train, the data the
+  # model was fitted on; scores against test, because the booster's scores on train
+  # are in-sample and would report its overfitting as drift (sections 3 and 6).
+  reference:
+    features: train
+    scores: test
+
+  psi:
+    # Quantile bins cut on the reference. Ties may merge edges, so a column can end
+    # with fewer, and its bin count is recorded beside its PSI.
+    bins: 10
+    # Added to both sides of every bin so an empty one has a finite logarithm. Below
+    # the share of a single row in any window, so it only acts on a bin that is truly
+    # empty and never reshapes one that holds data.
+    epsilon: 1.0e-5
+    # The credit-scoring convention, stated as one rather than derived.
+    moderate: 0.1
+    significant: 0.25
+
+  # Columns led by contribution in the reported summary. Twenty, the width at which
+  # explainability.md section 4 read its tier shares. The full table is persisted.
+  report_top: 20
+
+  # The bar on each window's PR-AUC (section 4). Same values as usd_halves, but its own
+  # keys, so re-measuring one cannot restage the other.
+  bootstrap_resamples: 2000
+  interval: 0.95
+  seed: 0
+
+  # Section 7, the retraining trigger.
+  trigger:
+    # Condition 1 averages PSI over the top_k features by contribution, weighted by
+    # their contribution mass renormalised over those k.
+    top_k: 10
+    # Named boundaries of the convention above, not numbers chosen for this data, so
+    # the rule cannot be tuned without editing the convention itself. The feature
+    # condition is an average, which dilutes any one column's move, so it fires at
+    # `moderate`; the score is a single distribution, so it waits for `significant`.
+    feature_psi: moderate
+    score_psi: significant
+    # Condition 3: a relative fall below the test baseline, interval clear and ROC-AUC
+    # agreeing. A policy judgement with no derivation behind it — the size of move a
+    # risk team would act on — and registered as exactly that.
+    pr_auc_drop: 0.10
+    # Condition 4: the length of the training window, so the model is replaced once
+    # per span of data it was fitted on.
+    cadence_days: 90
+
+# ------------------------------------------------------------------------------
+# Phase 09 — the unlabelled horizon
+# ------------------------------------------------------------------------------
+# Its own section for the reason explain_latency is separate from explain: a stamp
+# covers a whole section, and correcting a PSI setting must not restage a build of the
+# whole unlabelled file.
+horizon:
+  # Threads per prediction. A whole file, unlike a single request, gives LightGBM
+  # rows to spread across cores, so this inverts serving.threads; 0 is LightGBM's
+  # default of every core. The scores do not depend on it.
+  threads: 0

@@ -43,6 +43,13 @@ PATH_PAIRS = [
     ("EXPLAIN_LATENCY", "paths.explain_latency"),
     ("REASON_DICT", "paths.reason_dictionary"),
     ("REASON_CODES", "paths.reason_codes"),
+    ("HORIZON_TXN", "paths.horizon_raw.transactions"),
+    ("HORIZON_ID", "paths.horizon_raw.identity"),
+    ("HORIZON_DIR", "paths.horizon_dir"),
+    ("COMPOSITION", "paths.composition"),
+    ("DECAY", "paths.decay"),
+    ("DRIFT", "paths.drift"),
+    ("TRIGGER", "paths.retraining_trigger"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment
@@ -53,7 +60,8 @@ PATH_PAIRS = [
 # still hashes to docs/raw_checksums.txt. No Python reads it. It is listed here
 # rather than left to the suffix filter below, which skips it by accident —
 # Path(".verified").suffix is "" — so the exemption is stated, not incidental.
-SENTINEL_ONLY = {"FEATURES", "VERIFIED"}
+# HORIZON and HORIZON_VERIFIED are the same two kinds for the unlabelled horizon.
+SENTINEL_ONLY = {"FEATURES", "VERIFIED", "HORIZON", "HORIZON_VERIFIED"}
 
 
 @pytest.fixture(scope="module")

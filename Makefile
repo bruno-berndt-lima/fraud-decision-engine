@@ -67,6 +67,19 @@ REASON_DICT     := $(CONFIG_DIR)/reason_codes.yaml
 REASON_CODES    := $(REPORTS_DIR)/metrics/reason_codes.json
 NEUTRALISATION  := $(REPORTS_DIR)/metrics/neutralisation.json
 SERVING_LATENCY := $(REPORTS_DIR)/metrics/serving_latency.json
+# Phase 09. The unlabelled Kaggle files, checked against their own sums by their own
+# stamp: `make data` never needs them, so deleting them breaks only the horizon.
+HORIZON_TXN      := $(RAW_DIR)/test_transaction.csv
+HORIZON_ID       := $(RAW_DIR)/test_identity.csv
+HORIZON_SUMS     := docs/horizon_checksums.txt
+HORIZON_VERIFIED := $(RAW_DIR)/.horizon_verified
+HORIZON_DIR      := $(DATA_DIR)/horizon
+# Stands for the horizon stage: the same run writes the pre-vocabulary matrix beside it.
+HORIZON          := $(HORIZON_DIR)/scores.parquet
+COMPOSITION      := $(REPORTS_DIR)/metrics/composition.json
+DECAY            := $(REPORTS_DIR)/metrics/decay.json
+DRIFT            := $(REPORTS_DIR)/metrics/drift.json
+TRIGGER          := $(REPORTS_DIR)/metrics/retraining_trigger.json
 # Not a file: docker owns the image, and its tag is what the load test starts. The
 # stamp is what make can compare timestamps against.
 IMAGE_TAG   := fraud-engine:local
@@ -156,7 +169,7 @@ check: lint test  ## Everything CI runs
 # ==============================================================================
 # Pipeline
 # ==============================================================================
-$(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(PREDICTIONS_DIR) $(MODEL_DIR) $(REPORTS_DIR):
+$(INTERIM_DIR) $(SPLITS_DIR) $(FEATURES_DIR) $(PREDICTIONS_DIR) $(MODEL_DIR) $(REPORTS_DIR) $(HORIZON_DIR):
 	mkdir -p $@
 
 .PHONY: download
@@ -182,6 +195,14 @@ download:  ## Fetch the IEEE-CIS CSVs from Kaggle into data/raw/
 $(VERIFIED): $(RAW_TXN) $(RAW_ID) $(RAW_SUMS)
 	rm -f $@
 	cd $(RAW_DIR) && shasum -a 256 -c $(abspath $(RAW_SUMS))
+	touch $@
+
+# The same control for the unlabelled pair, and the same `rm -f` for the same reason.
+# Its own sums file rather than lines in raw_checksums.txt, which $(VERIFIED) checks
+# whole: listed there, these would become prerequisites of `make data`.
+$(HORIZON_VERIFIED): $(HORIZON_TXN) $(HORIZON_ID) $(HORIZON_SUMS)
+	rm -f $@
+	cd $(RAW_DIR) && shasum -a 256 -c $(abspath $(HORIZON_SUMS))
 	touch $@
 
 $(INTERIM): $(VERIFIED) $(call sections,load) \
