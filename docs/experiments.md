@@ -1207,7 +1207,7 @@ write down about this project is a limitation rather than a win.
 
 ## E5 — Is the train/validation gap the model, or the data it was given?
 
-**Status:** registered, amended before the run, not yet run. Phase 09.
+**Status:** complete, amended before the run. Phase 09.
 
 **Question.** Identity coverage falls sharply across the split boundary. How much
 of the gap between training and validation performance is the model failing to
@@ -1278,6 +1278,58 @@ explanation that would otherwise stay plausible forever.
 no feature. The shipped model is already chosen by then. It changes how the
 Phase 09 decay chart is *read*, and it is a caveat on the Phase 05 headline
 rather than a correction to it.
+
+### Result — composition is large, and the in-sample column saturates
+
+The reloaded booster reproduced its `VAL-FIT` and `VAL-CAL` records exactly before
+it scored train. Record: `reports/metrics/composition.json`.
+
+| PR-AUC | train (in-sample) | validation (`VAL-FIT` ∪ `VAL-CAL`) |
+|---|---:|---:|
+| identity share | 29.02% | 17.58% |
+| `has_identity` true | 1.00000 | 0.77720 |
+| `has_identity` false | 1.00000 | 0.29069 |
+| pooled | 1.00000 | 0.55708 |
+
+| decomposition | PR-AUC |
+|---|---:|
+| validation as it is | 0.55708 |
+| validation reweighted to train's identity mix | 0.63045 |
+| **compositional part** | **+0.07338** |
+| pooled gap | 0.44292 |
+| share of the gap | 16.6% |
+
+**The train column saturates.** In-sample PR-AUC is exactly 1.0 in both strata: the
+booster ranks every training fraud above every legitimate row, and recall at each
+capacity sits at its ceiling. The pooled gap is therefore one minus validation, and
+the within-stratum comparison compares each stratum against perfection. The
+registered share reads accordingly — had validation carried train's identity mix, it
+would close a sixth of its distance to a perfect ranking. The other five sixths are
+not "generalisation failure" in any separable sense: against a memorised column,
+memorisation and failure to generalise are the same number. This is the outcome the
+amendment to `monitoring.md` §5 anticipated, and why the decay chart reads E5
+through validation alone.
+
+**The out-of-sample part is large.** Reweighting validation to train's mix raises
+PR-AUC by 0.07338 for an 11.44-point shift in identity share — about 0.0064 per
+point. The strata show the mechanism: the model ranks rows that carry an identity
+block far better, 0.777 against 0.291, and they carry nearly five times the fraud,
+9.50% against 1.99%. Part of the gain is that prevalence travelling with the mix —
+the reweighted population's base rate is 4.17% against 3.31% — and that part is
+still composition rather than the model: it arrives with the rows, not from the
+ranking.
+
+**The step from `VAL-FIT` to `VAL-CAL` is not composition.** The mix barely moves,
+17.87% to 17.29%, and the step lives inside the strata, concentrated in rows without
+an identity block: PR-AUC −0.1133 and ROC-AUC −0.0207 there, against −0.0275 and
+−0.0121 with one. A move the mix did not make is the model's under §5's rule. It is
+also where `VAL-FIT`'s early-stopping optimism sits, so this is recorded as an
+observation for the decay chart to measure, not read as decay here.
+
+**What it changes.** How the Phase 05 train/validation gap is described: a
+material part of what looks like a generalisation gap is feature availability, and
+the fix that reading would have suggested — regularisation — is aimed at the wrong
+thing for that part. No threshold, parameter or feature moves.
 
 ---
 

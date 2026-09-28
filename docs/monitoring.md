@@ -355,7 +355,28 @@ requires.
 
 ### Result
 
-*Pending.*
+Full table in `experiments.md` E5; record `reports/metrics/composition.json`.
+
+**The train column saturated, as the amendment above anticipated.** In-sample PR-AUC is
+exactly 1.0 in both strata, so the registered share — 16.6% of the pooled gap — measures
+distance from a perfect ranking and is not read here.
+
+**What §4 inherits, both out of sample:**
+
+| quantity | value |
+|---|---:|
+| compositional part, for an 11.44-point shift in identity share | +0.07338 PR-AUC |
+| per point of identity share | ~0.0064 PR-AUC |
+| identity share already spanned by `VAL-FIT` and `VAL-CAL` | 17.29%–17.87% |
+| validation PR-AUC with an identity block / without | 0.777 / 0.291 |
+
+A decay window whose identity share sits inside that range cannot owe a move to mix. One
+outside it can owe at most about 0.0064 PR-AUC per point of distance, and anything beyond
+that is the model's.
+
+**The `VAL-FIT` → `VAL-CAL` step is already one such case.** The share moved by 0.58
+points and PR-AUC fell by 0.067, concentrated in rows without an identity block. Mix
+could account for about 0.004 of it.
 
 ## 6. Prediction drift
 

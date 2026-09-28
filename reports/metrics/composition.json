@@ -1,0 +1,513 @@
+{
+  "name": "composition",
+  "created": "2026-09-28T18:18:26+00:00",
+  "git_revision": "ba57b345499034ea6fd342e87520b410a3053099",
+  "model": "lightgbm_tuned",
+  "stratum": "has_identity",
+  "splits": [
+    "train",
+    "val_fit",
+    "val_cal"
+  ],
+  "in_sample": [
+    "train"
+  ],
+  "recall_capacity_within": "stratum",
+  "proofs": {
+    "lightgbm_tuned reproduces val_fit": true,
+    "lightgbm_tuned reproduces val_cal": true
+  },
+  "identity_share": {
+    "train": 0.2902157776954803,
+    "val_fit": 0.17872059028261172,
+    "val_cal": 0.17290909410174016,
+    "validation": 0.1758279216522598
+  },
+  "cells": {
+    "train": {
+      "all": {
+        "n": 315927,
+        "positives": 10702,
+        "base_rate": 0.03387491414155802,
+        "pr_auc": 1.0,
+        "roc_auc": 1.0,
+        "recall_at_capacity": [
+          {
+            "recall": 0.14315081293216222,
+            "reviewed": 1532,
+            "caught": 1532,
+            "positives": 10702,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.14315081293216222,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.29125397122033264,
+            "reviewed": 3117,
+            "caught": 3117,
+            "positives": 10702,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.29125397122033264,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.5750327041674453,
+            "reviewed": 6278,
+            "caught": 6154,
+            "positives": 10702,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.5750327041674453,
+            "share_of_ceiling": 1.0
+          }
+        ]
+      },
+      "identity": {
+        "n": 91687,
+        "positives": 5965,
+        "base_rate": 0.06505829615976093,
+        "pr_auc": 1.0,
+        "roc_auc": 1.0,
+        "recall_at_capacity": [
+          {
+            "recall": 0.06940486169321039,
+            "reviewed": 414,
+            "caught": 414,
+            "positives": 5965,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.06940486169321039,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.1468566638725901,
+            "reviewed": 876,
+            "caught": 876,
+            "positives": 5965,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.1468566638725901,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.2838222967309304,
+            "reviewed": 1791,
+            "caught": 1693,
+            "positives": 5965,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.2838222967309304,
+            "share_of_ceiling": 1.0
+          }
+        ]
+      },
+      "no_identity": {
+        "n": 224240,
+        "positives": 4737,
+        "base_rate": 0.021124687834463075,
+        "pr_auc": 1.0,
+        "roc_auc": 1.0,
+        "recall_at_capacity": [
+          {
+            "recall": 0.22778129617901627,
+            "reviewed": 1079,
+            "caught": 1079,
+            "positives": 4737,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.22778129617901627,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.4642178594046865,
+            "reviewed": 2199,
+            "caught": 2199,
+            "positives": 4737,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.4642178594046865,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.874181971712054,
+            "reviewed": 4438,
+            "caught": 4141,
+            "positives": 4737,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.874181971712054,
+            "share_of_ceiling": 1.0
+          }
+        ]
+      }
+    },
+    "val_fit": {
+      "all": {
+        "n": 57464,
+        "positives": 1990,
+        "base_rate": 0.03463037727968815,
+        "pr_auc": 0.588780232632545,
+        "roc_auc": 0.9066974741030385,
+        "recall_at_capacity": [
+          {
+            "recall": 0.1221105527638191,
+            "reviewed": 279,
+            "caught": 243,
+            "positives": 1990,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.14020100502512564,
+            "share_of_ceiling": 0.8709677419354839
+          },
+          {
+            "recall": 0.2407035175879397,
+            "reviewed": 567,
+            "caught": 479,
+            "positives": 1990,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.28492462311557787,
+            "share_of_ceiling": 0.8447971781305116
+          },
+          {
+            "recall": 0.4271356783919598,
+            "reviewed": 1140,
+            "caught": 850,
+            "positives": 1990,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.5728643216080402,
+            "share_of_ceiling": 0.7456140350877193
+          }
+        ]
+      },
+      "identity": {
+        "n": 10270,
+        "positives": 1015,
+        "base_rate": 0.0988315481986368,
+        "pr_auc": 0.7891377709444752,
+        "roc_auc": 0.9408734993466452,
+        "recall_at_capacity": [
+          {
+            "recall": 0.03842364532019704,
+            "reviewed": 40,
+            "caught": 39,
+            "positives": 1015,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.03940886699507389,
+            "share_of_ceiling": 0.975
+          },
+          {
+            "recall": 0.08374384236453201,
+            "reviewed": 92,
+            "caught": 85,
+            "positives": 1015,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.09064039408866995,
+            "share_of_ceiling": 0.9239130434782609
+          },
+          {
+            "recall": 0.17142857142857143,
+            "reviewed": 197,
+            "caught": 174,
+            "positives": 1015,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.19408866995073892,
+            "share_of_ceiling": 0.883248730964467
+          }
+        ]
+      },
+      "no_identity": {
+        "n": 47194,
+        "positives": 975,
+        "base_rate": 0.020659405856676697,
+        "pr_auc": 0.3455702454452744,
+        "roc_auc": 0.862681337068061,
+        "recall_at_capacity": [
+          {
+            "recall": 0.16307692307692306,
+            "reviewed": 225,
+            "caught": 159,
+            "positives": 975,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.23076923076923078,
+            "share_of_ceiling": 0.7066666666666666
+          },
+          {
+            "recall": 0.24923076923076923,
+            "reviewed": 461,
+            "caught": 243,
+            "positives": 975,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.4728205128205128,
+            "share_of_ceiling": 0.5271149674620391
+          },
+          {
+            "recall": 0.3569230769230769,
+            "reviewed": 934,
+            "caught": 348,
+            "positives": 975,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.8748717948717949,
+            "share_of_ceiling": 0.4079718640093786
+          }
+        ]
+      }
+    },
+    "val_cal": {
+      "all": {
+        "n": 56949,
+        "positives": 1796,
+        "base_rate": 0.031536989235983075,
+        "pr_auc": 0.5214493719453812,
+        "roc_auc": 0.8907557199557077,
+        "recall_at_capacity": [
+          {
+            "recall": 0.14643652561247217,
+            "reviewed": 275,
+            "caught": 263,
+            "positives": 1796,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.15311804008908686,
+            "share_of_ceiling": 0.9563636363636364
+          },
+          {
+            "recall": 0.26224944320712695,
+            "reviewed": 559,
+            "caught": 471,
+            "positives": 1796,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.31124721603563477,
+            "share_of_ceiling": 0.8425760286225402
+          },
+          {
+            "recall": 0.4042316258351893,
+            "reviewed": 1130,
+            "caught": 726,
+            "positives": 1796,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.6291759465478842,
+            "share_of_ceiling": 0.6424778761061947
+          }
+        ]
+      },
+      "identity": {
+        "n": 9847,
+        "positives": 896,
+        "base_rate": 0.09099218035950035,
+        "pr_auc": 0.7616524112677291,
+        "roc_auc": 0.9287934957387044,
+        "recall_at_capacity": [
+          {
+            "recall": 0.04241071428571429,
+            "reviewed": 38,
+            "caught": 38,
+            "positives": 896,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.04241071428571429,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.10044642857142858,
+            "reviewed": 90,
+            "caught": 90,
+            "positives": 896,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.10044642857142858,
+            "share_of_ceiling": 1.0
+          },
+          {
+            "recall": 0.20200892857142858,
+            "reviewed": 188,
+            "caught": 181,
+            "positives": 896,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.20982142857142858,
+            "share_of_ceiling": 0.9627659574468085
+          }
+        ]
+      },
+      "no_identity": {
+        "n": 47102,
+        "positives": 900,
+        "base_rate": 0.01910746889728674,
+        "pr_auc": 0.23222405252268416,
+        "roc_auc": 0.8419524407312814,
+        "recall_at_capacity": [
+          {
+            "recall": 0.12111111111111111,
+            "reviewed": 227,
+            "caught": 109,
+            "positives": 900,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.25222222222222224,
+            "share_of_ceiling": 0.48017621145374445
+          },
+          {
+            "recall": 0.2088888888888889,
+            "reviewed": 462,
+            "caught": 188,
+            "positives": 900,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.5133333333333333,
+            "share_of_ceiling": 0.40692640692640697
+          },
+          {
+            "recall": 0.29444444444444445,
+            "reviewed": 933,
+            "caught": 265,
+            "positives": 900,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.9077777777777778,
+            "share_of_ceiling": 0.3243574051407589
+          }
+        ]
+      }
+    },
+    "validation": {
+      "all": {
+        "n": 114413,
+        "positives": 3786,
+        "base_rate": 0.033090645293804025,
+        "pr_auc": 0.5570766491326912,
+        "roc_auc": 0.8991581630196045,
+        "recall_at_capacity": [
+          {
+            "recall": 0.13365029054410987,
+            "reviewed": 554,
+            "caught": 506,
+            "positives": 3786,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.14632857897517168,
+            "share_of_ceiling": 0.9133574007220217
+          },
+          {
+            "recall": 0.2509244585314316,
+            "reviewed": 1126,
+            "caught": 950,
+            "positives": 3786,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.29741151611199157,
+            "share_of_ceiling": 0.8436944937833036
+          },
+          {
+            "recall": 0.41627047015319596,
+            "reviewed": 2270,
+            "caught": 1576,
+            "positives": 3786,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.5995773903856313,
+            "share_of_ceiling": 0.6942731277533039
+          }
+        ]
+      },
+      "identity": {
+        "n": 20117,
+        "positives": 1911,
+        "base_rate": 0.09499428344186508,
+        "pr_auc": 0.7771994012790253,
+        "roc_auc": 0.9354144754091396,
+        "recall_at_capacity": [
+          {
+            "recall": 0.040293040293040296,
+            "reviewed": 78,
+            "caught": 77,
+            "positives": 1911,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.04081632653061224,
+            "share_of_ceiling": 0.9871794871794873
+          },
+          {
+            "recall": 0.09157509157509157,
+            "reviewed": 182,
+            "caught": 175,
+            "positives": 1911,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.09523809523809523,
+            "share_of_ceiling": 0.9615384615384616
+          },
+          {
+            "recall": 0.1857666143380429,
+            "reviewed": 385,
+            "caught": 355,
+            "positives": 1911,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.20146520146520147,
+            "share_of_ceiling": 0.9220779220779219
+          }
+        ]
+      },
+      "no_identity": {
+        "n": 94296,
+        "positives": 1875,
+        "base_rate": 0.01988419445151438,
+        "pr_auc": 0.29068724100735527,
+        "roc_auc": 0.8527260889480385,
+        "recall_at_capacity": [
+          {
+            "recall": 0.14293333333333333,
+            "reviewed": 452,
+            "caught": 268,
+            "positives": 1875,
+            "capacity": 0.005,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.24106666666666668,
+            "share_of_ceiling": 0.5929203539823008
+          },
+          {
+            "recall": 0.22986666666666666,
+            "reviewed": 923,
+            "caught": 431,
+            "positives": 1875,
+            "capacity": 0.01,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.4922666666666667,
+            "share_of_ceiling": 0.4669555796316359
+          },
+          {
+            "recall": 0.32693333333333335,
+            "reviewed": 1867,
+            "caught": 613,
+            "positives": 1875,
+            "capacity": 0.02,
+            "ambiguous_days": 0,
+            "recall_ceiling": 0.8906666666666667,
+            "share_of_ceiling": 0.36706586826347304
+          }
+        ]
+      }
+    }
+  },
+  "decomposition": {
+    "train_pr_auc": 1.0,
+    "validation_pr_auc": 0.5570766491326912,
+    "reweighted_pr_auc": 0.6304528642846073,
+    "pooled_gap": 0.44292335086730883,
+    "compositional": 0.07337621515191617,
+    "remainder": 0.36954713571539266,
+    "share_of_gap": 0.16566346075056732
+  }
+}
