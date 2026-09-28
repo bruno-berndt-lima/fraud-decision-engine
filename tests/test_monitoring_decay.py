@@ -229,6 +229,13 @@ def test_a_share_outside_the_range_explains_its_distance_times_the_rate():
     assert table["mix_bound"].iloc[0] == pytest.approx(1.0 * BOUND["per_point"])
 
 
+def test_more_identity_than_validation_cannot_explain_a_fall():
+    """Identity rows are the ones ranked best: more of them would raise PR-AUC."""
+    table = verdicts(window(0.45, 0.50, 0.85, share=0.2829))
+    assert table["mix_bound"].iloc[0] == 0
+    assert table["beyond_mix"].iloc[0]
+
+
 def test_a_decline_mix_could_cover_is_not_beyond_it():
     """Ten points below the range could explain 0.064; this window is 0.05 short."""
     table = verdicts(window(0.47, 0.50, 0.85, share=0.0729))

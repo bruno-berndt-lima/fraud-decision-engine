@@ -218,17 +218,17 @@ def read_windows(table: pd.DataFrame, baseline: dict, bound: dict) -> pd.DataFra
     - Below the baseline only if the whole interval is.
     - A PR-AUC fall ROC-AUC does not share is `prevalence`; one it shares is `decline`.
     - `mix_bound` is the most a change of identity mix could explain: nothing inside
-      the share validation already spans, E5's per-point figure for each point outside.
-      A decline larger than it is `beyond_mix` — the model's, not the data's.
+      the share validation already spans, E5's per-point figure for each point *below*
+      it. Only fewer identity rows can explain a fall — they are the rows the model
+      ranks best, so more of them would raise PR-AUC, not lower it. A decline larger
+      than the bound is `beyond_mix`: the model's, not the data's.
     """
     pr_below = table["pr_auc_high"] < baseline["pr_auc"]
     roc_below = table["roc_auc_high"] < baseline["roc_auc"]
     reading = np.select([~pr_below, ~roc_below], ["no decline", "prevalence"], "decline")
 
-    outside = np.maximum(bound["low"] - table["identity_share"], 0) + np.maximum(
-        table["identity_share"] - bound["high"], 0
-    )
-    mix_bound = 100 * outside * bound["per_point"]
+    below = np.maximum(bound["low"] - table["identity_share"], 0)
+    mix_bound = 100 * below * bound["per_point"]
     shortfall = baseline["pr_auc"] - table["pr_auc"]
 
     return table.assign(
