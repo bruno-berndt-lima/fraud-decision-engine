@@ -504,6 +504,22 @@ $(COMPOSITION): $(MODEL) $(FEATURES) $(COST_MATRIX) $(call sections,load splits 
                 src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.monitoring.composition
 
+# The decay chart. Reads persisted score vectors only — the shipped model's validation
+# scores, which `make train` wrote beside it, and test's, which the headline persisted —
+# and loads no model. $(HEADLINE) is deliberately NOT a prerequisite, for the reason the
+# explain figures give: it refuses to rerun, so a stage naming it could never be
+# satisfied. The stage checks for the test vector itself. $(COMPOSITION) is one, because
+# E5's result is the bound every window is read against.
+$(DECAY): $(MODEL) $(INTERIM) $(COMPOSITION) $(call sections,load splits model monitoring) \
+          src/fraud_engine/monitoring/decay.py \
+          src/fraud_engine/monitoring/windows.py \
+          src/fraud_engine/monitoring/plots.py \
+          src/fraud_engine/evaluation/metrics.py \
+          src/fraud_engine/evaluation/plots.py \
+          src/fraud_engine/evaluation/report.py \
+          src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.monitoring.decay
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -512,7 +528,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -540,6 +556,7 @@ neutralisation: $(NEUTRALISATION) ## What serving without the card's history cos
 image:     $(IMAGE)     ## Build the serving image from the shipped artifacts
 loadtest:  $(SERVING_LATENCY) ## p50/p95/p99 against the container, per worker count
 composition: $(COMPOSITION) ## E5: the train/validation gap, stratified by identity coverage
+decay:     $(DECAY)     ## PR-AUC by five-day window across the labelled days, read by the rules
 
 # For looking at the thing by hand. The load test does not use this — it starts its
 # own container so the record can name the worker count it measured.
