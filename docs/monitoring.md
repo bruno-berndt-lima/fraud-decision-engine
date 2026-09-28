@@ -264,6 +264,10 @@ all. ROC-AUC does not depend on prevalence, so it is carried beside PR-AUC on ev
 reading rule: a PR-AUC fall that ROC-AUC does not share is read as prevalence, not
 decay.**
 
+**And its identity share, for §5's reading rule.** Composition can only move a window's
+PR-AUC through a change in mix, so a window that does not carry its mix cannot be read
+against E5 at all.
+
 **`VAL-FIT` is optimistic and is marked optimistic.** The model early-stopped on it. Its
 four points are drawn and annotated rather than dropped, because the step from `VAL-FIT`
 to `VAL-CAL` is worth seeing: it mixes the early-stopping optimism E6 sized with twenty
@@ -328,12 +332,26 @@ reweighted to train's identity mix and PR-AUC is recomputed with those weights. 
 difference between the reweighted and the raw validation figure is the compositional
 part; the remainder of the pooled gap is what composition does not explain.
 
-**Registered reading rule for §4.** If within-stratum PR-AUC holds across the boundary
-while the pooled figure falls, then a decline in the decay chart is composition, the
-share attributable to composition is reported as a number, and the indicated response is
-upstream rather than a retrain. If within-stratum performance falls too, the decline is
-generalisation and §7's PR-AUC condition is the appropriate one. Both directions are
-publishable; the point of writing this down now is that neither can be chosen later.
+**Registered reading rule for §4, and why it is built from validation alone.** The train
+column is in-sample, so both strata sit far above validation whatever composition does. A
+rule asking whether within-stratum PR-AUC *holds* across the boundary could only ever
+answer no, and a rule with one possible outcome is not a rule. §4 therefore inherits two
+out-of-sample quantities instead: the compositional part, which says how far a mix shift
+of the size the boundary produced moves PR-AUC on rows the model never saw, and the two
+strata's validation figures, which say how differently it ranks with and without an
+identity block.
+
+**A window-to-window PR-AUC move is read as composition only if the identity share moved
+with it**, and by no more than the compositional part scaled linearly to the size of that
+move — an approximation, registered as one. A window whose share stays inside the range
+`VAL-FIT` and `VAL-CAL` already span cannot owe its move to mix. Whatever composition does
+not cover is the model's, and §7's PR-AUC condition is the one that applies to it.
+
+The share of the in-sample gap is still reported, because it is the quantity E5 was
+registered to answer — what part of an overfitting-shaped gap is not overfitting — but §4
+does not read it. Test windows' identity shares are §4's measurement, taken under §9's
+standing; E5's own figures stay on `VAL-FIT` and `VAL-CAL`, as its first constraint
+requires.
 
 ### Result
 
