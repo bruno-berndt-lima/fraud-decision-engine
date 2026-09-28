@@ -727,10 +727,12 @@ monitoring:
     # Quantile bins cut on the reference. Ties may merge edges, so a column can end
     # with fewer, and its bin count is recorded beside its PSI.
     bins: 10
-    # Added to both sides of every bin so an empty one has a finite logarithm. Below
-    # the share of a single row in any window, so it only acts on a bin that is truly
-    # empty and never reshapes one that holds data.
-    epsilon: 1.0e-5
+    # Added to both sides of every bin so an empty one has a finite logarithm. Smaller
+    # than one row's share on either side of every comparison — the training
+    # reference is the largest sample, so it sets the bound — which keeps any bin
+    # holding a transaction carried by its count. What it still decides is how much an
+    # empty bin contributes, and that is why it is fixed before any window is read.
+    epsilon: 1.0e-6
     # The credit-scoring convention, stated as one rather than derived.
     moderate: 0.1
     significant: 0.25

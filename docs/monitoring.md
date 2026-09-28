@@ -151,7 +151,9 @@ two different rulers.
 their mass at zero or one, and flags have two values, so ten quantiles of such a column
 share edges. Duplicate edges are merged, a column may carry fewer than ten bins, and the
 bin count is recorded beside its PSI: a column scored on three bins is not comparable in
-magnitude to one scored on ten, and the table says which is which.
+magnitude to one scored on ten, and the table says which is which. **Every edge is a value
+the reference holds** — the empirical quantile, never an interpolated one, which would put
+an edge between a run of zeros and a run of ones and open a bin nothing can land in.
 
 **Missing is its own bin, never imputed.** This is the one that matters most. A null-rate
 shift is the most common real drift in production — an upstream field stops arriving —
@@ -166,18 +168,21 @@ matrix is persisted at exactly that stage, before `horizon.py` goes on to prepar
 score it. A reference and a window taken at different stages differ by the pipeline, not
 by the world.
 
-**Categorical columns bin on the shipped vocabulary.** Each level `categories.parquet`
-holds is a bin; every level it does not hold — new on the horizon, or too rare in train
-to have earned a code — shares one **other** bin; missing keeps its own. The bins are then
+**Categorical columns bin on the shipped vocabulary, through the function the booster's
+inputs pass through.** Each level `categories.parquet` holds is a bin, its two sentinels
+included: `OTHER` takes every level the vocabulary does not hold — new on the horizon, or
+too rare in train to have earned a code — and `MISSING` takes nulls. The values are
+routed by `train.apply_categories` itself rather than by a copy of it, so the bins are
 exactly the distinctions the booster can make, and there is no second minimum-share
 threshold to tune.
 
-**The other bin's share is also reported on its own, as the unseen-category rate.** Inside
-PSI it is one bin among several; beside it, it is the number that says new device strings
-are arriving. It is never folded into the missing bin: `apply_categories` maps an unknown
-level to null for the booster, and a monitor that did the same would report an influx of
-new values as an upstream field going silent. Two different things happened; two numbers
-say so.
+**The `OTHER` share is also reported on its own, as the unseen-category rate**, on both
+sides: in the reference it is not zero, because the rare training levels live there.
+Inside PSI it is one bin among several; beside it, it is the number that says new device
+strings are arriving. It is never merged with the missing bin, and the guarantee is the
+model's own: `apply_categories` turns a null into `MISSING` before it tests membership,
+so an influx of new values cannot read as an upstream field going silent. Two different
+things happened; two numbers say so.
 
 **The zero-count guard is a registered value, not a convenience.** PSI takes a logarithm
 of a ratio, so an empty bin on either side is undefined. The epsilon lives in
