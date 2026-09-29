@@ -520,6 +520,29 @@ $(DECAY): $(MODEL) $(INTERIM) $(COMPOSITION) $(call sections,load splits model m
           src/fraud_engine/evaluation/tracking.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.monitoring.decay
 
+# The unlabelled horizon, built by the service's transform and scored by the shipped model
+# and calibrator. $(HORIZON_VERIFIED) is its own checksum control, so `make data` never
+# needs these files. $(FEATURES) and $(INTERIM) are here for the proof the stage runs
+# first — test's rows through the same path must reproduce the matrix and the headline's
+# persisted scores — and $(HEADLINE) is not, for the reason the decay chart gives. The
+# `baselines` section arrives through the artifact loaders, as it does for
+# $(NEUTRALISATION).
+$(HORIZON): $(HORIZON_VERIFIED) $(MODEL) $(CALIBRATOR) $(FEATURES) $(INTERIM) \
+            $(call sections,load splits baselines features model calibration horizon) \
+            src/fraud_engine/monitoring/horizon.py \
+            src/fraud_engine/serving/transform.py \
+            src/fraud_engine/serving/artifacts.py \
+            src/fraud_engine/data/load.py \
+            src/fraud_engine/features/amounts.py \
+            src/fraud_engine/features/encoders.py \
+            src/fraud_engine/features/aggregations.py \
+            src/fraud_engine/features/velocity.py \
+            src/fraud_engine/features/vblock.py \
+            src/fraud_engine/models/train.py \
+            src/fraud_engine/models/calibrate.py \
+            src/fraud_engine/evaluation/report.py | $(HORIZON_DIR)
+	$(RUN) python -m fraud_engine.monitoring.horizon
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -528,7 +551,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -557,6 +580,7 @@ image:     $(IMAGE)     ## Build the serving image from the shipped artifacts
 loadtest:  $(SERVING_LATENCY) ## p50/p95/p99 against the container, per worker count
 composition: $(COMPOSITION) ## E5: the train/validation gap, stratified by identity coverage
 decay:     $(DECAY)     ## PR-AUC by five-day window across the labelled days, read by the rules
+horizon:   $(HORIZON)   ## Prove the path, then build and score the unlabelled days 213-395
 
 # For looking at the thing by hand. The load test does not use this — it starts its
 # own container so the record can name the worker count it measured.

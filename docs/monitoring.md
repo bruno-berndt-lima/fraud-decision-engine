@@ -162,11 +162,12 @@ The consequence is registered here and taken deliberately: **PSI is computed on 
 pre-imputation matrix**, which is not quite what the booster consumes. The booster sees
 medians in those positions. That difference is the point.
 
-**Both sides at the same stage.** The reference is `data/features/train.parquet` — after
-the fitted feature tables, before the vocabulary and the medians — and the horizon
-matrix is persisted at exactly that stage, before `horizon.py` goes on to prepare and
-score it. A reference and a window taken at different stages differ by the pipeline, not
-by the world.
+**Both sides at the same stage: after the vocabulary, before the medians.** The horizon
+matrix is the service's transform with the fill left out; the reference is
+`data/features/train.parquet` routed through the same shipped vocabulary. The vocabulary is
+on both sides because it *is* the categorical binning, above; the medians are on neither,
+because a fill erases the null-rate drift this section exists to see. A reference and a
+window taken at different stages differ by the pipeline, not by the world.
 
 **Categorical columns bin on the shipped vocabulary, through the function the booster's
 inputs pass through.** Each level `categories.parquet` holds is a bin, its two sentinels
@@ -522,36 +523,47 @@ registered that rule for models — `evaluation/reproduce.py` — and it applies
 force to a measurement pipeline, because a subtly different matrix produces a PSI table
 that is wrong and looks entirely plausible.
 
-**The guard: the horizon builder, run over labelled rows, must reproduce
-`data/features/test.parquet` on every tier 0, 1 and 2 column.** It ships as a test, in
-both tiers, the way `serving.md` §8's transform guard does.
+**The guard, and it is the stage's first step rather than only a test.** Test's labelled
+rows go through the horizon's own path, carrying the tier-3 history the training matrix
+built for them, and must reproduce that matrix on every column, value and dtype — and the
+single touch's persisted scores, uncalibrated and calibrated, to the bit. This is
+stronger than the tier 0–2 comparison first registered here, amended before any horizon
+row was scored: agreeing columns could still feed the booster differently, and agreeing
+scores could still hide a column the booster never splits on but PSI reads. The pieces
+it composes are tested in CI against a synthetic deployment; the whole of it needs the
+shipped artifacts.
 
-**Tier 3 is filled the way the service fills it, and is therefore outside the guard.**
-The horizon file starts thirty days after the labelled data with no card history behind
-it, so computing the four `vel_*` columns there would score every card as first-seen for
-a reason the service never produces. §1 watches the shipped system, and `serving.md` §2
-decided what that system writes into those columns: the family's no-history defaults,
-through `serving/transform.fill_history`. The builder calls that same function, so the
-horizon is scored as the service would have scored it. On labelled rows `build.py`
-computed them from real history, so the builder and the matrix differ there by design —
-a guard demanding they match would assert something false, and one relaxed until they
-passed would be worth nothing. They are excluded from the guard and from horizon PSI
-alike, and named in both places.
+**Tier 3 is filled the way the service fills it.** The horizon file starts thirty days
+after the labelled data with no card history behind it, so computing the four `vel_*`
+columns there would score every card as first-seen for a reason the service never
+produces. §1 watches the shipped system, and `serving.md` §2 decided what that system
+writes into those columns: the family's no-history defaults, through
+`serving/transform.fill_history`. The builder is the service's transform, which calls that
+same function, so the horizon is scored as the service would have scored it.
+
+**What the guard proves about tier 3, and what it cannot.** It supplies the labelled rows'
+real history, which the transform keeps, so it proves the path, the medians, the booster
+and the calibrator — and says nothing about the defaults. Nothing could: a default
+compared against a matrix built from history measures its cost, not its correctness, and
+`serving.md` §2 measured that cost on `VAL-CAL`. Tier 3 stays out of horizon PSI (§3).
 
 **No refit, ever.** `features/build.py` fits frequencies, entity amount statistics and
 the V-block reduction on `split == "train"`. The horizon has no train rows and must not
-acquire any: it composes the *apply* functions against the tables already shipped in
+acquire any: it is the service's transform, which applies the tables already shipped in
 `models/`, read through `serving/artifacts.py`. A builder that refitted on the horizon
 would encode the drift it exists to measure.
 
-**The identity header differs, and it is caught by a test rather than a comment.**
+**The identity header differs, and it is caught twice rather than by a comment.**
 `train_identity.csv` names its columns `id_01`; `test_identity.csv` names them `id-01`.
 Unhandled, the join raises nothing — it matches on `TransactionID`, so even
 `has_identity` comes out right — but the `id_01` … `id_38` the model reads are not among
 the columns that arrived. Filled as absent, they are null on every identity row, the
 missing bin of all 38 fills, and PSI tells a story that is completely plausible and
 false: an upstream identity feed gone silent. This is the exact failure a monitoring
-pipeline is supposed to catch, happening to the monitoring pipeline.
+pipeline is supposed to catch, happening to the monitoring pipeline. So the block is
+renamed on load, and the stage then refuses a horizon missing any input the model reads:
+the transform's own rule, that an omitted field is a null, is right for a request and
+wrong for a file.
 
 **The unlabelled files are not checksum-enforced, and that stays true.**
 `data-provenance.md` deliberately keeps them out of `raw_checksums.txt` so `make data`

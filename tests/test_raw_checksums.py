@@ -138,6 +138,17 @@ def test_the_load_depends_on_the_verification_stamp(makefile):
     )
 
 
+def test_the_horizon_depends_on_its_own_verification_stamp(makefile):
+    """The unlabelled pair's control means nothing unless the stage that reads it waits on it."""
+    rule = re.search(r"^\$\(HORIZON\):([^\n]*(?:\\\n[^\n]*)*)", makefile, re.MULTILINE)
+    assert rule, "could not find the $(HORIZON) rule in the Makefile"
+    assert "$(HORIZON_VERIFIED)" in rule.group(1), (
+        "$(HORIZON) no longer depends on $(HORIZON_VERIFIED) — the horizon would be built "
+        "from files nothing checked against docs/horizon_checksums.txt"
+    )
+    assert "$(VERIFIED)" not in rule.group(1).replace("$(HORIZON_VERIFIED)", "")
+
+
 @pytest.mark.parametrize("stamp", ["VERIFIED", "HORIZON_VERIFIED"])
 def test_the_stamp_is_cleared_before_verifying(makefile, stamp):
     """A failed check must leave no stamp behind.
