@@ -1,0 +1,2915 @@
+{
+  "name": "drift",
+  "created": "2026-09-29T19:55:48+00:00",
+  "git_revision": "f11da360b9370aeb65b6f4049e8f42f093d6823c",
+  "model": "lightgbm_tuned",
+  "horizon_build": {
+    "created": "2026-09-29T19:39:22+00:00",
+    "git_revision": "a1d13b30ba48f96267ab04599c292f936130c48b",
+    "model": "lightgbm_tuned",
+    "calibrator": "platt",
+    "rows": 506691,
+    "first_day": 213,
+    "last_day": 395,
+    "with_identity": 141907,
+    "tier_3": "filled as the service fills it (serving/transform.fill_history)",
+    "medians_in_features": false,
+    "proof": {
+      "split": "test",
+      "rows": 61585,
+      "matrix reproduces data/features": true,
+      "scores reproduce the headline's": true
+    }
+  },
+  "references": {
+    "features": "train",
+    "scores": "test"
+  },
+  "psi": {
+    "bins": 10,
+    "epsilon": 1e-06,
+    "moderate": 0.1,
+    "significant": 0.25
+  },
+  "excluded_on_horizon": [
+    "vel_n1h_card1",
+    "vel_n24h_card1",
+    "vel_n7d_card1",
+    "vel_recency_card1"
+  ],
+  "weighted_columns": [
+    {
+      "feature": "C13",
+      "tier": "tier_0",
+      "weight": 0.2100712167669969
+    },
+    {
+      "feature": "C1",
+      "tier": "tier_0",
+      "weight": 0.13255096326376775
+    },
+    {
+      "feature": "freq_card1",
+      "tier": "tier_2",
+      "weight": 0.11216888307652206
+    },
+    {
+      "feature": "C14",
+      "tier": "tier_0",
+      "weight": 0.09457059342936679
+    },
+    {
+      "feature": "amt_mean_card1",
+      "tier": "tier_2",
+      "weight": 0.08856678946607933
+    },
+    {
+      "feature": "amt_z_addr1",
+      "tier": "tier_2",
+      "weight": 0.07657260957234822
+    },
+    {
+      "feature": "card1",
+      "tier": "tier_1",
+      "weight": 0.0747593607111014
+    },
+    {
+      "feature": "D1",
+      "tier": "tier_0",
+      "weight": 0.0734656061601403
+    },
+    {
+      "feature": "C11",
+      "tier": "tier_0",
+      "weight": 0.0687300971409603
+    },
+    {
+      "feature": "TransactionAmt",
+      "tier": "tier_1",
+      "weight": 0.06854388041271696
+    }
+  ],
+  "score_reference": {
+    "score_psi": 0.0,
+    "p50": 0.01066810126921471,
+    "p90": 0.05142665336652766,
+    "p99": 0.8861792584270577,
+    "mean_calibrated": 0.03738331220767014,
+    "identity_share": 0.22758788666071283,
+    "block_rate": 0.06447998700982382,
+    "reviews_per_day": 27.454545454545453,
+    "review_eligible_rate": 0.17616302671104977
+  },
+  "labelled": [
+    {
+      "window": 0,
+      "first_day": 121,
+      "last_day": 125,
+      "partial": false,
+      "rows": 16583,
+      "weighted_psi": 0.0285618286388108,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 312,
+        "moderate": 25,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.05235457209110858,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.020206290022651407,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.011777644738682126,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.020043125788462058,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.046441557252403454,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.005582666278194155,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.01653706444283016,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.044340090152617195,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.009844218626700282,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.01596764715386301,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.022420854348868705,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.06754601127235439,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.024145956304568013,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.004299753596421281,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01662935985439801,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.030332367976213224,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.0025525182088117337,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0033273747220357716,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.028395870439108115,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.017594306489173296,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 1,
+      "first_day": 126,
+      "last_day": 130,
+      "partial": false,
+      "rows": 14048,
+      "weighted_psi": 0.031616499574967205,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 320,
+        "moderate": 19,
+        "significant": 10
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.043199755028983794,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.010983465836747103,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.001455633956296474,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.010984483840070126,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.02301186006753228,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.004366966259634768,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.001837238610513971,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.21676958693008866,
+          "band": "moderate"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.01803042366217255,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.008993976108699722,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.012115249315751206,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.036281352839466714,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.025435156640315332,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.012390508192067882,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01613760524009683,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.011980686682208917,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.012280576690315136,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0010350950916619053,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.016739673762764598,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.007822646177049801,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 2,
+      "first_day": 131,
+      "last_day": 135,
+      "partial": false,
+      "rows": 13627,
+      "weighted_psi": 0.024695412688055866,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 330,
+        "significant": 11,
+        "moderate": 8
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.03134072224770159,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.008417260999197465,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.002664814626873624,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.008885072573849961,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.016516681871555826,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.002976691517891248,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.0010252215747021739,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.16875439152986316,
+          "band": "moderate"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.024895645669982272,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.005795779877367999,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.018868810618036875,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.040711939343558656,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.019283043277056492,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.02099323524445637,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.012659883757957945,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.009839734323337441,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.020128645839567527,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.003260097312527156,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.010073441066420278,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.011059267932215799,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 3,
+      "first_day": 136,
+      "last_day": 140,
+      "partial": false,
+      "rows": 13206,
+      "weighted_psi": 0.025592784683197523,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 329,
+        "significant": 12,
+        "moderate": 8
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.04934021808377042,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.019254337296839855,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.0032523672000311817,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.019687225942338363,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.017082620569730877,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.004480690653664987,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.0020984870511787427,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.08666177985482296,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.04880119704493794,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.012193175702676712,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.017964639742050485,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.03837713151809408,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.03016709891744175,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.0043090771906767085,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.011145434753911828,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.014840927889804198,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.0040755322741499065,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0013950795091120809,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.015598383185568415,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.017050536064969073,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 4,
+      "first_day": 141,
+      "last_day": 145,
+      "partial": false,
+      "rows": 12841,
+      "weighted_psi": 0.031267195355737895,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 324,
+        "moderate": 13,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.038099283738513415,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.01067738527404288,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.008796981983464255,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.012686162549114081,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.021646419627113538,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.0031730932729156077,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.003989745874700419,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.21358768099867062,
+          "band": "moderate"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.0792477409109574,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.006074318405716736,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.015969558022861676,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.03828242448313421,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.018951722461760447,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.012767623913175803,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01053824588850531,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.01144025263994274,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.013956164456810673,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.007004687411587945,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.014020589345137157,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.00704935322861311,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 5,
+      "first_day": 146,
+      "last_day": 150,
+      "partial": false,
+      "rows": 13266,
+      "weighted_psi": 0.014804746882932743,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 327,
+        "significant": 12,
+        "moderate": 10
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.03126620069138586,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.007457845851369193,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.007305831015132947,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.007794005849198051,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.021321022070491975,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.0025910126834801503,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.003112084473815571,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.02698849405000901,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.10948119328408701,
+          "band": "moderate"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.0026605960642154254,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.017602171281562377,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.043265857371352884,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.013851747205602775,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.02866458046307352,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.013756143199881362,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.013232913962482556,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.03045327462541831,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.006426458210547976,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.016977332668850046,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.01251947838447859,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 6,
+      "first_day": 151,
+      "last_day": 155,
+      "partial": false,
+      "rows": 17237,
+      "weighted_psi": 0.03193319443043939,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 315,
+        "moderate": 22,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.05684565915833743,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.019416172210027068,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.0195154009692344,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.01808030876995647,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.051984817473678877,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.0050243806199381045,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.02032926767424753,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.06107181914991422,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.0022747716917663557,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.011869804734072505,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.02491669020546173,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.07303828108807023,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.025164777073180426,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.005864150102672947,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.024091969674599333,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.035902344170063175,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.007608303522868624,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.007502817161572563,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.0338059978600966,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.028367290261213016,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 7,
+      "first_day": 156,
+      "last_day": 160,
+      "partial": false,
+      "rows": 13605,
+      "weighted_psi": 0.01707470970893145,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 327,
+        "significant": 12,
+        "moderate": 10
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.03314884288094115,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.012694714153974529,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.003507450233433128,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.013447451300834301,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.02044044510914138,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.006279144736414374,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.003099440380177919,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.036972005429211564,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.020134353636694514,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.005018527568116457,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.017204645751019057,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.1775950530112216,
+          "band": "moderate"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.019198866043278664,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.006426595296872971,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01974728750377439,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.022024340692371625,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.00568911063545057,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0025216317314054795,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.0653456847738652,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.005164089338673653,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 8,
+      "first_day": 161,
+      "last_day": 165,
+      "partial": false,
+      "rows": 14993,
+      "weighted_psi": 0.01149498358620276,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 336,
+        "significant": 12,
+        "moderate": 1
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.010607086503151286,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.016175559486276768,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.0071020489186554405,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.011971262869331015,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.014147160824818029,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.009461525026164616,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.011809239079597982,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.01739722169828058,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.015714481481616867,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.0020981929410950405,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.013294780082364161,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.010880846598466571,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.020153019853032802,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.0016355786480975552,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.008689833021256926,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.010379490778856075,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.0056718404521740335,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.009092867618256256,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.014288845870529022,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.019422148564452655,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 9,
+      "first_day": 166,
+      "last_day": 170,
+      "partial": false,
+      "rows": 14499,
+      "weighted_psi": 0.010943105682966156,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 326,
+        "significant": 12,
+        "moderate": 11
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.019867836783564012,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.008810297955856163,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.0025098895344522784,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.00659572251228029,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.014035062729811292,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.002383758074842949,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.0025139907413253924,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.02833639151987008,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.013132331229454262,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.004359201007922304,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.01023380645355384,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.037694185565320545,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.011962565144275095,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.02099148879671844,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.010861938322494238,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.011463309015477147,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.026846552549458988,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0035308120989083662,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.008574528193076376,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.010684909127194034,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 10,
+      "first_day": 171,
+      "last_day": 175,
+      "partial": false,
+      "rows": 14341,
+      "weighted_psi": 0.05013490863576217,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 311,
+        "moderate": 26,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.07388843623727154,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.05855012948309042,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.03139314596368557,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.060110844776226795,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.039559761674974665,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.014265616888832237,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.031824727273501184,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.07731841873362097,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.007275027503213129,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.03157580129607254,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.04114825741515255,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.00977175742238557,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.0625497693518491,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.0034695384606457376,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.046689659577026296,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.04534424605425534,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.004593491244467291,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.03675854937915534,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.046814040856206135,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.019467919116544632,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 11,
+      "first_day": 176,
+      "last_day": 180,
+      "partial": false,
+      "rows": 12259,
+      "weighted_psi": 0.017395390746447744,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 323,
+        "moderate": 14,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.03220100422469885,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.0141617136776995,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.0065057491676854175,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.010638354244917715,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.014320665572533113,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.003646933382332533,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.008542180841574527,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.04594773661010922,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.10121256581172414,
+          "band": "moderate"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.006643652179366071,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.014582249817403789,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.03649449381411757,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.01883202285516697,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.031738837991886565,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.010680081738140036,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.01358033024565671,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.02957675343187079,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0046956376556269355,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.010246692049000467,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.011347492570697035,
+          "band": "stable"
+        }
+      ]
+    },
+    {
+      "window": 12,
+      "first_day": 181,
+      "last_day": 182,
+      "partial": true,
+      "rows": 5493,
+      "weighted_psi": 0.021686477261131504,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 325,
+        "moderate": 12,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.02799563521403177,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.011397960160995212,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.014665462050144466,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.005565222766589434,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.020305812174278303,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.008466438104483788,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.006763764357629247,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.09009727174143126,
+          "band": "stable"
+        },
+        {
+          "column": "vel_n7d_card1",
+          "tier": "tier_3",
+          "psi": 0.11297951015716604,
+          "band": "moderate"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.005135579018516959,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.032079924581016425,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.030768353958023,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.01616519703257728,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.016723272918567605,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.03167366298329435,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.01253778714975045,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.017070323131518857,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.013695502403349488,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.013618279396235097,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.016331726871075196,
+          "band": "stable"
+        }
+      ]
+    }
+  ],
+  "horizon": [
+    {
+      "window": 0,
+      "first_day": 213,
+      "last_day": 240,
+      "partial": false,
+      "rows": 71077,
+      "weighted_psi": 0.021394286584133414,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 321,
+        "moderate": 12,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.033706876606052566,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.019371899993705623,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.006034559801344685,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.010408869671717683,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.0280127331339958,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.002133158439074057,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.002218329503414128,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.0770028574513756,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.006462017625402553,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.017113683038054033,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.028224527977734615,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.023114509466024464,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.019157662534693712,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01428054364053977,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.017104019956223963,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.01667627193078748,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.0026454204831928593,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.007777574066404853,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.011041724850912376,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.03835118285958731,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.019185953362209067,
+        "p50": 0.009193858060598834,
+        "p90": 0.0456552695079708,
+        "p99": 0.9828437308350333,
+        "mean_calibrated": 0.039844691981118285,
+        "identity_share": 0.18411019035693685,
+        "block_rate": 0.06328348129493366,
+        "reviews_per_day": 24.857142857142858,
+        "review_eligible_rate": 0.16379419502792747
+      }
+    },
+    {
+      "window": 1,
+      "first_day": 241,
+      "last_day": 268,
+      "partial": false,
+      "rows": 69225,
+      "weighted_psi": 0.03515556634274034,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 321,
+        "moderate": 12,
+        "significant": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.1008821740353128,
+          "band": "moderate"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.01189040808268063,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.00961295896853789,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.007084514163523855,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.04111171762574851,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.0019022810906786096,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.0038710320602759985,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.07157228981005939,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.0034484803432340543,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.015573546017920797,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.0351697162724093,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.01621130804052088,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.015519764854519995,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.016073726629302273,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.02603926697208856,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.013234635712277353,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.004374369547772702,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.009040133508827044,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.014964210684833867,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.04036287024549372,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.031764084788404104,
+        "p50": 0.008841364949967206,
+        "p90": 0.04293681905073901,
+        "p99": 0.9727435749193309,
+        "mean_calibrated": 0.038307215719687836,
+        "identity_share": 0.18610328638497653,
+        "block_rate": 0.05841820151679306,
+        "reviews_per_day": 24.142857142857142,
+        "review_eligible_rate": 0.1571830985915493
+      }
+    },
+    {
+      "window": 2,
+      "first_day": 269,
+      "last_day": 296,
+      "partial": false,
+      "rows": 67865,
+      "weighted_psi": 0.05878122384503452,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 318,
+        "significant": 17,
+        "moderate": 10
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.2158446120833334,
+          "band": "moderate"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.010149326787630746,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.008521291593761682,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.006395562389393011,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.0370582180320037,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.00150282861426857,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.0039335102909067495,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.07803099609816466,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.0025542263268462494,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.013613299164161447,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.03686977077384459,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.010750718793374966,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.01824985037784449,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01427839211248561,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.020301163115636657,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.018868959921860946,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.00829941262966271,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.012537240446034778,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.014120199986158918,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.054577786577415105,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.04345606249913545,
+        "p50": 0.008565982155733383,
+        "p90": 0.041351950382968766,
+        "p99": 0.9763663887586304,
+        "mean_calibrated": 0.037499353821755614,
+        "identity_share": 0.17805938259780446,
+        "block_rate": 0.05522728947174538,
+        "reviews_per_day": 23.678571428571427,
+        "review_eligible_rate": 0.15184557577543653
+      }
+    },
+    {
+      "window": 3,
+      "first_day": 297,
+      "last_day": 324,
+      "partial": false,
+      "rows": 71511,
+      "weighted_psi": 0.017938367333517335,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 313,
+        "significant": 17,
+        "moderate": 15
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.018644694506963957,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.00978943821560556,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.01187418283238274,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.005439031884280414,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.03595135330579439,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.011887891083104249,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.006234430879984427,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.061333666909164405,
+          "band": "stable"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.005750755569808273,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.020660313428471282,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.053745137501514856,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.018432792453980232,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.002676395502387693,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.011195935449440047,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.004947487782361193,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.03179510481045108,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.01945134511526571,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.012361937700084938,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.009758920036480753,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.02963442937006048,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.03987697781476552,
+        "p50": 0.008661807945296075,
+        "p90": 0.04176135787511714,
+        "p99": 0.7947227112920859,
+        "mean_calibrated": 0.030645132959075592,
+        "identity_share": 0.25004544755352326,
+        "block_rate": 0.047027729999580485,
+        "reviews_per_day": 25.0,
+        "review_eligible_rate": 0.1436422368586651
+      }
+    },
+    {
+      "window": 4,
+      "first_day": 325,
+      "last_day": 352,
+      "partial": false,
+      "rows": 74442,
+      "weighted_psi": 0.0403496859124306,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 309,
+        "moderate": 18,
+        "significant": 18
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.107103054566224,
+          "band": "moderate"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.005916101103025312,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.011118546168700337,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.003354285945241412,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.03062184826523197,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.010033791704931763,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.006491597392498877,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.1356074917894993,
+          "band": "moderate"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.005486780575976418,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.017456944007053693,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.042404831312647454,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.012280255206134714,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.0014692839824764908,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.017014210227922252,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.005622234429888709,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.03263712847528764,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.023250332773245015,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.010316667613317954,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.0036021854491859405,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.026894600906991882,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.03852007140017536,
+        "p50": 0.008681592667953097,
+        "p90": 0.04091177970835611,
+        "p99": 0.8784152824520568,
+        "mean_calibrated": 0.031540868954226566,
+        "identity_share": 0.2598667418930174,
+        "block_rate": 0.04885682813465517,
+        "reviews_per_day": 26.142857142857142,
+        "review_eligible_rate": 0.1479675452029768
+      }
+    },
+    {
+      "window": 5,
+      "first_day": 353,
+      "last_day": 380,
+      "partial": false,
+      "rows": 87585,
+      "weighted_psi": 0.026763433768089526,
+      "weighted_band": "stable",
+      "columns_by_band": {
+        "stable": 307,
+        "significant": 26,
+        "moderate": 12
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.0519841472658977,
+          "band": "stable"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.005904112564496835,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.02101362756289231,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.006036781185752237,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.009579678192755497,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.006122039258711468,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.004760662535867188,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.12357886311867972,
+          "band": "moderate"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.013032710760302841,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.007073224641404945,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.01059739411700312,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.0011522747910318516,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.006097510012632267,
+          "band": "stable"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.01294808409803255,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.00619965615392822,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.010002968212435279,
+          "band": "stable"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.006993985837220192,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.009996571144539635,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.0008637912206066545,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.009113712530171531,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.0716741897650804,
+        "p50": 0.008185349403116958,
+        "p90": 0.0389558802169715,
+        "p99": 0.7219229839725588,
+        "mean_calibrated": 0.028636452246799903,
+        "identity_share": 0.3555060798081863,
+        "block_rate": 0.04715419306958954,
+        "reviews_per_day": 30.75,
+        "review_eligible_rate": 0.1461437460752412
+      }
+    },
+    {
+      "window": 6,
+      "first_day": 381,
+      "last_day": 395,
+      "partial": true,
+      "rows": 64986,
+      "weighted_psi": 0.12239770832540328,
+      "weighted_band": "moderate",
+      "columns_by_band": {
+        "stable": 278,
+        "significant": 52,
+        "moderate": 15
+      },
+      "leading": [
+        {
+          "column": "C13",
+          "tier": "tier_0",
+          "psi": 0.33536444781207625,
+          "band": "significant"
+        },
+        {
+          "column": "C1",
+          "tier": "tier_0",
+          "psi": 0.05452534383586053,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card1",
+          "tier": "tier_2",
+          "psi": 0.02588490465413015,
+          "band": "stable"
+        },
+        {
+          "column": "C14",
+          "tier": "tier_0",
+          "psi": 0.05630608051226924,
+          "band": "stable"
+        },
+        {
+          "column": "amt_mean_card1",
+          "tier": "tier_2",
+          "psi": 0.07557384559907761,
+          "band": "stable"
+        },
+        {
+          "column": "amt_z_addr1",
+          "tier": "tier_2",
+          "psi": 0.01885234537107091,
+          "band": "stable"
+        },
+        {
+          "column": "card1",
+          "tier": "tier_1",
+          "psi": 0.019594413281514494,
+          "band": "stable"
+        },
+        {
+          "column": "D1",
+          "tier": "tier_0",
+          "psi": 0.2798141871921427,
+          "band": "significant"
+        },
+        {
+          "column": "C11",
+          "tier": "tier_0",
+          "psi": 0.04959984229624324,
+          "band": "stable"
+        },
+        {
+          "column": "TransactionAmt",
+          "tier": "tier_1",
+          "psi": 0.04265925329322066,
+          "band": "stable"
+        },
+        {
+          "column": "card6",
+          "tier": "tier_1",
+          "psi": 0.06318623085302258,
+          "band": "stable"
+        },
+        {
+          "column": "C2",
+          "tier": "tier_0",
+          "psi": 0.03040301326283433,
+          "band": "stable"
+        },
+        {
+          "column": "M5",
+          "tier": "tier_1",
+          "psi": 0.10363222302863678,
+          "band": "moderate"
+        },
+        {
+          "column": "P_emaildomain",
+          "tier": "tier_1",
+          "psi": 0.07387697754113229,
+          "band": "stable"
+        },
+        {
+          "column": "freq_card2",
+          "tier": "tier_2",
+          "psi": 0.046397800785346714,
+          "band": "stable"
+        },
+        {
+          "column": "M4",
+          "tier": "tier_1",
+          "psi": 0.10524328762241117,
+          "band": "moderate"
+        },
+        {
+          "column": "addr1",
+          "tier": "tier_1",
+          "psi": 0.035401915308205405,
+          "band": "stable"
+        },
+        {
+          "column": "card2",
+          "tier": "tier_1",
+          "psi": 0.04241490070391811,
+          "band": "stable"
+        },
+        {
+          "column": "hour",
+          "tier": "tier_1",
+          "psi": 0.003118503083129257,
+          "band": "stable"
+        },
+        {
+          "column": "dist1",
+          "tier": "tier_1",
+          "psi": 0.06922674904054062,
+          "band": "stable"
+        }
+      ],
+      "prediction": {
+        "score_psi": 0.01965025556188121,
+        "p50": 0.009383519974640708,
+        "p90": 0.04439890402393139,
+        "p99": 0.5443650367593416,
+        "mean_calibrated": 0.02887606485867007,
+        "identity_share": 0.5461330132643955,
+        "block_rate": 0.04291693595543655,
+        "reviews_per_day": 42.86666666666667,
+        "review_eligible_rate": 0.15209429723325024
+      }
+    }
+  ],
+  "drift_leads_decay": {
+    "n": 12,
+    "spearman": -0.6083916083916086,
+    "flagged": [
+      {
+        "window": 5,
+        "reading": "decline",
+        "psi_rank": 10
+      }
+    ]
+  }
+}

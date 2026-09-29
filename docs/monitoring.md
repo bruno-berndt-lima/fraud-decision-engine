@@ -239,7 +239,39 @@ nothing about the horizon it is meant to license.
 
 ### Result
 
-*Pending.*
+Record `reports/metrics/drift.json`, full table `reports/metrics/drift_psi.csv`, figure
+`reports/figures/drift.png`.
+
+**The columns the model leans on did not move.** The contribution-weighted PSI stayed in
+the stable band in every full window on both horizons — 0.011–0.050 on the labelled days,
+0.018–0.059 on the unlabelled ones. Only the partial window, days 381–395, reaches
+moderate (0.122), led by `C13` (0.335) and `D1` (0.280): both tier 0, so reported and, by
+the rule above, not attributed.
+
+**The columns that moved most are ones it barely consults.** None is in the weighted ten.
+
+- **Fields that started arriving.** `M1`–`M3` and `M7`–`M9` are significant in every
+  labelled window, `D11` in twelve of thirteen. On the labelled days `M1`–`M3` go from
+  61.1% missing in train to 24–34%, `M7`–`M9` from 75.0% to 34–48%, `D11` from 62.0% to
+  24–44%; on the horizon some windows drift back toward the training level. Upstream
+  collection changed after the training window. The missing bin is what shows it, which
+  is the reason it is never imputed.
+- **Categories the vocabulary never saw.** `id_31`, the browser version: its unseen share
+  rises from 0.3% in train to a median of 10% across the labelled windows and 19% across
+  the horizon's — new releases, kept apart from the missing bin as registered.
+
+**`weekday` is significant in every five-day window and stable in every twenty-eight-day
+one.** Five days cannot hold seven weekdays, so each labelled window is lopsided against
+train's uniform week by construction. A measurement artifact of the width, not drift, and
+outside the aggregate.
+
+**Drift did not lead decay on the labelled windows.** Spearman −0.61 over the twelve full
+windows, and the one window §4 flags (days 146–150) ranks tenth of twelve by weighted PSI.
+Both criteria registered above read as a contradiction. The scope is precise: every
+labelled window's weighted PSI sat inside the stable band, so what is contradicted is that
+PSI *at these levels* tracks PR-AUC shortfall — at these levels both are dominated by
+sampling. Whether large drift anticipates decay is untested here, because none occurred.
+Condition 1 stays in §7 as registered (§9); what changes is what may be claimed for it.
 
 ## 4. Performance decay
 
@@ -475,7 +507,40 @@ this phase invented would measure this phase.
 
 ### Result
 
-*Pending.*
+Before a horizon window was costed, test's EV row — block rate and reviews per day —
+recomputed from the persisted vector matched the headline record exactly, with labels and
+without them.
+
+| days | score PSI | p50 | p99 | mean predicted | EV blocks | with identity |
+|---|---:|---:|---:|---:|---:|---:|
+| test | — | 0.0107 | 0.886 | 3.74% | 6.45% | 22.8% |
+| 213–240 | 0.019 | 0.0092 | 0.983 | 3.98% | 6.33% | 18.4% |
+| 241–268 | 0.032 | 0.0088 | 0.973 | 3.83% | 5.84% | 18.6% |
+| 269–296 | 0.043 | 0.0086 | 0.976 | 3.75% | 5.52% | 17.8% |
+| 297–324 | 0.040 | 0.0087 | 0.795 | 3.06% | 4.70% | 25.0% |
+| 325–352 | 0.039 | 0.0087 | 0.878 | 3.15% | 4.89% | 26.0% |
+| 353–380 | 0.072 | 0.0082 | 0.722 | 2.86% | 4.72% | 35.6% |
+| 381–395 (partial) | 0.020 | 0.0094 | 0.544 | 2.89% | 4.29% | 54.6% |
+
+**The score PSI stayed stable while the policy blocked a quarter less.** Mean predicted
+fraud fell from 3.98% to 2.86%, below test's 3.74% from day 297, and the EV policy's block
+rate from 6.33% to 4.72%. The movement is in the tail: the median and the 90th percentile
+barely move, and the 99th falls from 0.983 to 0.722. Deciles cut on test put every high
+score in one bin, so the score PSI is structurally blind to what happens inside the top
+tenth — and that is where the policy acts. The policy view saw what the PSI could not,
+which is what this section registered it for.
+
+**The fall has two readings, and neither is chosen.** Fraud on the horizon fell, or the
+model drifted toward under-calling it; without labels they cannot be told apart.
+
+**The identity share sharpens the ambiguity rather than resolving it.** It doubles across
+the full windows, 18.4% to 35.6%, and reaches 54.6% in the partial one. E5 found those are
+the rows the model ranks best, carrying about five times the fraud — and predicted fraud
+falls as they grow. Either those rows now carry less fraud than they did in training, or
+the model under-calls them. No label here can say which.
+
+Review eligibility stays between 14.4% and 16.4% against test's 17.6%; reviews per day
+track daily volume, because capacity is a share of it.
 
 ## 7. The retraining trigger
 
