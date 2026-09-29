@@ -140,6 +140,13 @@ same rows, so the only place the claim that drift *leads* decay can be checked r
 assumed. §7 builds its label-free conditions on that claim; the labelled windows are
 where it is read, and the result is reported whichever way it goes.
 
+**How it is read, fixed before any PSI exists.** Over the twelve full labelled windows,
+the rank correlation between each window's contribution-weighted PSI (§7's condition 1
+quantity) and its PR-AUC shortfall against the `VAL-CAL` baseline, reported with its n —
+and whether the window §4's rules flag is the one with the highest weighted PSI. Twelve
+points cannot establish that drift leads decay. They can contradict it, and a correlation
+of the wrong sign, or a flagged window with unremarkable PSI, is exactly that.
+
 **Ten quantile bins, cut on the reference.** Quantile rather than equal-width, for the
 reason `calibration.ece_bins` is quantile: on a skewed distribution — the score at a 3%
 base rate there, `TransactionAmt` and most counts here — equal-width bins put nearly
@@ -201,6 +208,14 @@ ones lead the summary is decided by `explainability.md` §4's contribution ranki
 than by PSI magnitude or by LightGBM's gain, because the question a reader has is "did
 the columns that move decisions move", and a large shift in a column the booster barely
 consults is not that. The full table is persisted regardless.
+
+**The weighted aggregate uses the same columns on both horizons.** Condition 1 takes the
+top-`k` by contribution *among the columns the horizon can support*, weights renormalised
+over those `k`, on the labelled windows as well as on the unlabelled ones. A `vel_*`
+column ranks inside the booster's top ten, and it is excluded on the horizon (below); an
+aggregate over different columns on each side would make a labelled number and a horizon
+number two different quantities, and the drift-leads-decay reading above would say
+nothing about the horizon it is meant to license.
 
 **Two exclusions, both registered now.**
 

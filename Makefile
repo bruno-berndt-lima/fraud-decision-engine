@@ -543,6 +543,28 @@ $(HORIZON): $(HORIZON_VERIFIED) $(MODEL) $(CALIBRATOR) $(FEATURES) $(INTERIM) \
             src/fraud_engine/evaluation/report.py | $(HORIZON_DIR)
 	$(RUN) python -m fraud_engine.monitoring.horizon
 
+# Feature drift on both horizons and prediction drift on the unlabelled one. $(DRIFT)
+# stands for the pair, per the single-sentinel note above: the same run writes the full
+# per-column table beside it. It reads the horizon the stage above built, the matrices and
+# the shipped vocabulary for the reference, the contribution ranking condition 1 weights by,
+# and the decay chart's windows, which the drift-against-decay reading sets PSI beside.
+# $(HEADLINE) is not a prerequisite, as for the decay chart; the stage checks for test's
+# vector itself, and proves the policy against the headline's record before it costs a
+# horizon window.
+$(DRIFT): $(HORIZON) $(FEATURES) $(MODEL) $(INTERIM) $(DECAY) $(SHAP_GLOBAL) $(COST_MATRIX) \
+          $(call sections,load splits baselines model monitoring) \
+          src/fraud_engine/monitoring/drift.py \
+          src/fraud_engine/monitoring/drift_plots.py \
+          src/fraud_engine/monitoring/psi.py \
+          src/fraud_engine/monitoring/windows.py \
+          src/fraud_engine/evaluation/cost.py \
+          src/fraud_engine/evaluation/plots.py \
+          src/fraud_engine/evaluation/report.py \
+          src/fraud_engine/evaluation/tracking.py \
+          src/fraud_engine/serving/artifacts.py \
+          src/fraud_engine/models/train.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.monitoring.drift
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -551,7 +573,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon drift
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -581,6 +603,7 @@ loadtest:  $(SERVING_LATENCY) ## p50/p95/p99 against the container, per worker c
 composition: $(COMPOSITION) ## E5: the train/validation gap, stratified by identity coverage
 decay:     $(DECAY)     ## PR-AUC by five-day window across the labelled days, read by the rules
 horizon:   $(HORIZON)   ## Prove the path, then build and score the unlabelled days 213-395
+drift:     $(DRIFT)     ## PSI on both horizons, and prediction drift on the unlabelled one
 
 # For looking at the thing by hand. The load test does not use this — it starts its
 # own container so the record can name the worker count it measured.

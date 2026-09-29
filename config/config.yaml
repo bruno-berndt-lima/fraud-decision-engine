@@ -151,6 +151,9 @@ paths:
   # Sections 3 and 6 — feature PSI on both horizons, and the score distribution and
   # the frozen policy's behaviour on the unlabelled one. Tracked.
   drift: reports/metrics/drift.json
+  # The same run's full table: every column's PSI in every window, beside its bin count,
+  # missing share and unseen-category share. Tracked — section 3 persists it whole.
+  drift_table: reports/metrics/drift_psi.csv
   # Section 7 — which condition would have fired first, and when a retrain could
   # legitimately have used the data. Tracked.
   retraining_trigger: reports/metrics/retraining_trigger.json
