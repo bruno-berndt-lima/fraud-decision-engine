@@ -592,6 +592,40 @@ phase wrote and reports which condition would have fired first, on which window,
 what the earliest legitimate retrain date would have been given the lag above. A rule
 nobody ran against data is a paragraph.
 
+**How the rule is replayed, fixed before the stage runs.** Added on 2026-09-29, before
+`retraining_trigger.json` existed: the paragraph above names what is reported, and not the
+clock it is reported on.
+
+- **The model goes live on day 161**, where §4's replay puts it, and the cadence counts
+  from there. The 30 days of maturity are `splits.gap_days`, the purge that
+  `problem-statement.md` §3.3 sets from the same assumption, read from config rather
+  than restated.
+- **A window is read on its last day.** Conditions 1 and 2 fire on the day the window
+  that crosses the threshold closes. "Exceeds" means reaching the named band, so the
+  boundary value itself counts, as it does in §3's bands. A partial window is reported
+  with whether it would have reached the band, and never fires.
+- **Condition 1 on every window after deployment**: test's four full five-day windows
+  and the horizon's six. Validation's windows come before the model went live.
+- **Condition 2 on the horizon only.** Test's windows are its reference.
+- **Condition 3 on no window here**, and each window is reported with the day its labels
+  would mature. Test's windows are part of the pooled figure they would be judged
+  against, which exists only once the last of their labels matures, on day 212. The
+  horizon has no labels at all. So that the condition is a rule and not a phrase: it
+  fires on a window whose PR-AUC interval lies wholly below `1 − pr_auc_drop` times
+  test's pooled PR-AUC, and whose ROC-AUC interval lies wholly below test's ROC-AUC. The
+  record carries both values.
+- **Ties go to the signal.** If a label-free condition and the cadence fall on the same
+  day, the label-free one is reported first.
+- **The earliest legitimate retrain, for whichever condition fires first on day *T*.**
+  Training data can end on *T* − 30 at the very best, as registered above. It is also
+  reported under this project's own layout, which a retrain that keeps the protocol has
+  to fit into the days up to *T* − 30: `VAL-CAL`, `VAL-FIT` and the purge, at the
+  lengths `splits` gives them. Fitting and shipping are not measured here, so the
+  response time is reported without them.
+- **The shipped model's day 161 is put through the same arithmetic.** Its calibrator was
+  fitted on `VAL-CAL`, whose labels mature 30 days after it ends, and the record says on
+  which day.
+
 ### Result
 
 *Pending.*

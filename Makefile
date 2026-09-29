@@ -565,6 +565,15 @@ $(DRIFT): $(HORIZON) $(FEATURES) $(MODEL) $(INTERIM) $(DECAY) $(SHAP_GLOBAL) $(C
           src/fraud_engine/models/train.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.monitoring.drift
 
+# The retraining trigger, replayed against the records: drift's windows for the label-free
+# conditions and the split layout for the clock. It fits and scores nothing. The headline's
+# record supplies condition 3's baseline and is checked for rather than named, as for
+# every stage after it.
+$(TRIGGER): $(DRIFT) $(call sections,load splits monitoring) \
+            src/fraud_engine/monitoring/trigger.py \
+            src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.monitoring.trigger
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -573,7 +582,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon drift
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon drift trigger
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -604,6 +613,7 @@ composition: $(COMPOSITION) ## E5: the train/validation gap, stratified by ident
 decay:     $(DECAY)     ## PR-AUC by five-day window across the labelled days, read by the rules
 horizon:   $(HORIZON)   ## Prove the path, then build and score the unlabelled days 213-395
 drift:     $(DRIFT)     ## PSI on both horizons, and prediction drift on the unlabelled one
+trigger:   $(TRIGGER)   ## Replay the retraining rule against the records, and when it fires
 
 # For looking at the thing by hand. The load test does not use this — it starts its
 # own container so the record can name the worker count it measured.
