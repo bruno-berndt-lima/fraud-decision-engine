@@ -299,7 +299,50 @@ feature, whatever it shows. §9.
 
 ### Result
 
-*Pending.*
+Record `reports/metrics/decay.json`, figure `reports/figures/decay_pr_auc.png`. Before a
+window was drawn, the pooled PR-AUC and ROC-AUC of each slice, recomputed from the vectors
+on disk, matched their records exactly.
+
+**No test window is shown to decline.** Every one of the five reaches the `VAL-CAL`
+baseline of 0.5215 with its interval, across days 73 to 92 after the training window
+ended. Twelve of the thirteen windows read `no decline`; none reads `prevalence`.
+
+| slice | windows | PR-AUC range | identity share | verdicts |
+|---|---:|---:|---:|---|
+| `VAL-FIT` (early-stopped on) | 4 | 0.469–0.683 | 17.87% | no decline |
+| `VAL-CAL` | 4 | 0.445–0.616 | 17.29% | one decline |
+| test | 4 + 1 partial | 0.478–0.561 | 22.76% | no decline |
+
+**The one decline is inside the baseline's own slice.** Days 146–150 of `VAL-CAL`: PR-AUC
+0.445 [0.430, 0.468], ROC-AUC below as well, identity share 17.8% — inside the range
+validation spans, so mix can explain none of it. The baseline is the pooled figure of the
+slice this window belongs to, so what the rule found here is variation *within*
+`VAL-CAL`, before the replayed deployment, not decay after it.
+
+**A five-day window moves a long way on its own.** Inside `VAL-FIT`, PR-AUC falls from 0.683
+to 0.469 in twenty days; inside `VAL-CAL` it ranges between 0.445 and 0.616, with no
+direction to it. The intervals are as wide
+as §4 said they would be — five days to resample is a detector of large moves — and that
+width is what keeps any single window from being read as a trend.
+
+**Two observations, neither a verdict.** The rules read PR-AUC first and use ROC-AUC only
+to tell a decline from prevalence, so these are recorded, not read:
+
+- **ROC-AUC dips where PR-AUC does not.** Its interval sits wholly below the baseline in two
+  test windows — days 166–170, and the partial 181–182 — while PR-AUC's does not.
+- **Identity coverage comes back in test.** 28.3% in its first window and 22.8% across the
+  slice, against 17.3–17.9% in validation. Those are the rows the model ranks best, and no
+  test window rises above the baseline with them; by E5's arithmetic, mix alone would
+  have pushed PR-AUC up.
+
+**One correction, made before this record.** The first run's code took the identity
+share's distance from the validated range in either direction, which gave windows with
+*more* identity a bound pointing the wrong way. §5 registered a fall as composition only
+if the share moved with it, so the code was corrected to count only a share below the
+range. No verdict changed, and every window's figures were identical across the two
+runs.
+
+Nothing here moves a threshold, a parameter or a feature (§9).
 
 ## 5. E5 — composition, or generalisation?
 
