@@ -132,7 +132,9 @@ two of four. Expected calibration error, out of fold, fell from 0.0210 to 0.0018
 against 3.70% observed, PR-AUC 0.515 against 0.521 on `VAL-CAL`. At 1% capacity the
 model catches 22.1% of test fraud against the rules engine's 5.0%.
 
-![Reliability on test](reports/figures/reliability_test.png)
+<p align="center">
+  <img src="reports/figures/reliability_test.png" alt="Reliability on test" width="420">
+</p>
 
 ## Explainability
 
@@ -199,7 +201,9 @@ moved because of anything in this section.
   triggered then trains, under this project's own layout, on data ending 100 days
   earlier.
 
-![Drift on both horizons](reports/figures/drift.png)
+<p align="center">
+  <img src="reports/figures/drift.png" alt="Drift on both horizons" width="520">
+</p>
 
 Record: [`docs/monitoring.md`](docs/monitoring.md); the labelled decay chart is
 [`reports/figures/decay_pr_auc.png`](reports/figures/decay_pr_auc.png).
