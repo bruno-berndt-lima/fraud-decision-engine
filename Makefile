@@ -80,6 +80,7 @@ COMPOSITION      := $(REPORTS_DIR)/metrics/composition.json
 DECAY            := $(REPORTS_DIR)/metrics/decay.json
 DRIFT            := $(REPORTS_DIR)/metrics/drift.json
 TRIGGER          := $(REPORTS_DIR)/metrics/retraining_trigger.json
+ATTRIBUTION      := $(REPORTS_DIR)/metrics/attribution_test.json
 # Not a file: docker owns the image, and its tag is what the load test starts. The
 # stamp is what make can compare timestamps against.
 IMAGE_TAG   := fraud-engine:local
@@ -574,6 +575,19 @@ $(TRIGGER): $(DRIFT) $(call sections,load splits monitoring) \
             src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
 	$(RUN) python -m fraud_engine.monitoring.trigger
 
+# What the headline was missing (decision-policy.md §8): the threshold ladder and the
+# day-bootstrap intervals. It reads the rehearsal's inputs and test's persisted vector,
+# loads no model, and proves both records before measuring. $(HEADLINE) is not a
+# prerequisite, for the reason the decay chart gives; the stage checks for it.
+$(ATTRIBUTION): $(CALIBRATOR) $(REHEARSAL) $(BASELINES) $(INTERIM) $(COST_MATRIX) \
+                $(call sections,load splits model calibration attribution) \
+                src/fraud_engine/evaluation/attribution.py \
+                src/fraud_engine/evaluation/policy.py \
+                src/fraud_engine/evaluation/arms.py \
+                src/fraud_engine/evaluation/cost.py \
+                src/fraud_engine/evaluation/report.py | $(REPORTS_DIR)
+	$(RUN) python -m fraud_engine.evaluation.attribution
+
 # Forces the check the stamp normally lets make skip. `make data` already
 # verifies whenever raw/ changed; this is for re-checking on demand — after a
 # disk scare, or before trusting a number you are about to publish.
@@ -582,7 +596,7 @@ verify-data:  ## Re-check raw/ against docs/raw_checksums.txt, ignoring the stam
 	rm -f $(VERIFIED)
 	$(MAKE) --no-print-directory $(VERIFIED)
 
-.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon drift trigger
+.PHONY: data splits baselines figures features families floor train spread imbalance tune ablation ablation-floor purge calibrate rehearsal sensitivity usd-halves headline explain latency explain-figures reason-codes neutralisation image loadtest serve composition decay horizon drift trigger attribution
 data:      $(INTERIM)   ## Build interim/transactions.parquet from raw CSVs
 splits:    $(SPLITS)    ## Assign transactions to temporal splits
 baselines: $(BASELINES) $(LOGISTIC) $(FIGURES) ## Score both baselines through the Phase 02 harness
@@ -614,6 +628,7 @@ decay:     $(DECAY)     ## PR-AUC by five-day window across the labelled days, r
 horizon:   $(HORIZON)   ## Prove the path, then build and score the unlabelled days 213-395
 drift:     $(DRIFT)     ## PSI on both horizons, and prediction drift on the unlabelled one
 trigger:   $(TRIGGER)   ## Replay the retraining rule against the records, and when it fires
+attribution: $(ATTRIBUTION) ## The threshold ladder on test, with day-bootstrap intervals
 
 # For looking at the thing by hand. The load test does not use this — it starts its
 # own container so the record can name the worker count it measured.

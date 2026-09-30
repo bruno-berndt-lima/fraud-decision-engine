@@ -50,6 +50,7 @@ PATH_PAIRS = [
     ("DECAY", "paths.decay"),
     ("DRIFT", "paths.drift"),
     ("TRIGGER", "paths.retraining_trigger"),
+    ("ATTRIBUTION", "paths.attribution"),
 ]
 
 # Make represents a multi-file stage by a single sentinel file (see the comment
