@@ -1,249 +1,272 @@
-<!--
-README OUTLINE — headings only (Phase 00 deliverable).
-
-Each HTML comment states the evidence that section is obligated to carry and the
-phase that produces it. They don't render on GitHub, so the page stays clean
-while the outline is still being filled in. Delete each one as its section lands.
-
-The ordering is deliberate: the money result leads. Everything below it is
-supporting evidence for that number.
--->
-
 # fraud-decision-engine
 
-<!-- One sentence: turns transaction fraud probabilities into cost-weighted
-     allow/review/block decisions, and reports the result in dollars saved
-     against the rules engine it replaces. -->
-
----
+Turns transaction fraud probabilities into cost-weighted **allow / review / block**
+decisions on the IEEE-CIS dataset, and reports the result in dollars saved against the
+rules engine it replaces — not in AUC.
 
 ## The result
 
-<!-- PHASE 06 + 09. Leads the document.
-     - The money chart: USD lost per 1,000 transactions.
-     - Table: rules baseline vs. model at a naive 0.5 threshold vs. model with
-       the expected-value policy. Test set, scored once.
-     - One paragraph interpreting it. No metrics here — this section is money. -->
+Test set, days 161–182, scored **once**: 61,585 transactions, 2,277 of them fraudulent
+(3.70%). Every input was frozen and committed before a test row was scored.
+
+| policy | USD lost per 1,000 transactions | reviews / day | blocked | vs. rules engine |
+|---|---:|---:|---:|---:|
+| allow everything | 6,618 | 0 | 0% | +3.8% |
+| **rules engine** (the incumbent) | **6,373** | 27.45 | 0% | — |
+| model, fixed 0.5 threshold | 5,155 | 0 | 1.77% | −19.1% |
+| model, expected-value policy on uncalibrated scores | 4,840 | 18.64 | 1.23% | −24.1% |
+| **model, expected-value policy** | **2,481** | 27.45 | 6.45% | **−61.1%** |
+
+**The expected-value policy saves $3,892 per 1,000 transactions against the rules
+engine.** Changing one thing at a time says where it comes from:
+
+- **The model behind one fixed cut: 19.1%.**
+- **A threshold per transaction, priced against its own amount: 61.1%**, on the same
+  probabilities — 42 points more.
+- **The same policy on uncalibrated scores: 24.1%**, so calibration is worth 37 points.
+
+Both levers outrank the model on its own.
+
+**What it costs.** The policy blocks 6.45% of transactions and 67% of those are
+legitimate — 4.5% of good customers declined, at an assumed $15 each. That is the
+weakest assumption in the project, so it was swept from $5 to $100 on validation: the
+advantage stayed between 34% and 69%. Part of the margin is structural — a rules engine
+emits points, not probabilities, so it can only review and never blocks.
+
+**What it rests on.** Most of the signal is inherited. The dataset ships several hundred
+aggregates (`C*`, `D*`, `V*`) that Vesta computed over lookback windows it never
+published. They carry **57.2%** of the model's contribution mass on test, and keeping
+only the 54 columns a team could rebuild retains **53.8%** of PR-AUC in the ablation's
+reference configuration. The pipeline is clean and tested; the exposure is the
+dataset's, and it belongs at the top rather than in the limitations.
 
 ## The problem
 
-<!-- PHASE 00. Compressed from docs/problem-statement.md, which this links to.
-     - The three actions, and what "review" operationally means.
-     - Latency budget and review capacity.
-     - The cost asymmetry: FN scales with amount, FP is ~fixed. This is the
-       sentence the whole project hangs on. -->
+A payment processor decides, inline with authorisation, what to do with each
+transaction:
 
-## Data and splits
+| action | cost when wrong |
+|---|---|
+| **allow** | a fraud costs its amount plus a $25 chargeback fee |
+| **review** | friction on a good customer, plus analyst time |
+| **block** | a legitimate customer refused |
 
-<!-- PHASE 01 + 02. Lead with the maturity gap — it's the differentiator.
-     - Dataset, base rate, time span.
-     - The temporal split diagram, including the 30-day purge and the
-       VAL-FIT / VAL-CAL carve, with the reason for each.
-     - Why not a random split.
-     - The harness sanity check: random scorer lands at the base rate. -->
+Two constraints: **p95 latency under 100 ms**, and **review capacity of 1% of daily
+volume** — about 32 cases a day, one analyst for an hour or two.
 
-## Baselines
+A missed fraud costs an amount that scales with the transaction; a false decline costs
+roughly a fixed amount. So blocking pays above a probability that depends on the amount:
 
-<!-- PHASE 03.
-     - The rules engine, each rule with its rationale. This is the incumbent.
-     - Logistic regression as the "is complexity earning its keep" reference.
-     - Both scored through the same harness. -->
+```
+p* = C_fp / (amount + chargeback_fee + C_fp)
+```
 
-## Model
+At the assumed costs a $20 transaction is blocked above 25.0% and an $8,000 one above
+0.187%. One global threshold is the wrong instrument, which is why this project reports
+money. Review is the third action: a transaction is eligible when reviewing it beats the
+better of allow and block in expectation, and each day the largest savings take the
+seats.
 
-<!-- PHASE 05.
-     - LightGBM, why trees over neural nets on this data.
-     - Tuning approach and search space.
-     - The imbalance experiment and its verdict — including if SMOTE lost.
-     - PR-AUC and recall@capacity vs. both baselines, on validation. -->
+Everything is in USD, as `TransactionAmt` is. The reasoning and each cost's provenance:
+[`docs/problem-statement.md`](docs/problem-statement.md); the assumptions are versioned
+in [`config/cost_matrix.yaml`](config/cost_matrix.yaml).
 
-## Calibration and decision policy
+## How it was evaluated
 
-<!-- PHASE 06. The intellectual core.
-     - Reliability diagram, before and after.
-     - Why calibration matters here specifically: the policy multiplies
-       probability by money.
-     - The per-transaction threshold derivation.
-     - The sensitivity sweep over friction cost, with its chart. -->
+The labelled IEEE-CIS file: 590,540 transactions over 182 days, 3.50% fraud. Split in
+time, never at random:
+
+```
+day   1 ────────── 90 │ 91 ──── 120 │ 121 ── 140 │ 141 ── 160 │ 161 ── 182
+         TRAIN        │   PURGED    │  VAL-FIT   │  VAL-CAL   │    TEST
+```
+
+- **A 30-day label-maturity purge.** Fraud is confirmed by a chargeback weeks later, so
+  training right up to validation assumes labels that would not exist yet. Measured on
+  validation, an evaluation without the purge would have claimed **$280–$355 more
+  saving per 1,000**, both intervals clear of zero.
+- **Validation in two.** `VAL-FIT` drives early stopping and tuning; `VAL-CAL`, later in
+  time, fits the calibrator and rehearses the policy, so the calibrator never sees rows
+  the model stopped against.
+- **Test touched once, structurally.** The stage that scores it refuses a dirty tree and
+  refuses to run twice, and a reloaded model must reproduce its recorded validation
+  scores exactly before it scores anything new.
+- **Decisions registered before their numbers.** Every choice that could move a reported
+  figure was written down with its reading rule first:
+  [`decision-policy.md`](docs/decision-policy.md),
+  [`explainability.md`](docs/explainability.md), [`serving.md`](docs/serving.md),
+  [`monitoring.md`](docs/monitoring.md). Experiments are in
+  [`experiments.md`](docs/experiments.md).
+
+## Model and baselines
+
+| | `VAL-FIT` PR-AUC | `VAL-CAL` PR-AUC | recall at 1% capacity, `VAL-CAL` |
+|---|---:|---:|---:|
+| rules engine (the incumbent) | 0.128 | 0.094 | 4.3% |
+| logistic regression (the reference) | 0.322 | 0.229 | 13.9% |
+| **LightGBM, tuned (shipped)** | **0.589** | **0.521** | **26.2%** |
+
+A perfect ranker catches 31.1% on `VAL-CAL` at that capacity: at 1% of daily volume the
+limit is the seat count, not the model.
+
+- **Tuning had to clear a bar.** The best of sixty Optuna trials on `VAL-FIT` is partly
+  the luckiest, so the winner was accepted only because its gain over the untuned model
+  (0.069) was eight times the spread seed changes alone produce.
+- **Imbalance handling lost.** Class weighting scored below doing nothing, and SMOTE
+  below the same pipeline without it.
+- **No hand-built feature family clears its own noise bar** when removed from the
+  model. The signal is in the inherited columns, as the result above says.
+
+## Calibration
+
+The booster ranked well and lied about magnitude: its uncalibrated log-loss on
+`VAL-CAL` was worse than predicting the base rate for everyone. **Platt scaling shipped,
+by a rule written before the numbers** — isotonic had to beat it in every fold and won
+two of four. Expected calibration error, out of fold, fell from 0.0210 to 0.0018.
+
+**It held on test**: expected calibration error 0.0016, mean predicted fraud 3.74%
+against 3.70% observed, PR-AUC 0.515 against 0.521 on `VAL-CAL`. At 1% capacity the
+model catches 22.1% of test fraud against the rules engine's 5.0%.
+
+![Reliability on test](reports/figures/reliability_test.png)
 
 ## Explainability
 
-<!-- PHASE 07.
-     - Global SHAP beeswarm.
-     - Local waterfalls: a true positive, a false positive, a high-value catch.
-     - Phase 01 hypotheses vs. what SHAP actually showed — including where the
-       hypotheses were wrong.
-     - Reason codes, and why an automated decision needs an explanation. -->
+A person subject to an automated decision can ask why (LGPD, BACEN guidance). Here the
+answer is partly *no one can say*.
+
+- **36.2% of declines have only a generic reason**, in a sample of 10,000 test
+  transactions: none of their three leading contributors has a published definition,
+  so the honest notice is that pre-computed indicators argued against the transaction.
+- **Explaining costs about sixty times scoring**: ~900 ms at p95 against ~16 ms, and
+  more threads made it slower. Reason codes therefore live on their own endpoint.
+- **The hypotheses failed in an instructive way.** Three were registered before any
+  model. Their claims about fraud mostly held on test; every prediction about how the
+  model would use the field failed — `ProductCD` ranks #70 of 349 — because a booster
+  whose columns repeat the same signal does not use a field in proportion to how well it
+  separates fraud alone.
+
+Record: [`docs/explainability.md`](docs/explainability.md).
 
 ## Serving
 
-The model runs behind a FastAPI service in a container: `POST /score` for a decision,
-`GET /health` for liveness and provenance, `POST /explain` for the adverse-action notice.
-The full record, with every choice registered before its number existed, is
-[`docs/serving.md`](docs/serving.md).
+A FastAPI service in a container: `POST /score`, `GET /health`, `POST /explain`. The
+433-field contract is derived from the booster at startup, so it cannot drift from the
+model, and an omitted field is a null, as it is in the data.
 
-### The contract
+- **Features that need live card history are served with their no-history defaults.**
+  Measured on `VAL-CAL`, that costs +$56 per 1,000 with a 95% interval of [−$18, +$124]:
+  it cannot be shown to cost anything.
+- **The p95 budget is met at one and two requests in flight** (31 ms and 79 ms on one
+  worker) **and missed from four.** The real operating point is 0.032 requests per
+  second. Past the knee throughput *falls*, because a breach releases the caller but a
+  prediction cannot be interrupted.
+- **It fails open to the rules engine**, and `/health` counts the fallbacks. The image
+  refuses to build without its ten artifacts and carries neither `shap` nor
+  `matplotlib`.
 
-A request carries **433 fields** — the 349 features the booster holds, less what the
-pipeline builds, plus the 339 V columns the reduction consumes and never shows. The
-Pydantic model is derived from the booster's feature names at startup, so the contract
-cannot drift from the model it serves.
-
-An omitted field is a null, not an error, because that is what this data looks like: the
-first transaction of the interim table carries **199 of 433 non-null**. A contract
-demanding them all would reject the dataset it was built from. Four fields are required,
-three may not be null, and unknown field names are refused — a 422 naming the field,
-never a 500.
-
-`/score` returns the action, the calibrated probability, **the break-even probability for
-this amount**, review eligibility with the expected saving behind it, which path decided,
-and the identity of every artifact that produced it.
-
-**Review is eligibility, never an outcome.** Whether a transaction reaches an analyst
-depends on the other transactions that day, which is queue state a single request cannot
-see. The response carries what a queue needs to rank by and stops there.
-
-**Reason codes are not on `/score`.** Explaining a decline costs about **960 ms** against
-**30 ms** to decide it, and the policy declines 6.45% of transactions — putting a
-900 ms call inside the p95 it would have to fit under. The notice moved to its own
-endpoint with its own budget, because §3.1 prices an authorisation and an adverse-action
-notice is not one.
-
-### The train/serve feature gap
-
-`docs/features.md` sorts all 349 model features into four serving tiers:
-
-| tier | what it needs | columns |
-|---|---|---:|
-| 0 | nothing — inherited, unreproducible | 295 |
-| 1 | the request itself | 36 |
-| 2 | a static table shipped with the model | 14 |
-| 3 | live entity history at request time | 4 |
-
-**Tier 3 is the problem, and it is the velocity family.** Those four columns need a
-per-`card1` running window updated on every transaction — a feature store that was to be
-costed rather than built. Two experiments had already failed to show it pays: the live
-entity store could not be shown to earn its keep on PR-AUC, and could not be shown to
-pay in USD either.
-
-**The choice: serve the family's own no-history values.** Not zeros, and not invented for
-serving — a card's first sighting takes a trailing count of one in every window and the
-configured first-seen recency, which are values the model was fitted against rather than
-a hole punched in the matrix. Callers that *do* have the history may supply it, and the
-response declares which tier-3 inputs arrived, so a scored-with-history decision is
-distinguishable from one scored without.
-
-**What it costs was measured, not asserted.** Scoring VAL-CAL twice with the same frozen
-booster — once as built, once with those four columns neutralised:
-
-- PR-AUC falls **0.00729**, from 0.52145 to 0.51416
-- cost rises **$56.19 per 1,000**, 95% interval **[−18.20, +123.99]**
-
-The interval contains zero, so the serving default **cannot be shown to cost anything in
-USD**. Only 0.67% of the slice already held those values, so the null is not the default
-being quietly true already — and the booster does use the family, ranking one of the four
-in its top ten contributors.
-
-**The larger exposure is tier 0, and it is inherited.** 295 of 349 features are Vesta's
-pre-computed aggregates over lookback windows that were never published; they carry
-**57.2% of the contribution mass** on test. Keeping only the columns this project could
-rebuild from scratch retains **53.8%** of PR-AUC. That is a property of the dataset, not
-of the code, and it cannot be bounded from inside this repository.
-
-### Latency
-
-**p95 under sustained concurrent load**, 30 seconds per cell with 5 discarded as warmup,
-one thread per worker, replaying test transactions. 16-core Intel i9-9980HK under Docker
-Desktop — a Linux VM with all 16 cores — and the load generator sharing the machine,
-which inflates the tail.
-
-| workers | in flight | req/s | p50 | p95 | p99 | fell back | |
-|---:|---:|---:|---:|---:|---:|---:|:--|
-| 1 | 1 | 35.6 | 27.3 | **31.0** | 37.3 | 0.0% | met |
-| 1 | 2 | 34.2 | 57.2 | **79.4** | 93.5 | 0.2% | met |
-| 1 | 4 | 14.6 | 267.6 | 345.3 | 375.9 | 100% | missed |
-| 1 | 8 | 19.2 | 408.7 | 544.7 | 612.9 | 100% | missed |
-| 1 | 16 | 30.1 | 522.7 | 705.9 | 766.9 | 100% | missed |
-| 1 | 32 | 37.6 | 839.3 | 1102.4 | 1192.7 | 100% | missed |
-| 4 | 1 | 31.6 | 32.2 | **36.6** | 54.6 | 0.0% | met |
-| 4 | 2 | 62.2 | 29.6 | **45.1** | 70.5 | 0.1% | met |
-| 4 | 4 | 75.8 | 36.7 | 107.6 | 209.0 | 3.7% | missed |
-| 4 | 8 | 37.2 | 80.9 | 687.9 | 842.6 | 39.3% | missed |
-| 4 | 16 | 31.0 | 425.9 | 1199.5 | 1357.3 | 58.9% | missed |
-| 4 | 32 | 31.4 | 1179.3 | 2023.3 | 2427.5 | 69.9% | missed |
-
-Milliseconds. No request errored in any cell.
-
-**The budget is `p95 < 100 ms`. It is met at one and two requests in flight, and missed
-from four.** Both are reported, because repairing a miss by lowering the concurrency
-until it passes is not an answer.
-
-Per request the service is about three times faster than it has to be. The misses are
-more requests in flight than workers to run them, which is arithmetic: four concurrent
-CPU-bound calls of ~30 ms cannot leave one worker inside 100 ms. **Where the operating
-point actually is:** test holds 61,585 transactions over 22 days — 2,799 a day, **0.032
-requests per second**, which at ten times peak is 0.01 requests in flight. Two orders of
-magnitude below the first missed row.
-
-**Past the knee, throughput falls rather than flattening.** One worker serves 35.6 req/s
-with a single request in flight and 14.6 with four — offered more work, it completes less
-than half as much. That is the fail-open guarantee turning on itself: a breach releases
-the caller, but a LightGBM prediction cannot be interrupted, so the worker finishes a
-score nobody will read *and then* runs the rules decision. Every request in breach costs
-the server both paths, which is what makes the next one breach. Shedding on queue depth
-would fix it, and is listed under [what I'd do next](#what-id-do-next) rather than
-changed here — the frozen set was fixed before this number existed.
-
-### Failure, and what ships
-
-**Fail open, to rules.** A missing artifact leaves the service up and degraded; a raise
-anywhere in the scoring path falls back to the incumbent; a breach of the budget returns
-the incumbent's decision on time. Declining every transaction during a model outage
-converts an availability incident into a total revenue outage. `/health` counts the
-fallbacks, because a service answering every request from the incumbent is otherwise
-indistinguishable from a healthy one.
-
-**Ten artifacts ship, not five** — the booster, its vocabulary and fill values, the
-calibrator, three fitted tables the transform needs, the rules constants, the cost matrix
-and the reason dictionary. Each fails *quietly* when absent, so the image refuses to build
-without them, checking the manifest against the list the code defines rather than a copy.
-
-The image is multi-stage on a slim base, runs as a non-root user, excludes `shap` and
-`matplotlib`, and pins one thread per worker — which inverts the usual advice and is a
-measurement: a single row gives LightGBM nothing to parallelise, and more threads made
-the identical call slower.
-
-`make image` builds it, `make serve` runs it, `make loadtest` reproduces the table above.
-
+Record, with the full latency table: [`docs/serving.md`](docs/serving.md).
 
 ## Monitoring
 
-<!-- PHASE 09.
-     - PSI drift report across monthly windows.
-     - Month-over-month PR-AUC decay chart.
-     - The retraining trigger, justified against the label-maturity constraint. -->
+Labels arrive 30 days late, so **a monitor that needs labels is always a month behind.**
+Two horizons: the labelled days 121–182 in five-day windows, and Kaggle's unlabelled
+file, days 213–395, in 28-day windows — scored by the shipped model as the service
+would, after the same path reproduced test's matrix and scores to the bit.
+
+**Measurement is unlimited; tuning is spent once.** Test was touched once to *decide*,
+and is re-read here window by window to *measure*. No threshold, parameter or feature
+moved because of anything in this section.
+
+- **No test window declines.** None is shown to fall below `VAL-CAL`'s PR-AUC with
+  day-level bootstrap intervals; the one window flagged lies inside `VAL-CAL` itself.
+- **The inputs the model leans on held.** Contribution-weighted PSI stayed stable in
+  every full window of both horizons. What moved is in columns it barely uses: fields
+  that started arriving (`M1`–`M3`, `M7`–`M9`, `D11`) and browser versions the
+  vocabulary never saw.
+- **The policy moved anyway.** Score PSI stayed stable while the frozen policy blocked a
+  quarter less (6.33% → 4.72%) and mean predicted fraud fell from 3.98% to 2.86%. The
+  change is in the top tail, which decile PSI cannot see. Without labels, "fraud fell"
+  and "the model under-calls" cannot be told apart, and neither is chosen.
+- **The retraining rule fires only on its 90-day cadence.** Registered before the run
+  and replayed on the records, its labelled condition could judge no window, and its
+  label-free ones stayed silent through the one change that reached the policy. That
+  blind spot is reported, not tuned away. A retrain
+  triggered then trains, under this project's own layout, on data ending 100 days
+  earlier.
+
+![Drift on both horizons](reports/figures/drift.png)
+
+Record: [`docs/monitoring.md`](docs/monitoring.md); the labelled decay chart is
+[`reports/figures/decay_pr_auc.png`](reports/figures/decay_pr_auc.png).
 
 ## Limitations
 
-<!-- PHASE 09. Written honestly, sourced from problem-statement.md §6.
-     - Friction cost assumed, not measured.
-     - Label maturity window estimated.
-     - C*/D* are vendor aggregates with undisclosed lookback windows.
-     - isFraud = 0 means "nobody disputed", not "legitimate".
-     - US ticket-size distribution; rates wouldn't transfer, method would. -->
+- **`isFraud = 0` means nobody disputed it**, so every metric is measured against an
+  under-count of fraud.
+- **Most of the signal is vendor aggregates over undisclosed windows.** The purge
+  protects the labels, not features computed with information from beyond the training
+  window.
+- **The $15 false-decline cost is assumed.** The conclusion survives $5–$100; its size
+  does not.
+- **The policy declines 4.5% of good customers**, which a merchant would weigh as a
+  constraint, not only a cost.
+- **The incumbent cannot block**, so part of the margin is structural.
+- **30 days of label maturity is a judgement**; card networks allow about 120 to dispute.
+- **There is no purge before deployment.** The calibrator used `VAL-CAL` labels that
+  would mature 30 days after it ends; the test replay treats them as known the next day.
+- **The labelled evaluation spans 22 days**, so a monthly labelled decay chart was never
+  possible, and five-day windows are noisy.
+- **A system cannot detect drift in a feature it defaults.** The live-history columns
+  are defaulted in serving, so PSI cannot see them move.
+- **A US e-commerce ticket distribution.** Decision rates would not transfer; the method
+  would.
 
 ## What I'd do next
 
-<!-- PHASE 09. Short, specific, and evidence-backed — not a wish list. -->
+- **Monitor what the policy acts on**: a trigger condition on its block rate and the
+  score tail, threshold fixed before any horizon is read — the change the registered
+  rule could not see.
+- **Shed load on queue depth**, so a request in breach stops costing the server both the
+  model and the fallback.
+- **A per-card feature store**, to serve the live-history columns properly, monitor them,
+  and give their value a fair test.
+- **A second purge before deployment and a longer labelled window**, so decay is
+  measured monthly and with labels.
 
 ## Running it
 
-<!-- PHASE 08/09.
-     - Prerequisites, Kaggle credentials, `make download`.
-     - The make targets in pipeline order.
-     - `docker run` for the API. -->
+```bash
+uv sync                                      # install from the lockfile
+make download                                # Kaggle CLI; needs ~/.kaggle/access_token
+make data splits features train calibrate    # raw CSVs to the frozen model and calibrator
+make headline                                # the one test touch; refuses once recorded
+make decay horizon drift trigger             # monitoring, both horizons
+make image serve                             # the API on port 8000
+make check                                   # ruff and pytest
+```
+
+`make help` lists every stage. Raw data is checksum-enforced, and each stage reruns only
+when its inputs or its config section change.
 
 ## Repository layout
 
-<!-- The annotated tree, plus one line on why the pipeline stages read and write
-     to disk rather than passing dataframes. -->
+```
+config/             run settings, cost assumptions, the reason-code dictionary
+src/fraud_engine/
+  data/             loading, schemas, temporal splits
+  features/         feature families and their serving tiers
+  models/           rules engine, logistic, LightGBM, calibration, experiments
+  evaluation/       metrics, cost policies, the single test touch
+  explain/          contributions, reason codes
+  serving/          the API, its transform and its fallback
+  monitoring/       windows, PSI, decay, drift, the retraining trigger
+tests/              the suite `make check` runs
+docs/               the records each section above links to
+reports/            metrics and figures, tracked as deliverables
+notebooks/          exploration only, never the pipeline
+```
+
+Each stage reads the previous stage's output from disk and writes its own, so any stage
+reruns in isolation, and encoders fitted on training data live where only training data
+reaches them.
