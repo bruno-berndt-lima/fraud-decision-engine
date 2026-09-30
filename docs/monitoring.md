@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Registered before any Phase 09 number exists. |
-| **Last updated** | 2026-09-23 |
+| **Last updated** | 2026-09-29 |
 | **Watches** | The shipped system — `models/model.txt`, its tables, the calibrator, the frozen policy |
 | **Changes** | Nothing. Everything Phase 06 froze, Phase 07 explained and Phase 08 shipped stays as it is (§9) |
 | **Touches test** | As measurement, in its own stage. Nothing here names `$(HEADLINE)` as a prerequisite |
@@ -74,7 +74,21 @@ they meet is §7, which may not fire a retrain on an availability incident.
 
 ### Result
 
-*Pending.*
+| # | signal | what it showed |
+|---|---|---|
+| 1 | Feature drift (§3) | The columns the model leans on stayed stable on every full window of both horizons. What moved is in columns it barely consults: fields that started arriving, and browser versions the vocabulary never saw |
+| 2 | Prediction drift (§6) | Score PSI stable, while the frozen policy blocked a quarter less and mean predicted fraud fell below test's. Fraud fell or the model under-calls it; neither is chosen |
+| 3 | Composition coverage (§4, §6) | Identity share 17.9% and 17.3% on the two validation slices, 22.8% on test, 17.8–35.6% across the horizon's full windows, highest in the last |
+| 3b | Composition, labelled (§5) | +0.0734 PR-AUC for the 11.44-point shift across the split boundary, about 0.0064 per point |
+| 4 | Performance (§4) | No test window declines against the `VAL-CAL` baseline |
+
+**The retraining rule, replayed, fires on its cadence and on nothing else (§7).** The one
+horizon change that reached the policy is in the score tail, which no condition reads.
+
+**What the four signals add up to is a monitor that can see a change and cannot say what
+it is.** The labelled signals cover twenty-two days after deployment and found no decline;
+the label-free ones cover six months and found the policy acting differently, with no
+label to say whether it should.
 
 ## 2. The window
 
@@ -124,7 +138,14 @@ draw a line implying that it is.
 
 ### Result
 
-*Pending.*
+**As registered.** Labelled: twelve full windows of 12,259–17,237 rows, a wider spread
+than the "roughly 14,000" above suggested, and the partial 181–182 of 5,493. None
+straddles a split boundary; the decay stage refuses one that does. Unlabelled: six full
+windows of 67,865–87,585 rows, and the partial 381–395 of 64,986.
+
+**The width had one cost, and §3 found it.** Five days cannot hold seven weekdays, so
+`weekday` is significant in every labelled window by construction and stable in every
+twenty-eight-day one.
 
 ## 3. Feature drift — PSI
 
@@ -628,7 +649,60 @@ clock it is reported on.
 
 ### Result
 
-*Pending.*
+Record `reports/metrics/retraining_trigger.json`.
+
+**The cadence fires first, on day 251**, ninety days after the model went live, inside the
+horizon's second window (241–268). No other condition fires on any window.
+
+| # | condition | threshold | closest after deployment | fires |
+|---|---|---:|---:|---|
+| 1 | weighted PSI | 0.10 (moderate) | 0.059, days 269–296 | never |
+| 2 | score PSI | 0.25 (significant) | 0.072, days 353–380 | never |
+| 3 | PR-AUC below test's, ROC-AUC agreeing | 0.4635 and 0.8792 | no window readable | never |
+| 4 | cadence | 90 days | — | day 251 |
+
+The only value past a threshold anywhere is the partial window's weighted PSI, 0.122 over
+days 381–395, which reaches moderate on fifteen days of twenty-eight and does not fire,
+as §2 registered.
+
+**Condition 3 arrives late by construction, and the record dates it.** The labels for the
+horizon's first window (213–240) would mature on day 270, fifty-seven days after that
+window opened; those of the last full window (353–380) on day 410, after the file ends.
+Test's own windows matured between days 195 and 212 and could not be judged either: the
+pooled figure they sit inside exists only from day 212.
+
+**A retrain triggered on day 251 trains on labels through day 221 at best.** Under this
+project's own layout, `VAL-CAL` becomes 202–221, `VAL-FIT` 182–201, the purge 152–181, and
+the training window ends on day 151 — a hundred days before the trigger, before any time
+is spent fitting and shipping. The hundred is the layout itself (maturity, both validation
+slices and the purge), so it is the same for any trigger day. Days 183–212 are missing
+from the Kaggle files; a live system would hold them, and the arithmetic is about that
+system.
+
+**The shipped model fails the same arithmetic.** Its calibrator was fitted on `VAL-CAL`,
+whose labels mature on day 190, so a deployment honouring the 30-day assumption at every
+boundary could not have started before day 190. Day 161 is the holdout convention (test
+follows `VAL-CAL` directly), and it takes `VAL-CAL`'s labels as known the day after it
+ends. The purge honours maturity between train and validation, and nothing honours it
+between validation and deployment. The measurements do not depend on it: every PSI,
+PR-AUC and policy rate stays what it is. The replay's clock does: live from day 190, the
+cadence would fire on day 280, still first, and test's windows would come before
+deployment. It is a property of the replay, and it belongs in the README's limitations.
+
+**What moved on the horizon, the rule does not read.** §6's policy view is where the
+horizon changed: the EV policy's block rate fell from 6.33% to 4.72% across the full
+windows and mean predicted fraud from 3.98% to 2.86%, below test's from day 297. Neither
+PSI condition sees it: condition 1 watches inputs that held, and condition 2 is decile
+PSI, which §6 found blind to the tail where the policy acts. §6 registered the policy
+view as the only signal that shows a threshold drifting out of the money, and the rule
+registered here does not include it. On this data the rule is a ninety-day
+schedule, and its label-free conditions would have stayed silent through the change that
+reached the policy. §3 had already found no support, at the levels observed, for the
+premise condition 1 rests on.
+
+The rule stays as registered (§9). A condition on the policy's own rates, with its
+threshold fixed before any horizon is read, is a next step for the README, not a change
+made here after seeing what it would have caught.
 
 ## 8. What the horizon build is proven against
 
@@ -687,7 +761,15 @@ else.
 
 ### Result
 
-*Pending.*
+Manifest `data/horizon/build.json`, copied into `reports/metrics/drift.json`.
+
+**The proof passed before any horizon row was read.** All 61,585 test rows, through the
+horizon's own path, reproduced `data/features/test.parquet` on every column, value and
+dtype, and the headline's persisted scores, uncalibrated and calibrated, to the bit.
+
+**The horizon, as built:** 506,691 rows over days 213–395, 28.0% with an identity block.
+The identity block was renamed on load and the input check found nothing missing, so
+none of the columns the model reads was scored as absent.
 
 ## 9. What this phase may not change
 

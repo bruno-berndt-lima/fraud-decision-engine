@@ -1,0 +1,310 @@
+{
+  "name": "retraining_trigger",
+  "created": "2026-09-29T20:30:39+00:00",
+  "git_revision": "1c5fc12a8fd37dd5043952c9a53a97f74df9542b",
+  "model": "lightgbm_tuned",
+  "drift_revision": "f11da360b9370aeb65b6f4049e8f42f093d6823c",
+  "rule": {
+    "top_k": 10,
+    "feature_psi": {
+      "band": "moderate",
+      "value": 0.1
+    },
+    "score_psi": {
+      "band": "significant",
+      "value": 0.25
+    },
+    "pr_auc": {
+      "drop": 0.1,
+      "baseline": {
+        "split": "test",
+        "pr_auc": 0.5149814810055658,
+        "roc_auc": 0.8791698126709754
+      },
+      "threshold": 0.46348333290500926
+    },
+    "cadence_days": 90
+  },
+  "clock": {
+    "training_ends": 90,
+    "deployment": 161,
+    "maturity_days": 30,
+    "calibration_labels_mature_on": 190,
+    "baseline_labels_mature_on": 212,
+    "cadence_fires_on": 251
+  },
+  "windows": [
+    {
+      "horizon": "labelled",
+      "first_day": 161,
+      "last_day": 165,
+      "partial": false,
+      "read_on": 165,
+      "feature_psi": {
+        "value": 0.01149498358620276,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 195,
+        "why_not": "inside the baseline"
+      }
+    },
+    {
+      "horizon": "labelled",
+      "first_day": 166,
+      "last_day": 170,
+      "partial": false,
+      "read_on": 170,
+      "feature_psi": {
+        "value": 0.010943105682966156,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 200,
+        "why_not": "inside the baseline"
+      }
+    },
+    {
+      "horizon": "labelled",
+      "first_day": 171,
+      "last_day": 175,
+      "partial": false,
+      "read_on": 175,
+      "feature_psi": {
+        "value": 0.05013490863576217,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 205,
+        "why_not": "inside the baseline"
+      }
+    },
+    {
+      "horizon": "labelled",
+      "first_day": 176,
+      "last_day": 180,
+      "partial": false,
+      "read_on": 180,
+      "feature_psi": {
+        "value": 0.017395390746447744,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 210,
+        "why_not": "inside the baseline"
+      }
+    },
+    {
+      "horizon": "labelled",
+      "first_day": 181,
+      "last_day": 182,
+      "partial": true,
+      "read_on": 182,
+      "feature_psi": {
+        "value": 0.021686477261131504,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 212,
+        "why_not": "inside the baseline"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 213,
+      "last_day": 240,
+      "partial": false,
+      "read_on": 240,
+      "feature_psi": {
+        "value": 0.021394286584133414,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.019185953362209067,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 270,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 241,
+      "last_day": 268,
+      "partial": false,
+      "read_on": 268,
+      "feature_psi": {
+        "value": 0.03515556634274034,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.031764084788404104,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 298,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 269,
+      "last_day": 296,
+      "partial": false,
+      "read_on": 296,
+      "feature_psi": {
+        "value": 0.05878122384503452,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.04345606249913545,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 326,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 297,
+      "last_day": 324,
+      "partial": false,
+      "read_on": 324,
+      "feature_psi": {
+        "value": 0.017938367333517335,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.03987697781476552,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 354,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 325,
+      "last_day": 352,
+      "partial": false,
+      "read_on": 352,
+      "feature_psi": {
+        "value": 0.0403496859124306,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.03852007140017536,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 382,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 353,
+      "last_day": 380,
+      "partial": false,
+      "read_on": 380,
+      "feature_psi": {
+        "value": 0.026763433768089526,
+        "reaches": false,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.0716741897650804,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 410,
+        "why_not": "no labels"
+      }
+    },
+    {
+      "horizon": "horizon",
+      "first_day": 381,
+      "last_day": 395,
+      "partial": true,
+      "read_on": 395,
+      "feature_psi": {
+        "value": 0.12239770832540328,
+        "reaches": true,
+        "fires": false
+      },
+      "score_psi": {
+        "value": 0.01965025556188121,
+        "reaches": false,
+        "fires": false
+      },
+      "pr_auc": {
+        "fires": false,
+        "labels_mature_on": 425,
+        "why_not": "no labels"
+      }
+    }
+  ],
+  "firings": {
+    "feature_psi": null,
+    "score_psi": null,
+    "pr_auc": null,
+    "cadence": 251
+  },
+  "first": {
+    "condition": 4,
+    "name": "cadence",
+    "day": 251,
+    "window": {
+      "horizon": "horizon",
+      "first_day": 241,
+      "last_day": 268,
+      "partial": false
+    }
+  },
+  "retrain": {
+    "trigger_day": 251,
+    "labelled_through": 221,
+    "under_the_layout": {
+      "training_ends": 151,
+      "val_fit": [
+        182,
+        201
+      ],
+      "val_cal": [
+        202,
+        221
+      ],
+      "days_stale_on_the_trigger_day": 100
+    }
+  }
+}
