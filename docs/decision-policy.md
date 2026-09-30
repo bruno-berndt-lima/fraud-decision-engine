@@ -581,4 +581,43 @@ are twenty-two units, so it detects large moves rather than establishing small o
 
 ### Result
 
-*Pending.*
+Record `reports/metrics/attribution_test.json`. Before any ladder row was costed, §4's rows
+recomputed from the persisted vectors matched the rehearsal's and the headline's records
+exactly.
+
+**The cut chosen on `VAL-CAL` blocks at `p ≥ 0.0616`**, an eighth of the 0.5 the naive row
+uses. On `VAL-CAL` itself, in sample, it costs $2,935 per 1,000.
+
+| row | USD per 1,000 | blocked | vs rules | step | 95% interval of the step |
+|---|---:|---:|---:|---:|---:|
+| rules | 6,373 | 0% | — | | |
+| naive, 0.5 | 5,155 | 1.77% | −19.1% | | |
+| best global cut | 3,594 | 8.37% | −43.6% | **24.5 points** | −$1,975 to −$1,156 |
+| break-even, no review | 2,576 | 7.41% | −59.6% | **16.0 points** | −$1,425 to −$626 |
+| EV | 2,481 | 6.45% | −61.1% | **1.5 points** | −$99 to −$91 |
+
+**§7 credited 42 points to the per-transaction threshold, and most of them belong to
+choosing the cut.** Replacing 0.5 with one well-chosen global cut is worth 24.5 points.
+Letting the threshold move with the amount is worth 16.0 more, and review 1.5. Every
+step's interval excludes zero, so each is shown in USD.
+
+**The per-transaction threshold is still the better policy on both counts that matter.**
+Against the best global cut it saves $1,018 per 1,000 *and* blocks fewer transactions —
+7.41% against 8.37%. That is the mechanism §2 was built on: a single cut low enough for
+large tickets over-blocks small ones, and the break-even does not. The comparator was
+fitted to `VAL-CAL`'s labels and the break-even was not.
+
+**Review is worth little, and that is the capacity.** 1% of daily volume is about 27
+seats a day, and each review saves about $10 over the allow-or-block decision it
+replaces — $5,865 across test's 604 reviews.
+
+**The headline holds across the days test held.** $3,892 saved per 1,000, 95% interval
+$3,349 to $4,442; a reduction of 61.1%, interval 57.8% to 64.1%. The lower end clears the
+15% bar by far, so by the rule above the win holds across the interval, not only at its
+point estimate. The interval describes which days test happened to hold. It says nothing
+about the $15 false-positive cost, which §5's sweep carries.
+
+**What changes in the README.** The attribution becomes the ladder: the model with a
+fixed cut is worth 19.1%, choosing the cut 24.5 points, the threshold moving with the
+amount 16.0, and review 1.5. Calibration's 37 points (§7) is a separate comparison, and
+stands as recorded.

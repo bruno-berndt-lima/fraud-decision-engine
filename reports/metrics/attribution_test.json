@@ -1,0 +1,105 @@
+{
+  "name": "attribution_test",
+  "created": "2026-09-30T19:48:13+00:00",
+  "git_revision": "25ac0e8e0d923533c2fe6dea0e7e60882e0450be",
+  "split": "test",
+  "days": 22,
+  "probabilities": "platt; out-of-fold on val_cal, the shipped calibrator on test",
+  "cost_matrix_version": 1,
+  "review_capacity": 0.01,
+  "bootstrap": {
+    "bootstrap_resamples": 2000,
+    "interval": 0.95,
+    "seed": 0,
+    "unit": "day"
+  },
+  "global_cut": {
+    "threshold": 0.06156790907627248,
+    "chosen_on": "val_cal",
+    "val_cal_in_sample": {
+      "usd_per_1000": 2935.1560519060913,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.07310049342394072
+    }
+  },
+  "rows": {
+    "rules": {
+      "usd_per_1000": 6373.192514410976,
+      "reviews_per_day": 27.454545454545453,
+      "block_rate": 0.0,
+      "reduction_vs_rules": 0.0
+    },
+    "naive": {
+      "usd_per_1000": 5155.174506779248,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.01774782820492003,
+      "reduction_vs_rules": 0.19111583478414662
+    },
+    "global_cut": {
+      "usd_per_1000": 3593.9118129414633,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.08365673459446293,
+      "reduction_vs_rules": 0.43608924337136235
+    },
+    "break_even": {
+      "usd_per_1000": 2576.342307380044,
+      "reviews_per_day": 0.0,
+      "block_rate": 0.07410895510270359,
+      "reduction_vs_rules": 0.5957532584251215
+    },
+    "ev": {
+      "usd_per_1000": 2481.1080782658114,
+      "reviews_per_day": 27.454545454545453,
+      "block_rate": 0.06447998700982382,
+      "reduction_vs_rules": 0.6106961977602963
+    }
+  },
+  "steps": [
+    {
+      "from": "naive",
+      "to": "global_cut",
+      "usd_per_1000": -1561.2626938377848,
+      "usd_interval": [
+        -1975.3906207704088,
+        -1155.7600658570025
+      ],
+      "points": 24.49734085872157,
+      "interval_excludes_zero": true
+    },
+    {
+      "from": "global_cut",
+      "to": "break_even",
+      "usd_per_1000": -1017.5695055614192,
+      "usd_interval": [
+        -1424.8269769763017,
+        -626.4351852180952
+      ],
+      "points": 15.966401505375917,
+      "interval_excludes_zero": true
+    },
+    {
+      "from": "break_even",
+      "to": "ev",
+      "usd_per_1000": -95.23422911423268,
+      "usd_interval": [
+        -98.55020224145542,
+        -91.13309828239667
+      ],
+      "points": 1.4942939335174765,
+      "interval_excludes_zero": true
+    }
+  ],
+  "headline": {
+    "usd_per_1000": -3892.084436145165,
+    "usd_interval": [
+      -4442.181473872549,
+      -3348.963527981895
+    ],
+    "interval_excludes_zero": true,
+    "reduction": 0.6106961977602963,
+    "reduction_interval": [
+      0.5775739904644742,
+      0.6407618753886287
+    ]
+  }
+}

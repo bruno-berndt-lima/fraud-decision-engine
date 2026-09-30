@@ -18,14 +18,18 @@ Test set, days 161–182, scored **once**: 61,585 transactions, 2,277 of them fr
 | **model, expected-value policy** | **2,481** | 27.45 | 6.45% | **−61.1%** |
 
 **The expected-value policy saves $3,892 per 1,000 transactions against the rules
-engine.** Changing one thing at a time says where it comes from:
+engine**, with a 95% interval of $3,349–$4,442 across the days test held (a reduction of
+57.8–64.1%). Changing one thing at a time, on the same calibrated probabilities:
 
-- **The model behind one fixed cut: 19.1%.**
-- **A threshold per transaction, priced against its own amount: 61.1%**, on the same
-  probabilities — 42 points more.
-- **The same policy on uncalibrated scores: 24.1%**, so calibration is worth 37 points.
+- **A fixed 0.5 cut: 19.1%.** The model alone.
+- **One global cut, chosen on validation: 43.6%.** Choosing the cut is worth the most,
+  24.5 points.
+- **A threshold that moves with the amount: 59.6%.** 16.0 points more, while blocking
+  fewer transactions than the best single cut (7.4% against 8.4%).
+- **Plus review, within 1% of daily volume: 61.1%.** 1.5 points.
 
-Both levers outrank the model on its own.
+Every step's interval excludes zero. Calibration is a separate lever and the largest:
+the same policy on uncalibrated scores reaches only 24.1%, 37 points less.
 
 **What it costs.** The policy blocks 6.45% of transactions and 67% of those are
 legitimate — 4.5% of good customers declined, at an assumed $15 each. That is the
