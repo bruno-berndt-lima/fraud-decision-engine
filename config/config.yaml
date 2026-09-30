@@ -106,6 +106,9 @@ paths:
   # The test touch: the four §4 rows, calibration and model metrics on test,
   # measured once. Tracked, and its existence is what stops a second touch.
   headline: reports/metrics/policy_test.json
+  # What the headline was missing (decision-policy.md §8): the threshold ladder on test,
+  # with a paired day-bootstrap interval on the headline and on every step. Tracked.
+  attribution: reports/metrics/attribution_test.json
   # One contributions parquet per explained split: a column per model feature,
   # plus the base value they are additive around. Gitignored with the rest of
   # data/ — derived, rebuildable, and far larger than the matrices it explains.
@@ -780,3 +783,13 @@ horizon:
   # rows to spread across cores, so this inverts serving.threads; 0 is LightGBM's
   # default of every core. The scores do not depend on it.
   threads: 0
+
+# ------------------------------------------------------------------------------
+# After the headline — decision-policy.md §8
+# ------------------------------------------------------------------------------
+# The day bootstrap on test's persisted vector. The values usd_halves uses, under
+# their own keys, so re-measuring one cannot restage the other.
+attribution:
+  bootstrap_resamples: 2000
+  interval: 0.95
+  seed: 0

@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Status** | Registered before any Phase 06 number exists. |
-| **Last updated** | 2026-09-15 |
+| **Last updated** | 2026-09-30 |
 | **Cost matrix** | `config/cost_matrix.yaml`, version 1 |
 | **Fitted on** | `VAL-CAL` (days 141–160) — 56,949 rows, 1,796 positives |
-| **Touches test** | Once, in the last section, with everything above frozen |
+| **Touches test** | Once, in §7, with everything above frozen. §8 re-reads the persisted vector as measurement |
 
 ---
 
@@ -516,3 +516,69 @@ policy's prorating settles deterministically.
 
 With this, Phase 06's definition of done is complete: reliability diagram, EV policy,
 sensitivity analysis, and the final test table in USD.
+
+## 8. What the headline was missing
+
+Added on 2026-09-30, after every phase had closed and before either number below
+existed. §7's headline stands as recorded. Nothing in the frozen set moves, and neither
+measurement can change the policy, whatever it shows: both read what is already on disk
+— test's persisted vector (`headline_test.parquet`) and `VAL-CAL`'s out-of-fold
+probabilities — so no model is loaded and test is not scored again. This is measurement
+in the sense `monitoring.md` §9 states: unlimited, and deciding nothing.
+
+**Proven before measured.** The stage recomputes §4's rows from those two files first,
+and they must equal `policy_val_cal.json` and `policy_test.json` exactly.
+
+### 8.1 What the per-transaction threshold is worth, against a fair cut
+
+**The gap.** §4's naive row blocks at a fixed 0.5, a value nothing chose. The headline
+credits the per-transaction threshold with the distance from that row to the EV policy,
+and that distance holds three things at once: that 0.5 is a poor cut, that the threshold
+moves with the amount, and review. A ladder separates them, one change per step, every
+row on test:
+
+| row | policy | what the step from the row above isolates |
+|---|---|---|
+| naive, 0.5 | §4, unchanged | — |
+| best global cut | block if calibrated `p ≥ t`, otherwise allow; no review | choosing the cut |
+| break-even, no review | §2's allow-or-block alone, nothing reviewed | the threshold moving with the amount |
+| EV | §2, unchanged | review |
+
+**How `t` is chosen.** On `VAL-CAL`'s out-of-fold Platt probabilities, the ones the
+rehearsal used, as the cut that minimises realised USD per 1,000. The search runs over
+every distinct probability, blocking at `p ≥ t` as the naive row does. Cuts of equal
+cost resolve to the highest, which declines the fewest customers, as §2 resolves a tie
+towards allowing. The cut is fitted to labels and the break-even is not, so the
+asymmetry favours the comparator, which is the direction a comparator should be
+favoured in. Its `VAL-CAL` figure is in-sample and reported as such; the ladder is read
+on test.
+
+**The comparator is never a candidate.** A global cut that beats another row is written
+down and ships nowhere. §7's freeze holds.
+
+### 8.2 How far the headline moves with the days
+
+A paired day bootstrap on test's 22 days, as in §6: days resampled with replacement, each
+pair of policies costed on the same draw. It is reported for the EV policy against the
+rules engine, in USD per 1,000 and as the reduction, and for every step of the ladder.
+Resamples, interval and seed live in their own `attribution` section of `config.yaml`,
+with the values `usd_halves` uses, so re-measuring one cannot restage the other.
+
+**What the interval is.** Which days test happened to hold. Not how a refit would move,
+not a different period, and not the cost assumptions, which §5 carries. Twenty-two days
+are twenty-two units, so it detects large moves rather than establishing small ones.
+
+### Reading rules, before the numbers
+
+- **A difference whose interval contains zero is not shown to differ in USD**, for the
+  headline and for every step of the ladder.
+- **The 15% bar (`problem-statement.md` §5) is read on the reduction's interval.** If its
+  lower end is at or above 15%, the win holds across the days test held. If not, the
+  headline is stated as a win at its point estimate and not across the interval.
+- **The README's attribution is replaced by the ladder, whichever way it reads.** If the
+  best global cut takes most of what §7 credited to the per-transaction threshold, the
+  README says so.
+
+### Result
+
+*Pending.*
